@@ -293,7 +293,7 @@ function renderChart(country, countryData) {
       name: "7 日平滑指数",
       line: {
         color: country.color,
-        width: showRolling ? 4 : 2.2,
+        width: showRolling ? 2.8 : 1.6,
         dash: showRolling ? "solid" : "dot",
       },
       opacity: showRolling ? 1 : 0.38,
