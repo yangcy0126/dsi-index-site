@@ -129,7 +129,9 @@ def read_country(meta: dict[str, str]) -> tuple[dict[str, object], pd.DataFrame]
         daily = load_from_legacy(meta)
         data_source = "legacy_excel"
 
-    calendar = pd.DataFrame({"date": pd.date_range(daily["date"].min(), daily["date"].max(), freq="D")})
+    today = pd.Timestamp(datetime.now(timezone.utc).date())
+    end_date = max(daily["date"].max(), today)
+    calendar = pd.DataFrame({"date": pd.date_range(daily["date"].min(), end_date, freq="D")})
     merged = calendar.merge(daily.assign(publication=True), on="date", how="left")
     merged["publication"] = merged["publication"].notna()
     merged["filled"] = merged["raw"].ffill()

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -22,6 +23,8 @@ def load_records(path: Path) -> pd.DataFrame:
         frame = pd.read_csv(path, dtype=str, keep_default_na=False)
         if "score" in frame.columns:
             frame["score"] = pd.to_numeric(frame["score"], errors="coerce")
+        if "pipeline_version" not in frame.columns:
+            frame["pipeline_version"] = ""
         return frame
 
     return pd.DataFrame(
@@ -40,6 +43,7 @@ def load_records(path: Path) -> pd.DataFrame:
             "source_kind",
             "language",
             "model",
+            "pipeline_version",
             "response_id",
             "scored_at",
             "content_hash",
@@ -48,7 +52,11 @@ def load_records(path: Path) -> pd.DataFrame:
     )
 
 
-def pending_records(existing: pd.DataFrame, fetched: list[dict[str, object]]) -> tuple[list[dict[str, object]], set[str]]:
+def pending_records(
+    existing: pd.DataFrame,
+    fetched: list[dict[str, object]],
+    pipeline_version: str,
+) -> tuple[list[dict[str, object]], set[str]]:
     existing_by_url = {
         row["url"]: row
         for row in existing.to_dict(orient="records")
@@ -66,7 +74,10 @@ def pending_records(existing: pd.DataFrame, fetched: list[dict[str, object]]) ->
         url = str(record["url"])
         current = existing_by_url.get(url)
         if current:
-            if current.get("content_hash") == record["content_hash"]:
+            if (
+                str(current.get("content_hash", "")) == str(record["content_hash"])
+                and str(current.get("pipeline_version", "")) == pipeline_version
+            ):
                 continue
             replaced_urls.add(url)
             additions.append(record)
@@ -78,6 +89,22 @@ def pending_records(existing: pd.DataFrame, fetched: list[dict[str, object]]) ->
         additions.append(record)
 
     return additions, replaced_urls
+
+
+def determine_fetch_range(existing: pd.DataFrame, lookback_days: int) -> tuple[str, str]:
+    today = datetime.now(timezone.utc).date()
+    window_start = today - timedelta(days=max(lookback_days, 1))
+
+    legacy_dates = pd.to_datetime(
+        existing.loc[existing["is_legacy"].astype(str).str.lower() == "true", "published_at"],
+        errors="coerce",
+    ).dropna()
+    if len(legacy_dates):
+        start_date = max(window_start, (legacy_dates.max().date() + timedelta(days=1)))
+    else:
+        start_date = window_start
+
+    return start_date.isoformat(), today.isoformat()
 
 
 def make_sources(session: requests.Session, countries: list[str]) -> dict[str, object]:
@@ -93,7 +120,18 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Fetch, score, and store new WDSI records.")
     parser.add_argument("--countries", default="CN,US", help="Comma-separated country codes to update.")
     parser.add_argument("--dry-run", action="store_true", help="Fetch and diff records without scoring or writing.")
-    parser.add_argument("--max-pages", type=int, default=3, help="How many recent listing pages to inspect per source.")
+    parser.add_argument(
+        "--lookback-days",
+        type=int,
+        default=200,
+        help="How many recent days of source history to refetch and reconcile.",
+    )
+    parser.add_argument(
+        "--max-pages",
+        type=int,
+        default=40,
+        help="Maximum pages for source APIs that need explicit pagination.",
+    )
     args = parser.parse_args()
 
     countries = [code.strip().upper() for code in args.countries.split(",") if code.strip()]
@@ -107,17 +145,19 @@ def main() -> None:
     sources = make_sources(session, countries)
 
     scorer = None if args.dry_run else OpenAIWDSIScorer()
+    pipeline_version = OpenAIWDSIScorer.pipeline_version if scorer is None else scorer.pipeline_version
     changed = False
 
     for code in countries:
         source = sources[code]
         destination = RECORDS_DIR / f"{code}.csv"
         existing = load_records(destination)
+        start_date, end_date = determine_fetch_range(existing, args.lookback_days)
 
         if code == "CN":
-            fetched_records = source.fetch_recent(max_pages=args.max_pages)
+            fetched_records = source.fetch_between(start_date, end_date)
         else:
-            fetched_records = source.fetch_recent(max_pages=min(args.max_pages, 2))
+            fetched_records = source.fetch_between(start_date, end_date, max_pages=args.max_pages)
 
         fetched_rows = [
             {
@@ -137,9 +177,9 @@ def main() -> None:
             for record in fetched_records
         ]
 
-        additions, replaced_urls = pending_records(existing, fetched_rows)
+        additions, replaced_urls = pending_records(existing, fetched_rows, pipeline_version)
         print(
-            f"{code}: fetched {len(fetched_rows)} recent records, "
+            f"{code}: fetched {len(fetched_rows)} records for {start_date} to {end_date}, "
             f"{len(additions)} new or updated records, {len(replaced_urls)} replacements."
         )
 
@@ -163,6 +203,7 @@ def main() -> None:
                     "war_related": result["war_related"],
                     "confidence": result["confidence"],
                     "model": result["model"],
+                    "pipeline_version": result["pipeline_version"],
                     "response_id": result["response_id"],
                     "scored_at": result["scored_at"],
                 }

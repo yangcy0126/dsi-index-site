@@ -1,6 +1,13 @@
 name: Update WDSI Data
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/update-data.yml"
+      - "scripts/**"
+      - "requirements.txt"
   schedule:
     - cron: "20 15 * * *"
   workflow_dispatch:
@@ -38,7 +45,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Update records and rebuild data
-        run: python scripts/update_wdsi_records.py --countries CN,US
+        run: python scripts/update_wdsi_records.py --countries CN,US --lookback-days 200 --max-pages 40
         env:
           WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

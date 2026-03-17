@@ -126,6 +126,7 @@ def build_country_records(meta: dict[str, str]) -> pd.DataFrame:
     normalized["source_kind"] = meta["source_kind"]
     normalized["language"] = meta["language"]
     normalized["model"] = "legacy_import"
+    normalized["pipeline_version"] = "legacy_import"
     normalized["response_id"] = ""
     normalized["confidence"] = ""
     normalized["war_related"] = normalized["score"].astype(float).ne(0)
@@ -156,6 +157,7 @@ def build_country_records(meta: dict[str, str]) -> pd.DataFrame:
             "source_kind",
             "language",
             "model",
+            "pipeline_version",
             "response_id",
             "scored_at",
             "content_hash",

@@ -6,10 +6,10 @@ import json
 import os
 import re
 import time
+from collections import Counter
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime, timedelta, timezone
 from typing import Iterable
-from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
@@ -31,8 +31,31 @@ STATE_HEADERS = {
     "Referer": "https://www.state.gov/",
 }
 
+CN_SEARCH_REFERER = (
+    "https://www.mfa.gov.cn/irs-c-web/search_eng.shtml"
+    "?code=18fe7c6489d&searchBy=title&searchWord=Regular%20Press%20Conference"
+)
+
 JSON_BLOCK_RE = re.compile(r"\{.*\}", re.S)
 WHITESPACE_RE = re.compile(r"\s+")
+QUESTION_LABEL_RE = re.compile(r"^(?P<label>[A-Z][A-Za-z0-9 .&/'()\\-]{0,80}|Q)\s*:\s*(?P<body>.*)$")
+SPEAKER_TITLE_RE = re.compile(r"Foreign Ministry Spokesperson (.+?)'s Regular Press Conference", re.I)
+
+RELEVANCE_VARIANTS = (
+    "Apply a literal reading and do not infer military relevance unless the text itself supports it.",
+    "Use a conservative topic screen and separate war-security content from trade, protocol, and culture.",
+    "Focus on conflict, force, deterrence, sanctions tied to conflict, terrorism, ceasefire, and de-escalation.",
+)
+CATEGORY_VARIANTS = (
+    "Classify sentiment strictly with respect to war and the use of force.",
+    "Prefer neutral when the unit is descriptive and not evaluative.",
+    "Pay attention to condemnation, threats, mediation, ceasefire, reconciliation, and peace language.",
+)
+SCORE_VARIANTS = (
+    "Map intensity carefully across the full -3 to 3 range.",
+    "Reserve -3 and +3 for exceptionally strong tone or breakthrough de-escalation.",
+    "Differentiate mild concern from firm opposition and explicit threats or countermeasures.",
+)
 
 
 @dataclass(slots=True)
@@ -54,6 +77,13 @@ class ScrapedRecord:
     def record_id(self) -> str:
         seed = self.url or f"{self.country_code}|{self.published_at}|{self.content_hash}"
         return sha1_text(seed)[:16]
+
+
+@dataclass(slots=True)
+class TextUnit:
+    unit_id: str
+    label: str
+    text: str
 
 
 def sha1_text(value: str) -> str:
@@ -91,12 +121,41 @@ def parse_us_date(value: str) -> str:
 def request_json(session: requests.Session, url: str) -> object:
     response = session.get(url, headers=STATE_HEADERS, timeout=30)
     response.raise_for_status()
+    content_type = (response.headers.get("content-type") or "").lower()
+    if "json" not in content_type:
+        preview = response.text[:200].replace("\n", " ")
+        raise RuntimeError(f"Expected JSON from {url}, got {content_type or 'unknown'}: {preview}")
+    return response.json()
+
+
+def request_json_post(
+    session: requests.Session,
+    url: str,
+    payload: dict[str, object],
+    *,
+    headers: dict[str, str] | None = None,
+) -> object:
+    merged_headers = {
+        **BROWSER_HEADERS,
+        "Accept": "application/json,text/plain,*/*",
+        "Content-Type": "application/json",
+    }
+    if headers:
+        merged_headers.update(headers)
+    response = session.post(url, headers=merged_headers, json=payload, timeout=30)
+    response.raise_for_status()
+    content_type = (response.headers.get("content-type") or "").lower()
+    if "json" not in content_type:
+        preview = response.text[:200].replace("\n", " ")
+        raise RuntimeError(f"Expected JSON from {url}, got {content_type or 'unknown'}: {preview}")
     return response.json()
 
 
 def request_html(session: requests.Session, url: str) -> str:
     response = session.get(url, headers=BROWSER_HEADERS, timeout=30)
     response.raise_for_status()
+    if response.encoding == "ISO-8859-1" and response.apparent_encoding:
+        response.encoding = response.apparent_encoding
     return response.text
 
 
@@ -107,41 +166,101 @@ def extract_json_object(text: str) -> dict[str, object]:
     return json.loads(match.group(0))
 
 
+def iso_to_date(value: str) -> date:
+    return date.fromisoformat(value[:10])
+
+
+def truncate_text(value: str, limit: int) -> str:
+    if len(value) <= limit:
+        return value
+    return value[:limit].rstrip() + "\n[Truncated]"
+
+
+def normalize_bool(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    return clean_text(str(value)).lower() in {"1", "true", "yes", "y"}
+
+
+def normalize_category(value: object) -> str:
+    text = clean_text(str(value)).lower()
+    if text not in {"negative", "neutral", "positive"}:
+        raise ValueError(f"Unsupported category: {value}")
+    return text
+
+
 class ChinaMfaRegularPressSource:
     country_code = "CN"
-    base_url = "https://www.mfa.gov.cn/eng/xw/fyrbt/lxjzh/"
+    search_url = "https://www.mfa.gov.cn/irs/front/search"
 
     def __init__(self, session: requests.Session) -> None:
         self.session = session
 
     def fetch_recent(self, max_pages: int = 4) -> list[ScrapedRecord]:
+        end_date = datetime.now(timezone.utc).date()
+        start_date = end_date - timedelta(days=max(max_pages * 40, 30))
+        return self.fetch_between(start_date.isoformat(), end_date.isoformat(), page_size=10)
+
+    def fetch_between(self, start_date: str, end_date: str, page_size: int = 10) -> list[ScrapedRecord]:
+        begin = iso_to_date(start_date)
+        finish = iso_to_date(end_date)
+        payload = {
+            "code": "18fe7c6489d",
+            "configCode": "",
+            "codes": "",
+            "searchWord": "Regular Press Conference",
+            "dataTypeId": "2076",
+            "orderBy": "time",
+            "searchBy": "title",
+            "appendixType": "",
+            "granularity": "CUSTOM",
+            "beginDateTime": int(datetime.combine(begin, datetime.min.time()).timestamp() * 1000),
+            "endDateTime": int((datetime.combine(finish + timedelta(days=1), datetime.min.time()).timestamp() * 1000) - 1),
+            "isSearchForced": 0,
+            "filters": [],
+            "pageNo": 1,
+            "pageSize": page_size,
+            "isDefaultAdvanced": 0,
+            "advancedFilters": None,
+        }
+
+        page_count = 1
         article_urls: list[str] = []
-        for page in range(max_pages):
-            suffix = "" if page == 0 else f"index_{page}.shtml"
-            url = urljoin(self.base_url, suffix)
-            html_text = request_html(self.session, url)
-            article_urls.extend(self._parse_listing(html_text, url))
+        while int(payload["pageNo"]) <= page_count:
+            result = request_json_post(
+                self.session,
+                self.search_url,
+                payload,
+                headers={"Referer": CN_SEARCH_REFERER},
+            )
+            if not isinstance(result, dict) or not result.get("success"):
+                raise RuntimeError(f"CN search failed for {start_date} to {end_date}: {result}")
+
+            data = result.get("data") or {}
+            pager = data.get("pager") if isinstance(data, dict) else {}
+            page_count = int((pager or {}).get("pageCount") or 1)
+            middle = data.get("middle") if isinstance(data, dict) else {}
+            items = middle.get("listAndBox") if isinstance(middle, dict) else []
+            if not isinstance(items, list):
+                break
+
+            for item in items:
+                entry = item.get("data") if isinstance(item, dict) else {}
+                url = str(entry.get("url", "")).strip()
+                if "/xw/fyrbt/lxjzh/" not in url:
+                    continue
+                article_urls.append(url)
+
+            payload["pageNo"] = int(payload["pageNo"]) + 1
 
         unique_urls = list(dict.fromkeys(article_urls))
         return [self._parse_article(url) for url in unique_urls]
 
-    def _parse_listing(self, html_text: str, base_url: str) -> list[str]:
-        soup = BeautifulSoup(html_text, "html.parser")
-        article_urls: list[str] = []
-        for anchor in soup.select("a[href]"):
-            href = anchor.get("href", "").strip()
-            if not href:
-                continue
-            if re.match(r"^\./\d{6}/t\d+_\d+\.html$", href):
-                article_urls.append(urljoin(base_url, href))
-        return article_urls
-
     def _parse_article(self, url: str) -> ScrapedRecord:
         html_text = request_html(self.session, url)
         soup = BeautifulSoup(html_text, "html.parser")
-
-        title = clean_text(self._select_text(soup, [".news_header_title", ".news_header", "title"]))
-        date_text = self._select_text(soup, [".news_header_time .xltime", ".xltime", ".news_header_bottom"])
+        title = clean_text(self._select_text(soup, [".news_header_title", "meta[name='ArticleTitle']", "title"]))
+        date_text = self._select_text(soup, [".xltime", "meta[name='PubDate']"])
         content_node = soup.select_one(".content_text") or soup.select_one(".news_content")
         if content_node is None:
             raise ValueError(f"Could not find article body for {url}")
@@ -154,9 +273,9 @@ class ChinaMfaRegularPressSource:
             raise ValueError(f"Missing title or content for {url}")
 
         speaker = ""
-        title_match = re.match(r"Foreign Ministry Spokesperson (.+?)'?s Regular Press Conference", title)
+        title_match = SPEAKER_TITLE_RE.search(title.replace("\u2019", "'"))
         if title_match:
-            speaker = title_match.group(1).replace("’", "'")
+            speaker = title_match.group(1).strip()
 
         return ScrapedRecord(
             country_code=self.country_code,
@@ -172,18 +291,20 @@ class ChinaMfaRegularPressSource:
     @staticmethod
     def _select_text(soup: BeautifulSoup, selectors: Iterable[str]) -> str:
         for selector in selectors:
-            node = soup.select_one(selector)
-            if node:
-                return node.get_text(" ", strip=True)
+            if selector.startswith("meta["):
+                node = soup.select_one(selector)
+                if node and node.get("content"):
+                    return str(node.get("content", "")).strip()
+            else:
+                node = soup.select_one(selector)
+                if node:
+                    return node.get_text(" ", strip=True)
         return ""
 
 
 class UsStateDepartmentSource:
     country_code = "US"
-    press_endpoint = (
-        "https://www.state.gov/wp-json/wp/v2/state_press_release"
-        "?per_page=100&page={page}"
-    )
+    press_endpoint = "https://www.state.gov/wp-json/wp/v2/state_press_release?per_page=100&page={page}"
     briefing_endpoint = (
         "https://www.state.gov/wp-json/wp/v2/state_briefing"
         "?state_briefing_type=393&per_page=100&page={page}"
@@ -193,40 +314,59 @@ class UsStateDepartmentSource:
         self.session = session
 
     def fetch_recent(self, max_pages: int = 2) -> list[ScrapedRecord]:
+        end_date = datetime.now(timezone.utc).date()
+        start_date = end_date - timedelta(days=max(max_pages * 50, 30))
+        return self.fetch_between(start_date.isoformat(), end_date.isoformat(), max_pages=max_pages)
+
+    def fetch_between(self, start_date: str, end_date: str, max_pages: int = 8) -> list[ScrapedRecord]:
+        start = start_date[:10]
+        end = end_date[:10]
         records: list[ScrapedRecord] = []
         for page in range(1, max_pages + 1):
-            records.extend(self._fetch_press_releases(page))
-            records.extend(self._fetch_press_briefings(page))
+            press = self._fetch_press_releases(page, start, end)
+            briefings = self._fetch_press_briefings(page, start, end)
+            if not press and not briefings and page > 1:
+                break
+            records.extend(press)
+            records.extend(briefings)
         return list({record.url: record for record in records}.values())
 
-    def _fetch_press_releases(self, page: int) -> list[ScrapedRecord]:
+    def _fetch_press_releases(self, page: int, start_date: str, end_date: str) -> list[ScrapedRecord]:
         payload = request_json(self.session, self.press_endpoint.format(page=page))
         if not isinstance(payload, list):
             return []
 
         records: list[ScrapedRecord] = []
         for item in payload:
-            link = item.get("link", "")
+            link = str(item.get("link", ""))
+            published_at = parse_us_date(str(item.get("date", "")))
             if "/releases/office-of-the-spokesperson/" not in link:
+                continue
+            if not (start_date <= published_at <= end_date):
                 continue
             records.append(self._make_record(item, "state_press_release"))
         return records
 
-    def _fetch_press_briefings(self, page: int) -> list[ScrapedRecord]:
+    def _fetch_press_briefings(self, page: int, start_date: str, end_date: str) -> list[ScrapedRecord]:
         payload = request_json(self.session, self.briefing_endpoint.format(page=page))
         if not isinstance(payload, list):
             return []
 
         records: list[ScrapedRecord] = []
         for item in payload:
-            link = item.get("link", "")
+            link = str(item.get("link", ""))
+            published_at = parse_us_date(str(item.get("date", "")))
             if "/briefings/department-press-briefing" not in link:
+                continue
+            if not (start_date <= published_at <= end_date):
                 continue
             records.append(self._make_record(item, "state_department_press_briefing"))
         return records
 
     def _make_record(self, item: dict[str, object], source_kind: str) -> ScrapedRecord:
-        raw_html = str(((item.get("content") or {}) if isinstance(item.get("content"), dict) else {}).get("rendered", ""))
+        raw_html = str(
+            ((item.get("content") or {}) if isinstance(item.get("content"), dict) else {}).get("rendered", "")
+        )
         soup = BeautifulSoup(raw_html, "html.parser")
 
         speaker = ""
@@ -250,7 +390,11 @@ class UsStateDepartmentSource:
                 node.decompose()
 
         content = clean_text(soup.get_text("\n"))
-        title = clean_text(strip_html(str(((item.get("title") or {}) if isinstance(item.get("title"), dict) else {}).get("rendered", ""))))
+        title = clean_text(
+            strip_html(
+                str(((item.get("title") or {}) if isinstance(item.get("title"), dict) else {}).get("rendered", ""))
+            )
+        )
         if not title or not content:
             raise ValueError(f"Missing title or content for {item.get('link')}")
 
@@ -267,6 +411,8 @@ class UsStateDepartmentSource:
 
 
 class OpenAIWDSIScorer:
+    pipeline_version = "paper_multistage_v1"
+
     def __init__(
         self,
         api_key: str | None = None,
@@ -290,99 +436,564 @@ class OpenAIWDSIScorer:
         self.client = OpenAI(**client_kwargs)
 
     def score_record(self, record: ScrapedRecord) -> dict[str, object]:
-        user_prompt = self._build_prompt(record)
-        last_error: Exception | None = None
+        units = self._build_units(record)
+        relevance, stage_ids, stage_events = self._score_relevance(record, units)
+        war_units = [unit for unit in units if relevance[unit.unit_id]["war_related"]]
 
+        if not war_units:
+            confidence = self._confidence_from_events(stage_events + [{"kind": "aggregate", "status": "accepted"}])
+            return {
+                "score": 0,
+                "score_reasoning": "No war-related unit survived the paper-style screening stage.",
+                "confidence": confidence,
+                "war_related": False,
+                "model": self.model,
+                "response_id": self._join_response_ids(stage_ids),
+                "scored_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+                "pipeline_version": self.pipeline_version,
+            }
+
+        categories, category_ids, category_events = self._score_categories(record, war_units)
+        scores, score_ids, score_events = self._score_intensity(record, war_units, categories)
+        aggregate_payload, aggregate_id = self._aggregate_units(record, war_units, categories, scores)
+
+        response_ids = stage_ids + category_ids + score_ids + ([aggregate_id] if aggregate_id else [])
+        confidence = self._confidence_from_events(
+            stage_events + category_events + score_events + [{"kind": "aggregate", "status": "accepted"}]
+        )
+
+        return {
+            "score": int(aggregate_payload["score"]),
+            "score_reasoning": clean_text(str(aggregate_payload["reasoning"])),
+            "confidence": confidence,
+            "war_related": True,
+            "model": self.model,
+            "response_id": self._join_response_ids(response_ids),
+            "scored_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+            "pipeline_version": self.pipeline_version,
+        }
+
+    def _build_units(self, record: ScrapedRecord) -> list[TextUnit]:
+        if record.country_code == "CN" and record.source_kind == "mfa_regular_press_conference":
+            units = self._segment_cn_press_conference(record)
+            if units:
+                return units
+        return [TextUnit(unit_id="u1", label="statement", text=truncate_text(record.content, 18000))]
+
+    def _segment_cn_press_conference(self, record: ScrapedRecord) -> list[TextUnit]:
+        speaker = clean_text(record.speaker).replace("\u2019", "'")
+        lines = [clean_text(line) for line in record.content.splitlines() if clean_text(line)]
+        if not lines:
+            return []
+
+        units: list[TextUnit] = []
+        index = 0
+        while index < len(lines):
+            match = QUESTION_LABEL_RE.match(lines[index])
+            if not match:
+                index += 1
+                continue
+
+            label = match.group("label").strip()
+            if speaker and label.lower() == speaker.lower():
+                index += 1
+                continue
+
+            question_parts = [match.group("body").strip()]
+            index += 1
+            while index < len(lines):
+                next_match = QUESTION_LABEL_RE.match(lines[index])
+                if next_match and speaker and next_match.group("label").strip().lower() == speaker.lower():
+                    break
+                question_parts.append(lines[index])
+                index += 1
+
+            if index >= len(lines):
+                break
+
+            answer_match = QUESTION_LABEL_RE.match(lines[index])
+            if not answer_match:
+                continue
+
+            answer_parts = [answer_match.group("body").strip()]
+            index += 1
+            while index < len(lines):
+                next_match = QUESTION_LABEL_RE.match(lines[index])
+                if next_match and (not speaker or next_match.group("label").strip().lower() != speaker.lower()):
+                    break
+                answer_parts.append(lines[index])
+                index += 1
+
+            question_text = clean_text(" ".join(question_parts))
+            answer_text = clean_text(" ".join(answer_parts))
+            combined = clean_text(
+                f"Question ({label}): {question_text}\nAnswer ({speaker or 'Spokesperson'}): {answer_text}"
+            )
+            if len(combined) < 60:
+                continue
+            units.append(TextUnit(unit_id=f"u{len(units) + 1}", label=label, text=truncate_text(combined, 2500)))
+
+        return units
+
+    def _score_relevance(
+        self,
+        record: ScrapedRecord,
+        units: list[TextUnit],
+    ) -> tuple[dict[str, dict[str, object]], list[str], list[dict[str, str]]]:
+        runs: list[dict[str, dict[str, object]]] = []
+        response_ids: list[str] = []
+        events: list[dict[str, str]] = []
+        for variant in RELEVANCE_VARIANTS:
+            payload, response_id = self._request_stage_payload(
+                self._relevance_system_prompt(),
+                self._relevance_user_prompt(record, units, variant),
+            )
+            response_ids.append(response_id)
+            runs.append(self._map_stage_results(payload, key="war_related"))
+
+        final: dict[str, dict[str, object]] = {}
+        for unit in units:
+            labels = [normalize_bool(run[unit.unit_id]["war_related"]) for run in runs]
+            if len(set(labels)) == 1:
+                final[unit.unit_id] = {
+                    "war_related": labels[0],
+                    "rationale": clean_text(str(runs[0][unit.unit_id].get("rationale", ""))),
+                }
+                events.append({"kind": "relevance", "status": "unanimous"})
+                continue
+
+            validated, validation_id, status = self._resolve_disagreement(
+                stage_name="relevance",
+                record=record,
+                unit=unit,
+                candidates=[run[unit.unit_id] for run in runs],
+            )
+            response_ids.append(validation_id)
+            final[unit.unit_id] = {
+                "war_related": normalize_bool(validated["label"]),
+                "rationale": clean_text(str(validated["reasoning"])),
+            }
+            events.append({"kind": "relevance", "status": status})
+        return final, response_ids, events
+
+    def _score_categories(
+        self,
+        record: ScrapedRecord,
+        war_units: list[TextUnit],
+    ) -> tuple[dict[str, dict[str, object]], list[str], list[dict[str, str]]]:
+        runs: list[dict[str, dict[str, object]]] = []
+        response_ids: list[str] = []
+        events: list[dict[str, str]] = []
+        for variant in CATEGORY_VARIANTS:
+            payload, response_id = self._request_stage_payload(
+                self._category_system_prompt(),
+                self._category_user_prompt(record, war_units, variant),
+            )
+            response_ids.append(response_id)
+            runs.append(self._map_stage_results(payload, key="category"))
+
+        final: dict[str, dict[str, object]] = {}
+        for unit in war_units:
+            labels = [normalize_category(run[unit.unit_id]["category"]) for run in runs]
+            if len(set(labels)) == 1:
+                final[unit.unit_id] = {
+                    "category": labels[0],
+                    "rationale": clean_text(str(runs[0][unit.unit_id].get("rationale", ""))),
+                }
+                events.append({"kind": "category", "status": "unanimous"})
+                continue
+
+            validated, validation_id, status = self._resolve_disagreement(
+                stage_name="category",
+                record=record,
+                unit=unit,
+                candidates=[run[unit.unit_id] for run in runs],
+            )
+            response_ids.append(validation_id)
+            final[unit.unit_id] = {
+                "category": normalize_category(validated["label"]),
+                "rationale": clean_text(str(validated["reasoning"])),
+            }
+            events.append({"kind": "category", "status": status})
+        return final, response_ids, events
+
+    def _score_intensity(
+        self,
+        record: ScrapedRecord,
+        war_units: list[TextUnit],
+        categories: dict[str, dict[str, object]],
+    ) -> tuple[dict[str, dict[str, object]], list[str], list[dict[str, str]]]:
+        runs: list[dict[str, dict[str, object]]] = []
+        response_ids: list[str] = []
+        events: list[dict[str, str]] = []
+        for variant in SCORE_VARIANTS:
+            payload, response_id = self._request_stage_payload(
+                self._score_system_prompt(),
+                self._score_user_prompt(record, war_units, categories, variant),
+            )
+            response_ids.append(response_id)
+            runs.append(self._map_stage_results(payload, key="score"))
+
+        final: dict[str, dict[str, object]] = {}
+        for unit in war_units:
+            labels = [int(run[unit.unit_id]["score"]) for run in runs]
+            if len(set(labels)) == 1:
+                final[unit.unit_id] = {
+                    "score": labels[0],
+                    "rationale": clean_text(str(runs[0][unit.unit_id].get("rationale", ""))),
+                }
+                events.append({"kind": "score", "status": "unanimous"})
+                continue
+
+            validated, validation_id, status = self._resolve_disagreement(
+                stage_name="score",
+                record=record,
+                unit=unit,
+                candidates=[run[unit.unit_id] for run in runs],
+            )
+            response_ids.append(validation_id)
+            final[unit.unit_id] = {
+                "score": int(validated["label"]),
+                "rationale": clean_text(str(validated["reasoning"])),
+            }
+            events.append({"kind": "score", "status": status})
+        return final, response_ids, events
+
+    def _aggregate_units(
+        self,
+        record: ScrapedRecord,
+        war_units: list[TextUnit],
+        categories: dict[str, dict[str, object]],
+        scores: dict[str, dict[str, object]],
+    ) -> tuple[dict[str, object], str]:
+        if len(war_units) == 1:
+            unit = war_units[0]
+            payload = {
+                "score": int(scores[unit.unit_id]["score"]),
+                "reasoning": (
+                    f"Conference-level score inherits the single war-related unit {unit.unit_id} "
+                    f"({categories[unit.unit_id]['category']}, {scores[unit.unit_id]['score']}). "
+                    f"{scores[unit.unit_id]['rationale']}"
+                ),
+            }
+            return payload, ""
+
+        system_prompt = (
+            "You are the conference-level aggregation and validation agent for the WDSI pipeline. "
+            "Choose one conference-level raw score from -3 to 3. Do not average unit-level scores. "
+            "Select the dominant official war-related tone of the conference day."
+        )
+        lines = [
+            f"Country code: {record.country_code}",
+            f"Source kind: {record.source_kind}",
+            f"Published date: {record.published_at}",
+            f"Title: {record.title}",
+            "War-related units and prior stage outputs:",
+        ]
+        for unit in war_units:
+            lines.extend(
+                [
+                    f"[{unit.unit_id}] {unit.label}",
+                    truncate_text(unit.text, 1000),
+                    f"Category: {categories[unit.unit_id]['category']}",
+                    f"Unit score: {scores[unit.unit_id]['score']}",
+                    f"Rationale: {scores[unit.unit_id]['rationale']}",
+                    "",
+                ]
+            )
+        lines.extend(
+            [
+                "Return only JSON with keys score, reasoning, selected_unit_ids.",
+                "score must be an integer between -3 and 3.",
+            ]
+        )
+        payload, response_id = self._request_stage_payload(system_prompt, "\n".join(lines))
+        score = int(payload["score"])
+        if score < -3 or score > 3:
+            raise ValueError(f"Out-of-range aggregate score {score} for {record.url}")
+        return {
+            "score": score,
+            "reasoning": clean_text(str(payload.get("reasoning", ""))),
+        }, response_id
+
+    def _resolve_disagreement(
+        self,
+        *,
+        stage_name: str,
+        record: ScrapedRecord,
+        unit: TextUnit,
+        candidates: list[dict[str, object]],
+    ) -> tuple[dict[str, object], str, str]:
+        payload, response_id = self._request_stage_payload(
+            self._validator_system_prompt(stage_name),
+            self._validator_user_prompt(stage_name, record, unit, candidates),
+        )
+        action = clean_text(str(payload.get("action", "accept"))).lower()
+        if action != "retry":
+            return payload, response_id, "validated"
+
+        rerun_payload, rerun_id = self._request_stage_payload(
+            self._retry_system_prompt(stage_name),
+            self._retry_user_prompt(stage_name, record, unit, payload),
+        )
+        merged_id = self._join_response_ids([response_id, rerun_id])
+        return {
+            "label": rerun_payload["label"],
+            "reasoning": clean_text(str(rerun_payload.get("reasoning", ""))),
+        }, merged_id, "retry"
+
+    def _map_stage_results(self, payload: dict[str, object], *, key: str) -> dict[str, dict[str, object]]:
+        results = payload.get("results")
+        if not isinstance(results, list):
+            raise ValueError(f"Stage payload missing results list: {payload}")
+
+        mapped: dict[str, dict[str, object]] = {}
+        for item in results:
+            if not isinstance(item, dict):
+                continue
+            unit_id = clean_text(str(item.get("unit_id", "")))
+            if not unit_id:
+                continue
+            if key not in item:
+                raise ValueError(f"Missing {key} in stage item: {item}")
+            mapped[unit_id] = {
+                key: item[key],
+                "rationale": clean_text(str(item.get("rationale", ""))),
+            }
+
+        if not mapped:
+            raise ValueError(f"Stage payload did not contain any usable results: {payload}")
+        return mapped
+
+    def _request_stage_payload(self, system_prompt: str, user_prompt: str) -> tuple[dict[str, object], str]:
+        last_error: Exception | None = None
         for attempt in range(3):
             try:
-                payload = self._request_score_payload(user_prompt)
-                score = int(payload["score"])
-                if score < -3 or score > 3:
-                    raise ValueError(f"Out-of-range score {score} for {record.url}")
-
-                return {
-                    "score": score,
-                    "score_reasoning": clean_text(str(payload.get("reasoning", ""))),
-                    "confidence": float(payload.get("confidence", 0.0)),
-                    "war_related": bool(payload.get("war_related", score != 0)),
-                    "model": self.model,
-                    "response_id": str(payload.get("_response_id", "")),
-                    "scored_at": datetime.utcnow().isoformat(timespec="seconds") + "Z",
-                }
+                payload, response_id = self._request_json_payload(system_prompt, user_prompt)
+                return payload, response_id
             except Exception as exc:  # pragma: no cover - retry logic
                 last_error = exc
                 if attempt == 2:
                     break
                 time.sleep(2 * (attempt + 1))
-
         assert last_error is not None
         raise last_error
 
-    @staticmethod
-    def _system_prompt() -> str:
-        return (
-            "You score diplomatic texts for a War-related Diplomatic Sentiment Index (WDSI). "
-            "Focus only on war, military, security, sanctions, arms sales, terrorism, ceasefire, "
-            "conflict escalation, peace talks, and conflict resolution language. "
-            "Use this scale: -3 strongly escalatory/hostile war-related diplomatic tone; "
-            "-2 clearly negative or condemnatory war-related tone; "
-            "-1 mildly negative conflict-security concern or criticism; "
-            "0 no meaningful war-related diplomatic sentiment or neutral/mixed with no clear direction; "
-            "1 mildly positive de-escalatory or cooperative security tone; "
-            "2 clearly positive peace-building, ceasefire, or reconciliation tone; "
-            "3 strongly positive breakthrough-level peace or de-escalation. "
-            "If the text is not meaningfully about war or security, return 0. "
-            "Return only valid JSON with keys war_related, score, confidence, reasoning, salient_topics. "
-            "score must be an integer from -3 to 3. confidence must be between 0 and 1. "
-            "reasoning must be short and concrete."
-        )
-
-    def _request_score_payload(self, user_prompt: str) -> dict[str, object]:
+    def _request_json_payload(self, system_prompt: str, user_prompt: str) -> tuple[dict[str, object], str]:
         if self.base_url:
-            return self._request_with_chat_completions(user_prompt)
-        return self._request_with_responses_api(user_prompt)
+            return self._request_with_chat_completions(system_prompt, user_prompt)
+        return self._request_with_responses_api(system_prompt, user_prompt)
 
-    def _request_with_responses_api(self, user_prompt: str) -> dict[str, object]:
+    def _request_with_responses_api(self, system_prompt: str, user_prompt: str) -> tuple[dict[str, object], str]:
         response = self.client.responses.create(
             model=self.model,
             reasoning={"effort": self.reasoning_effort},
             input=[
-                {"role": "system", "content": self._system_prompt()},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            max_output_tokens=400,
+            max_output_tokens=2200,
         )
         payload = extract_json_object(response.output_text)
-        payload["_response_id"] = getattr(response, "id", "")
-        return payload
+        return payload, getattr(response, "id", "")
 
-    def _request_with_chat_completions(self, user_prompt: str) -> dict[str, object]:
+    def _request_with_chat_completions(self, system_prompt: str, user_prompt: str) -> tuple[dict[str, object], str]:
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[
-                {"role": "system", "content": self._system_prompt()},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
             temperature=0,
         )
         content = response.choices[0].message.content or ""
         payload = extract_json_object(content)
-        payload["_response_id"] = getattr(response, "id", "")
-        return payload
+        return payload, getattr(response, "id", "")
 
     @staticmethod
-    def _build_prompt(record: ScrapedRecord) -> str:
-        content = record.content
-        if len(content) > 30000:
-            content = content[:30000] + "\n\n[Truncated for scoring]"
-
+    def _relevance_system_prompt() -> str:
         return (
-            f"Country code: {record.country_code}\n"
-            f"Source kind: {record.source_kind}\n"
-            f"Published date: {record.published_at}\n"
-            f"Title: {record.title or '(none)'}\n"
-            f"Speaker or author: {record.speaker or '(none)'}\n"
-            f"URL: {record.url or '(none)'}\n\n"
-            "Text to score:\n"
-            f"{content}"
+            "You are Agent 1 in a paper-style WDSI pipeline. "
+            "For each unit, decide whether it is genuinely about war, armed conflict, military security, deterrence, "
+            "sanctions related to conflict, terrorism, ceasefire, or closely related escalation risks. "
+            "Return only JSON with a top-level key results. Each result must contain unit_id, war_related, rationale."
         )
+
+    @staticmethod
+    def _category_system_prompt() -> str:
+        return (
+            "You are Agent 2 in a paper-style WDSI pipeline. "
+            "For each already war-related unit, classify the sentiment direction with respect to war and the use of force "
+            "as negative, neutral, or positive. Return only JSON with key results. "
+            "Each result must contain unit_id, category, rationale."
+        )
+
+    @staticmethod
+    def _score_system_prompt() -> str:
+        return (
+            "You are Agent 3 in a paper-style WDSI pipeline. "
+            "For each already war-related unit, assign an intensity score from -3 to 3, conditional on the supplied category. "
+            "Use 0 only for neutral. Negative scores run from mildly negative (-1) to strongly negative (-3). "
+            "Positive scores run from mildly positive (1) to strongly positive (3). "
+            "Return only JSON with key results. Each result must contain unit_id, score, rationale."
+        )
+
+    @staticmethod
+    def _validator_system_prompt(stage_name: str) -> str:
+        return (
+            f"You are the validation agent for the {stage_name} stage of a multi-step WDSI pipeline. "
+            "Review three independent outputs and their rationales. If one interpretation is clearly more coherent, accept it. "
+            "If the disagreement reflects unresolved ambiguity, request a retry with a brief clarification. "
+            "Return only JSON with keys action, label, reasoning, clarification. Use action='accept' or action='retry'."
+        )
+
+    @staticmethod
+    def _retry_system_prompt(stage_name: str) -> str:
+        return (
+            f"You are rerunning the {stage_name} stage after validator feedback in a paper-style WDSI pipeline. "
+            "Return only JSON with keys label and reasoning."
+        )
+
+    def _relevance_user_prompt(self, record: ScrapedRecord, units: list[TextUnit], variant: str) -> str:
+        return self._stage_user_prompt(
+            record,
+            units,
+            instructions=[
+                variant,
+                "If a unit is only about economics, protocol, humanitarian relief without a security context, or culture, mark war_related=false.",
+            ],
+        )
+
+    def _category_user_prompt(self, record: ScrapedRecord, units: list[TextUnit], variant: str) -> str:
+        return self._stage_user_prompt(
+            record,
+            units,
+            instructions=[
+                variant,
+                "Negative includes condemnation, warnings, threats, or sharp criticism tied to war or force.",
+                "Positive includes support for ceasefire, de-escalation, mediation, peace talks, or peaceful outcomes.",
+                "Neutral is descriptive or balanced with no clear evaluative tone.",
+            ],
+        )
+
+    def _score_user_prompt(
+        self,
+        record: ScrapedRecord,
+        units: list[TextUnit],
+        categories: dict[str, dict[str, object]],
+        variant: str,
+    ) -> str:
+        category_lines = [f"{unit.unit_id}: {categories[unit.unit_id]['category']}" for unit in units]
+        return self._stage_user_prompt(
+            record,
+            units,
+            instructions=[
+                variant,
+                "Condition strictly on the supplied category for each unit.",
+                "Use -1 or 1 for mild tone, -2 or 2 for clear tone, and -3 or 3 only for especially strong tone.",
+                "Supplied categories:",
+                *category_lines,
+            ],
+        )
+
+    def _validator_user_prompt(
+        self,
+        stage_name: str,
+        record: ScrapedRecord,
+        unit: TextUnit,
+        candidates: list[dict[str, object]],
+    ) -> str:
+        key_name = "war_related" if stage_name == "relevance" else ("category" if stage_name == "category" else "score")
+        lines = [
+            f"Country code: {record.country_code}",
+            f"Source kind: {record.source_kind}",
+            f"Published date: {record.published_at}",
+            f"Title: {record.title}",
+            f"Unit id: {unit.unit_id}",
+            f"Speaker or label: {unit.label}",
+            "Unit text:",
+            truncate_text(unit.text, 1800),
+            "",
+            "Independent outputs:",
+        ]
+        for index, candidate in enumerate(candidates, start=1):
+            lines.extend(
+                [
+                    f"Run {index} label: {candidate[key_name]}",
+                    f"Run {index} rationale: {candidate.get('rationale', '')}",
+                    "",
+                ]
+            )
+        lines.append("If you accept, put the chosen label in label. If you retry, fill clarification.")
+        return "\n".join(lines)
+
+    def _retry_user_prompt(
+        self,
+        stage_name: str,
+        record: ScrapedRecord,
+        unit: TextUnit,
+        validator_payload: dict[str, object],
+    ) -> str:
+        if stage_name == "category":
+            label_hint = "Output label as negative, neutral, or positive."
+        elif stage_name == "score":
+            label_hint = "Output label as an integer from -3 to 3."
+        else:
+            label_hint = "Output label as true or false."
+
+        return "\n".join(
+            [
+                f"Country code: {record.country_code}",
+                f"Source kind: {record.source_kind}",
+                f"Published date: {record.published_at}",
+                f"Title: {record.title}",
+                f"Unit id: {unit.unit_id}",
+                "Unit text:",
+                truncate_text(unit.text, 1800),
+                "",
+                f"Validator clarification: {clean_text(str(validator_payload.get('clarification', 'Resolve the ambiguity carefully.')))}",
+                label_hint,
+            ]
+        )
+
+    def _stage_user_prompt(
+        self,
+        record: ScrapedRecord,
+        units: list[TextUnit],
+        *,
+        instructions: list[str],
+    ) -> str:
+        lines = [
+            f"Country code: {record.country_code}",
+            f"Source kind: {record.source_kind}",
+            f"Published date: {record.published_at}",
+            f"Title: {record.title or '(none)'}",
+            f"Speaker or author: {record.speaker or '(none)'}",
+            f"URL: {record.url or '(none)'}",
+            "",
+            "Instructions:",
+            *instructions,
+            "",
+            "Units:",
+        ]
+        for unit in units:
+            lines.extend([f"[{unit.unit_id}] {unit.label}", truncate_text(unit.text, 2200), ""])
+        return "\n".join(lines)
+
+    @staticmethod
+    def _confidence_from_events(events: list[dict[str, str]]) -> float:
+        if not events:
+            return 0.65
+        statuses = Counter(event["status"] for event in events)
+        total = len(events)
+        unanimous_ratio = statuses.get("unanimous", 0) / total
+        validated_ratio = statuses.get("validated", 0) / total
+        retry_ratio = statuses.get("retry", 0) / total
+        confidence = 0.62 + (0.28 * unanimous_ratio) + (0.12 * validated_ratio) - (0.08 * retry_ratio)
+        return round(max(0.35, min(confidence, 0.98)), 3)
+
+    @staticmethod
+    def _join_response_ids(values: list[str]) -> str:
+        cleaned = [value for value in values if value]
+        unique = list(dict.fromkeys(cleaned))
+        return "|".join(unique[:12])
