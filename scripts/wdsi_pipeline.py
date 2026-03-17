@@ -152,11 +152,19 @@ def request_json_post(
 
 
 def request_html(session: requests.Session, url: str) -> str:
-    response = session.get(url, headers=BROWSER_HEADERS, timeout=30)
-    response.raise_for_status()
-    if response.encoding == "ISO-8859-1" and response.apparent_encoding:
-        response.encoding = response.apparent_encoding
-    return response.text
+    last_error: Exception | None = None
+    for timeout_seconds in (30, 45, 60):
+        try:
+            response = session.get(url, headers=BROWSER_HEADERS, timeout=timeout_seconds)
+            response.raise_for_status()
+            if response.encoding == "ISO-8859-1" and response.apparent_encoding:
+                response.encoding = response.apparent_encoding
+            return response.text
+        except requests.RequestException as exc:
+            last_error = exc
+            time.sleep(1.5)
+    assert last_error is not None
+    raise last_error
 
 
 def extract_json_object(text: str) -> dict[str, object]:
@@ -304,7 +312,7 @@ class ChinaMfaRegularPressSource:
 
 class UsStateDepartmentSource:
     country_code = "US"
-    press_endpoint = "https://www.state.gov/wp-json/wp/v2/state_press_release?per_page=100&page={page}"
+    press_archive_url = "https://www.state.gov/press-releases/"
     briefing_endpoint = (
         "https://www.state.gov/wp-json/wp/v2/state_briefing"
         "?state_briefing_type=393&per_page=100&page={page}"
@@ -322,45 +330,72 @@ class UsStateDepartmentSource:
         start = start_date[:10]
         end = end_date[:10]
         records: list[ScrapedRecord] = []
-        for page in range(1, max_pages + 1):
-            press = self._fetch_press_releases(page, start, end)
-            briefings = self._fetch_press_briefings(page, start, end)
-            if not press and not briefings and page > 1:
-                break
-            records.extend(press)
-            records.extend(briefings)
+        records.extend(self._fetch_press_releases(start, end, max_pages=max_pages))
+        records.extend(self._fetch_press_briefings(start, end, max_pages=max_pages))
         return list({record.url: record for record in records}.values())
 
-    def _fetch_press_releases(self, page: int, start_date: str, end_date: str) -> list[ScrapedRecord]:
-        payload = request_json(self.session, self.press_endpoint.format(page=page))
-        if not isinstance(payload, list):
-            return []
-
+    def _fetch_press_releases(
+        self,
+        start_date: str,
+        end_date: str,
+        *,
+        max_pages: int,
+    ) -> list[ScrapedRecord]:
         records: list[ScrapedRecord] = []
-        for item in payload:
-            link = str(item.get("link", ""))
-            published_at = parse_us_date(str(item.get("date", "")))
-            if "/releases/office-of-the-spokesperson/" not in link:
-                continue
-            if not (start_date <= published_at <= end_date):
-                continue
-            records.append(self._make_record(item, "state_press_release"))
+        for page in range(1, max_pages + 1):
+            url = self.press_archive_url if page == 1 else f"{self.press_archive_url}page/{page}/"
+            soup = BeautifulSoup(request_html(self.session, url), "html.parser")
+            items = soup.select("li.collection-result")
+            if not items:
+                break
+
+            oldest_on_page: str | None = None
+            for item in items:
+                link_node = item.select_one("a.collection-result__link[href]")
+                if link_node is None:
+                    continue
+
+                link = str(link_node.get("href", "")).strip()
+                if "/releases/office-of-the-spokesperson/" not in link:
+                    continue
+
+                published_at = self._extract_collection_date(item)
+                if not published_at:
+                    continue
+
+                if oldest_on_page is None or published_at < oldest_on_page:
+                    oldest_on_page = published_at
+
+                if not (start_date <= published_at <= end_date):
+                    continue
+
+                title = clean_text(link_node.get_text(" ", strip=True))
+                records.append(self._parse_press_release_article(link, title, published_at))
+
+            if oldest_on_page is not None and oldest_on_page < start_date:
+                break
         return records
 
-    def _fetch_press_briefings(self, page: int, start_date: str, end_date: str) -> list[ScrapedRecord]:
-        payload = request_json(self.session, self.briefing_endpoint.format(page=page))
-        if not isinstance(payload, list):
-            return []
-
+    def _fetch_press_briefings(self, start_date: str, end_date: str, max_pages: int = 8) -> list[ScrapedRecord]:
         records: list[ScrapedRecord] = []
-        for item in payload:
-            link = str(item.get("link", ""))
-            published_at = parse_us_date(str(item.get("date", "")))
-            if "/briefings/department-press-briefing" not in link:
-                continue
-            if not (start_date <= published_at <= end_date):
-                continue
-            records.append(self._make_record(item, "state_department_press_briefing"))
+        for page in range(1, max_pages + 1):
+            payload = request_json(self.session, self.briefing_endpoint.format(page=page))
+            if not isinstance(payload, list):
+                return records
+
+            matched = 0
+            for item in payload:
+                link = str(item.get("link", ""))
+                published_at = parse_us_date(str(item.get("date", "")))
+                if "/briefings/department-press-briefing" not in link:
+                    continue
+                matched += 1
+                if not (start_date <= published_at <= end_date):
+                    continue
+                records.append(self._make_record(item, "state_department_press_briefing"))
+
+            if matched == 0:
+                break
         return records
 
     def _make_record(self, item: dict[str, object], source_kind: str) -> ScrapedRecord:
@@ -408,6 +443,60 @@ class UsStateDepartmentSource:
             language="en",
             speaker=speaker,
         )
+
+    def _parse_press_release_article(self, url: str, title: str, published_at: str) -> ScrapedRecord:
+        html_text = request_html(self.session, url)
+        soup = BeautifulSoup(html_text, "html.parser")
+        content_node = soup.select_one(".entry-content")
+        if content_node is None:
+            raise ValueError(f"Missing press-release body for {url}")
+
+        speaker = ""
+        speaker_node = soup.select_one(".article-meta__author-bureau")
+        if speaker_node:
+            speaker = clean_text(speaker_node.get_text(" ", strip=True))
+
+        for selector in [
+            ".wp-block-breadcrumbs",
+            ".featured-content__headline",
+            ".article-meta",
+            ".wp-block-tags-block",
+            ".tags-block",
+            ".share-this-page",
+            ".social-share",
+            ".copy-to-clipboard",
+            "button",
+            "script",
+            "style",
+        ]:
+            for node in content_node.select(selector):
+                node.decompose()
+
+        content = clean_text(content_node.get_text("\n"))
+        if not content:
+            raise ValueError(f"Missing parsed content for {url}")
+
+        return ScrapedRecord(
+            country_code=self.country_code,
+            published_at=published_at,
+            url=url,
+            title=title,
+            content=content,
+            source_kind="state_press_release",
+            language="en",
+            speaker=speaker,
+        )
+
+    @staticmethod
+    def _extract_collection_date(item: BeautifulSoup) -> str:
+        meta = item.select_one(".collection-result-meta")
+        if meta is None:
+            return ""
+        for span in meta.select("span"):
+            text = clean_text(span.get_text(" ", strip=True))
+            if re.fullmatch(r"[A-Za-z]+ \d{1,2}, \d{4}", text):
+                return parse_us_date(text)
+        return ""
 
 
 class OpenAIWDSIScorer:

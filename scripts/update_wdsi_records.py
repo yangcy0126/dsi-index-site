@@ -129,7 +129,7 @@ def main() -> None:
     parser.add_argument(
         "--max-pages",
         type=int,
-        default=40,
+        default=90,
         help="Maximum pages for source APIs that need explicit pagination.",
     )
     args = parser.parse_args()
