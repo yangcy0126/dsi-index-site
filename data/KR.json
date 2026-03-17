@@ -2,7 +2,7 @@
   "code": "KR",
   "label": "South Korea",
   "label_zh": "韩国",
-  "generated_at": "2026-03-17T15:05:56.600310+00:00",
+  "generated_at": "2026-03-17T15:39:42.346945+00:00",
   "records": [
     {
       "date": "2001-01-03",
@@ -19206,44 +19206,44 @@
     },
     {
       "date": "2009-10-08",
-      "raw": -0.1,
-      "rolling7": 0.057,
+      "raw": -0.167,
+      "rolling7": 0.048,
       "publication": true
     },
     {
       "date": "2009-10-09",
       "raw": 0.0,
-      "rolling7": 0.057,
+      "rolling7": 0.048,
       "publication": true
     },
     {
       "date": "2009-10-10",
       "raw": 0.0,
-      "rolling7": 0.057,
+      "rolling7": 0.048,
       "publication": true
     },
     {
       "date": "2009-10-11",
       "raw": null,
-      "rolling7": 0.057,
+      "rolling7": 0.048,
       "publication": false
     },
     {
       "date": "2009-10-12",
       "raw": 0.0,
-      "rolling7": 0.057,
+      "rolling7": 0.048,
       "publication": true
     },
     {
       "date": "2009-10-13",
       "raw": 0.0,
-      "rolling7": -0.014,
+      "rolling7": -0.024,
       "publication": true
     },
     {
       "date": "2009-10-14",
       "raw": 0.0,
-      "rolling7": -0.014,
+      "rolling7": -0.024,
       "publication": true
     },
     {
@@ -28764,44 +28764,44 @@
     },
     {
       "date": "2014-02-17",
-      "raw": -1.333,
-      "rolling7": -0.286,
+      "raw": -1.6,
+      "rolling7": -0.324,
       "publication": true
     },
     {
       "date": "2014-02-18",
       "raw": 1.5,
-      "rolling7": -0.071,
+      "rolling7": -0.11,
       "publication": true
     },
     {
       "date": "2014-02-19",
       "raw": 1.0,
-      "rolling7": 0.167,
+      "rolling7": 0.129,
       "publication": true
     },
     {
       "date": "2014-02-20",
       "raw": 0.0,
-      "rolling7": 0.167,
+      "rolling7": 0.129,
       "publication": true
     },
     {
       "date": "2014-02-21",
       "raw": 0.5,
-      "rolling7": 0.238,
+      "rolling7": 0.2,
       "publication": true
     },
     {
       "date": "2014-02-22",
       "raw": -2.0,
-      "rolling7": -0.048,
+      "rolling7": -0.086,
       "publication": true
     },
     {
       "date": "2014-02-23",
       "raw": null,
-      "rolling7": -0.333,
+      "rolling7": -0.371,
       "publication": false
     },
     {
@@ -34896,44 +34896,44 @@
     },
     {
       "date": "2016-12-05",
-      "raw": -1.2,
-      "rolling7": -0.305,
+      "raw": -1.5,
+      "rolling7": -0.348,
       "publication": true
     },
     {
       "date": "2016-12-06",
       "raw": -0.8,
-      "rolling7": -0.419,
+      "rolling7": -0.462,
       "publication": true
     },
     {
       "date": "2016-12-07",
       "raw": -1.286,
-      "rolling7": -0.507,
+      "rolling7": -0.55,
       "publication": true
     },
     {
       "date": "2016-12-08",
       "raw": -0.778,
-      "rolling7": -0.533,
+      "rolling7": -0.576,
       "publication": true
     },
     {
       "date": "2016-12-09",
       "raw": 0.0,
-      "rolling7": -0.533,
+      "rolling7": -0.576,
       "publication": true
     },
     {
       "date": "2016-12-10",
       "raw": -2.0,
-      "rolling7": -0.819,
+      "rolling7": -0.861,
       "publication": true
     },
     {
       "date": "2016-12-11",
       "raw": -3.0,
-      "rolling7": -1.295,
+      "rolling7": -1.338,
       "publication": true
     },
     {
@@ -35088,56 +35088,56 @@
     },
     {
       "date": "2017-01-06",
-      "raw": 0.0,
-      "rolling7": -1.429,
+      "raw": -0.667,
+      "rolling7": -1.524,
       "publication": true
     },
     {
       "date": "2017-01-07",
       "raw": null,
-      "rolling7": -1.429,
+      "rolling7": -1.619,
       "publication": false
     },
     {
       "date": "2017-01-08",
       "raw": null,
-      "rolling7": -1.0,
+      "rolling7": -1.286,
       "publication": false
     },
     {
       "date": "2017-01-09",
       "raw": 0.0,
-      "rolling7": -0.571,
+      "rolling7": -0.857,
       "publication": true
     },
     {
       "date": "2017-01-10",
       "raw": -0.5,
-      "rolling7": -0.357,
+      "rolling7": -0.643,
       "publication": true
     },
     {
       "date": "2017-01-11",
       "raw": -0.333,
-      "rolling7": -0.119,
+      "rolling7": -0.405,
       "publication": true
     },
     {
       "date": "2017-01-12",
       "raw": -1.667,
-      "rolling7": -0.357,
+      "rolling7": -0.643,
       "publication": true
     },
     {
       "date": "2017-01-13",
       "raw": 0.0,
-      "rolling7": -0.357,
+      "rolling7": -0.548,
       "publication": true
     },
     {
       "date": "2017-01-14",
       "raw": -1.0,
-      "rolling7": -0.5,
+      "rolling7": -0.595,
       "publication": true
     },
     {
@@ -41046,44 +41046,44 @@
     },
     {
       "date": "2019-09-26",
-      "raw": 0.786,
-      "rolling7": 0.291,
+      "raw": 0.833,
+      "rolling7": 0.298,
       "publication": true
     },
     {
       "date": "2019-09-27",
       "raw": -0.429,
-      "rolling7": 0.087,
+      "rolling7": 0.094,
       "publication": true
     },
     {
       "date": "2019-09-28",
       "raw": 0.0,
-      "rolling7": 0.087,
+      "rolling7": 0.094,
       "publication": true
     },
     {
       "date": "2019-09-29",
       "raw": 0.0,
-      "rolling7": 0.087,
+      "rolling7": 0.094,
       "publication": true
     },
     {
       "date": "2019-09-30",
       "raw": 0.0,
-      "rolling7": 0.087,
+      "rolling7": 0.094,
       "publication": true
     },
     {
       "date": "2019-10-01",
       "raw": 0.5,
-      "rolling7": 0.158,
+      "rolling7": 0.165,
       "publication": true
     },
     {
       "date": "2019-10-02",
       "raw": 0.5,
-      "rolling7": 0.194,
+      "rolling7": 0.201,
       "publication": true
     },
     {

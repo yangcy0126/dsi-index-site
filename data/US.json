@@ -2,7 +2,7 @@
   "code": "US",
   "label": "United States",
   "label_zh": "美国",
-  "generated_at": "2026-03-17T15:05:54.882930+00:00",
+  "generated_at": "2026-03-17T15:39:42.143655+00:00",
   "records": [
     {
       "date": "2010-01-01",
@@ -6012,7 +6012,7 @@
     },
     {
       "date": "2012-09-28",
-      "raw": -0.059,
+      "raw": -0.062,
       "rolling7": 0.194,
       "publication": true
     },
@@ -6025,61 +6025,61 @@
     {
       "date": "2012-09-30",
       "raw": 0.0,
-      "rolling7": 0.052,
+      "rolling7": 0.051,
       "publication": true
     },
     {
       "date": "2012-10-01",
-      "raw": 0.154,
-      "rolling7": 0.026,
+      "raw": 0.182,
+      "rolling7": 0.029,
       "publication": true
     },
     {
       "date": "2012-10-02",
       "raw": 0.0,
-      "rolling7": 0.086,
+      "rolling7": 0.089,
       "publication": true
     },
     {
       "date": "2012-10-03",
-      "raw": 0.444,
-      "rolling7": 0.116,
+      "raw": 0.571,
+      "rolling7": 0.138,
       "publication": true
     },
     {
       "date": "2012-10-04",
       "raw": -0.75,
-      "rolling7": -0.03,
+      "rolling7": -0.008,
       "publication": true
     },
     {
       "date": "2012-10-05",
       "raw": 0.25,
-      "rolling7": 0.014,
+      "rolling7": 0.036,
       "publication": true
     },
     {
       "date": "2012-10-06",
       "raw": 0.0,
-      "rolling7": 0.014,
+      "rolling7": 0.036,
       "publication": true
     },
     {
       "date": "2012-10-07",
       "raw": 0.0,
-      "rolling7": 0.014,
+      "rolling7": 0.036,
       "publication": true
     },
     {
       "date": "2012-10-08",
       "raw": 0.0,
-      "rolling7": -0.008,
+      "rolling7": 0.01,
       "publication": true
     },
     {
       "date": "2012-10-09",
       "raw": -0.167,
-      "rolling7": -0.032,
+      "rolling7": -0.014,
       "publication": true
     },
     {
@@ -6096,56 +6096,56 @@
     },
     {
       "date": "2012-10-12",
-      "raw": 0.154,
-      "rolling7": 0.07,
+      "raw": 0.0,
+      "rolling7": 0.048,
       "publication": true
     },
     {
       "date": "2012-10-13",
       "raw": null,
-      "rolling7": 0.092,
+      "rolling7": 0.048,
       "publication": false
     },
     {
       "date": "2012-10-14",
       "raw": null,
-      "rolling7": 0.114,
+      "rolling7": 0.048,
       "publication": false
     },
     {
       "date": "2012-10-15",
       "raw": -0.263,
-      "rolling7": 0.076,
+      "rolling7": 0.01,
       "publication": true
     },
     {
       "date": "2012-10-16",
       "raw": 0.0,
-      "rolling7": 0.1,
+      "rolling7": 0.034,
       "publication": true
     },
     {
       "date": "2012-10-17",
       "raw": 0.667,
-      "rolling7": 0.124,
+      "rolling7": 0.058,
       "publication": true
     },
     {
       "date": "2012-10-18",
       "raw": -0.3,
-      "rolling7": 0.081,
+      "rolling7": 0.015,
       "publication": true
     },
     {
       "date": "2012-10-19",
       "raw": -0.083,
-      "rolling7": 0.047,
+      "rolling7": 0.003,
       "publication": true
     },
     {
       "date": "2012-10-20",
       "raw": null,
-      "rolling7": 0.013,
+      "rolling7": -0.009,
       "publication": false
     },
     {
@@ -6162,68 +6162,68 @@
     },
     {
       "date": "2012-10-23",
-      "raw": 0.444,
-      "rolling7": 0.08,
+      "raw": 0.5,
+      "rolling7": 0.088,
       "publication": true
     },
     {
       "date": "2012-10-24",
       "raw": 0.667,
-      "rolling7": 0.08,
+      "rolling7": 0.088,
       "publication": true
     },
     {
       "date": "2012-10-25",
       "raw": -0.2,
-      "rolling7": 0.094,
+      "rolling7": 0.102,
       "publication": true
     },
     {
       "date": "2012-10-26",
-      "raw": 0.333,
-      "rolling7": 0.154,
+      "raw": 0.3,
+      "rolling7": 0.157,
       "publication": true
     },
     {
       "date": "2012-10-27",
       "raw": null,
-      "rolling7": 0.213,
+      "rolling7": 0.212,
       "publication": false
     },
     {
       "date": "2012-10-28",
       "raw": 2.0,
-      "rolling7": 0.511,
+      "rolling7": 0.51,
       "publication": true
     },
     {
       "date": "2012-10-29",
       "raw": 0.75,
-      "rolling7": 0.618,
+      "rolling7": 0.617,
       "publication": true
     },
     {
       "date": "2012-10-30",
       "raw": 1.25,
-      "rolling7": 0.733,
+      "rolling7": 0.724,
       "publication": true
     },
     {
       "date": "2012-10-31",
       "raw": 0.75,
-      "rolling7": 0.745,
+      "rolling7": 0.736,
       "publication": true
     },
     {
       "date": "2012-11-01",
       "raw": 0.5,
-      "rolling7": 0.845,
+      "rolling7": 0.836,
       "publication": true
     },
     {
       "date": "2012-11-02",
       "raw": -0.333,
-      "rolling7": 0.75,
+      "rolling7": 0.745,
       "publication": true
     },
     {

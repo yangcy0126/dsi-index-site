@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-17T15:05:56.682331+00:00",
+  "generated_at": "2026-03-17T15:39:42.430476+00:00",
   "overall": {
     "country_count": 5,
     "first_date": "2001-01-03",
@@ -22,6 +22,9 @@
       "change_30d": 0.0,
       "current_year": 2025,
       "current_year_mean": -1.059,
+      "latest_title": "",
+      "latest_url": "",
+      "data_source": "records",
       "file_json": "data/CN.json",
       "file_csv": "data/CN.csv"
     },
@@ -41,6 +44,9 @@
       "change_30d": -0.346,
       "current_year": 2025,
       "current_year_mean": 0.269,
+      "latest_title": "peoples-republic-of-china-national-day",
+      "latest_url": "https://www.state.gov/releases/office-of-the-spokesperson/2025/09/peoples-republic-of-china-national-day/",
+      "data_source": "records",
       "file_json": "data/US.json",
       "file_csv": "data/US.csv"
     },
@@ -60,6 +66,9 @@
       "change_30d": -0.571,
       "current_year": 2025,
       "current_year_mean": -1.258,
+      "latest_title": "",
+      "latest_url": "",
+      "data_source": "records",
       "file_json": "data/UK.json",
       "file_csv": "data/UK.csv"
     },
@@ -79,6 +88,9 @@
       "change_30d": 0.714,
       "current_year": 2025,
       "current_year_mean": -0.149,
+      "latest_title": "",
+      "latest_url": "",
+      "data_source": "records",
       "file_json": "data/JP.json",
       "file_csv": "data/JP.csv"
     },
@@ -98,6 +110,9 @@
       "change_30d": -0.929,
       "current_year": 2025,
       "current_year_mean": -0.048,
+      "latest_title": "6th Korea–Pacific Islands Foreign Ministers’ Meeting to Take Place",
+      "latest_url": "https://www.mofa.go.kr/eng/brd/m_5676/view.do?seq=323038",
+      "data_source": "records",
       "file_json": "data/KR.json",
       "file_csv": "data/KR.csv"
     }

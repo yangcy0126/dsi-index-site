@@ -1,61 +1,87 @@
-# WDSI 外交情绪观测台
+# WDSI Index Site
 
-这是一个适合 `GitHub Pages` 的静态网站原型，用来公开展示 WDSI 指数、方法说明和下载入口。
+This repository hosts a static WDSI website on GitHub Pages and a daily automation pipeline that can refresh the data.
 
-## 目录结构
+## What the site now supports
 
-- `index.html`：首页
-- `styles.css`：样式
-- `script.js`：前端交互逻辑
-- `data/`：网页直接读取的 JSON / CSV
-- `scripts/build_wdsi_data.py`：把本地 Excel 情绪结果表转换成网页数据
-- `.github/workflows/deploy.yml`：GitHub Pages 部署工作流
+- Static public site on GitHub Pages
+- Repository-local historical records in `records/*.csv`
+- Daily site assets in `data/*.json` and `data/*.csv`
+- Automated fetching for:
+  - China MFA regular press conferences
+  - U.S. State Department `Office of the Spokesperson` press releases
+  - U.S. State Department `Department Press Briefing`
 
-## 数据来源
+The UK, Japan, and South Korea series are still included in the website, but they currently update from the historical baseline only. The automation code is structured so more source adapters can be added later.
 
-当前数据生成脚本默认读取上一级目录中的原始结果文件：
+## Local setup
 
-- `../data/情绪测度结果数据/中国外交部例行记者会情绪测度结果.xlsx`
-- `../data/情绪测度结果数据/美国国务院新闻办公室发言稿情绪测度结果.xlsx`
-- `../data/情绪测度结果数据/英国外交办公室新闻稿情绪测度结果.xlsx`
-- `../data/情绪测度结果数据/日本外交部数据情绪测度结果.xlsx`
-- `../data/情绪测度结果数据/韩国外交部新闻稿情绪测度结果.xlsx`
+Install dependencies:
 
-脚本当前把每个文件里的 `2` 列解释为战争相关外交情绪分数，并生成：
+```bash
+python -m pip install -r requirements.txt
+```
 
-- 分国 `JSON`
-- 分国 `CSV`
-- 全量合并 `CSV`
-- 站点摘要 `summary.json`
+Bootstrap repository-local historical records from the parent research folder:
 
-## 本地更新数据
+```bash
+python scripts/bootstrap_records.py
+```
 
-```powershell
+Rebuild website data files from `records/*.csv`:
+
+```bash
 python scripts/build_wdsi_data.py
 ```
 
-## 本地预览
+Preview recent source fetches without scoring or writing:
 
-不要直接双击 `index.html`，因为浏览器会阻止本地 `fetch` JSON。
+```bash
+python scripts/update_wdsi_records.py --countries CN,US --dry-run
+```
 
-请在仓库目录运行：
+Run the full update locally:
 
-```powershell
+```bash
+set OPENAI_API_KEY=your_key_here
+python scripts/update_wdsi_records.py --countries CN,US
+```
+
+Serve locally:
+
+```bash
 python -m http.server 8000
 ```
 
-然后打开：
+Then open `http://127.0.0.1:8000`.
 
-```text
-http://localhost:8000
-```
+## Data flow
 
-## GitHub Pages 部署
+1. Historical baseline is imported into `records/*.csv`.
+2. `scripts/update_wdsi_records.py` fetches recent official texts.
+3. New or changed texts are scored with the OpenAI API on the `-3` to `3` WDSI scale.
+4. `scripts/build_wdsi_data.py` regenerates the frontend JSON and CSV files.
+5. GitHub Actions commits the changed `records/` and `data/` files.
+6. The existing Pages workflow deploys the refreshed site.
 
-这个仓库已经附带 GitHub Pages 工作流。推到 `main` 分支后，进入 GitHub：
+## GitHub Actions setup
 
-1. 打开仓库 `Settings`
-2. 进入 `Pages`
-3. 选择 `GitHub Actions` 作为 Source
+Add these repository settings before relying on daily updates:
 
-之后每次推送都会自动部署。
+- Repository secret: `OPENAI_API_KEY`
+- Optional repository variable: `WDSI_OPENAI_MODEL`
+- Optional repository variable: `WDSI_REASONING_EFFORT`
+
+The scheduled workflow lives at:
+
+- `.github/workflows/update-data.yml`
+
+It runs daily at `15:20 UTC`.
+
+## Important directories
+
+- `records/`: canonical scored records used by the website build
+- `data/`: static assets served by the site
+- `scripts/bootstrap_records.py`: one-time baseline import
+- `scripts/update_wdsi_records.py`: incremental fetch and score pipeline
+- `scripts/build_wdsi_data.py`: static asset builder

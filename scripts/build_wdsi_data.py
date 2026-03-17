@@ -9,7 +9,8 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = ROOT / "data"
-RAW_DIR = ROOT.parent / "data" / "情绪测度结果数据"
+RECORDS_DIR = ROOT / "records"
+LEGACY_DIR = ROOT.parent / "data" / "情绪测度结果数据"
 
 COUNTRIES = [
     {
@@ -17,7 +18,7 @@ COUNTRIES = [
         "label": "China",
         "label_zh": "中国",
         "series_zh": "中国外交部例行记者会",
-        "filename": "中国外交部例行记者会情绪测度结果.xlsx",
+        "legacy_filename": "中国外交部例行记者会情绪测度结果.xlsx",
         "color": "#0f6c74",
     },
     {
@@ -25,7 +26,7 @@ COUNTRIES = [
         "label": "United States",
         "label_zh": "美国",
         "series_zh": "美国国务院新闻办公室发言稿",
-        "filename": "美国国务院新闻办公室发言稿情绪测度结果.xlsx",
+        "legacy_filename": "美国国务院新闻办公室发言稿情绪测度结果.xlsx",
         "color": "#b85f35",
     },
     {
@@ -33,7 +34,7 @@ COUNTRIES = [
         "label": "United Kingdom",
         "label_zh": "英国",
         "series_zh": "英国外交办公室新闻稿",
-        "filename": "英国外交办公室新闻稿情绪测度结果.xlsx",
+        "legacy_filename": "英国外交办公室新闻稿情绪测度结果.xlsx",
         "color": "#5c7c5a",
     },
     {
@@ -41,7 +42,7 @@ COUNTRIES = [
         "label": "Japan",
         "label_zh": "日本",
         "series_zh": "日本外交部官方文本",
-        "filename": "日本外交部数据情绪测度结果.xlsx",
+        "legacy_filename": "日本外交部数据情绪测度结果.xlsx",
         "color": "#7851a9",
     },
     {
@@ -49,7 +50,7 @@ COUNTRIES = [
         "label": "South Korea",
         "label_zh": "韩国",
         "series_zh": "韩国外交部新闻稿",
-        "filename": "韩国外交部新闻稿情绪测度结果.xlsx",
+        "legacy_filename": "韩国外交部新闻稿情绪测度结果.xlsx",
         "color": "#9a6b2f",
     },
 ]
@@ -62,16 +63,43 @@ EVENTS = [
 ]
 
 
-def _round_or_none(value: float | None, digits: int = 3) -> float | None:
+def round_or_none(value: float | None, digits: int = 3) -> float | None:
     if value is None or pd.isna(value):
         return None
     return round(float(value), digits)
 
 
-def _read_country(meta: dict[str, str]) -> tuple[dict[str, object], pd.DataFrame]:
-    path = RAW_DIR / meta["filename"]
+def load_from_records(meta: dict[str, str]) -> pd.DataFrame:
+    path = RECORDS_DIR / f"{meta['code']}.csv"
     if not path.exists():
-        raise FileNotFoundError(f"Missing source file: {path}")
+        raise FileNotFoundError(path)
+
+    frame = pd.read_csv(path, dtype=str, keep_default_na=False)
+    if "score" not in frame.columns or "published_at" not in frame.columns:
+        raise ValueError(f"Missing required columns in {path}")
+
+    daily = pd.DataFrame(
+        {
+            "date": pd.to_datetime(frame["published_at"], errors="coerce"),
+            "raw": pd.to_numeric(frame["score"], errors="coerce"),
+            "title": frame.get("title", ""),
+            "url": frame.get("url", ""),
+        }
+    )
+    daily = daily.dropna(subset=["date", "raw"])
+    daily = (
+        daily.groupby("date", as_index=False)
+        .agg({"raw": "mean", "title": "last", "url": "last"})
+        .sort_values("date")
+        .reset_index(drop=True)
+    )
+    return daily
+
+
+def load_from_legacy(meta: dict[str, str]) -> pd.DataFrame:
+    path = LEGACY_DIR / meta["legacy_filename"]
+    if not path.exists():
+        raise FileNotFoundError(path)
 
     frame = pd.read_excel(path)
     score_col = next(column for column in frame.columns if str(column) == "2")
@@ -88,6 +116,18 @@ def _read_country(meta: dict[str, str]) -> tuple[dict[str, object], pd.DataFrame
         .sort_values("date")
         .reset_index(drop=True)
     )
+    daily["title"] = ""
+    daily["url"] = ""
+    return daily
+
+
+def read_country(meta: dict[str, str]) -> tuple[dict[str, object], pd.DataFrame]:
+    try:
+        daily = load_from_records(meta)
+        data_source = "records"
+    except FileNotFoundError:
+        daily = load_from_legacy(meta)
+        data_source = "legacy_excel"
 
     calendar = pd.DataFrame({"date": pd.date_range(daily["date"].min(), daily["date"].max(), freq="D")})
     merged = calendar.merge(daily.assign(publication=True), on="date", how="left")
@@ -99,6 +139,7 @@ def _read_country(meta: dict[str, str]) -> tuple[dict[str, object], pd.DataFrame
     previous_30 = float(merged["rolling7"].shift(30).iloc[-1]) if len(merged) > 30 else None
     current_year = int(merged["date"].dt.year.max())
 
+    latest_publication = daily.iloc[-1]
     summary = {
         "code": meta["code"],
         "label": meta["label"],
@@ -107,37 +148,36 @@ def _read_country(meta: dict[str, str]) -> tuple[dict[str, object], pd.DataFrame
         "color": meta["color"],
         "start_date": merged["date"].iloc[0].date().isoformat(),
         "latest_date": merged["date"].iloc[-1].date().isoformat(),
-        "latest_publication_date": daily["date"].iloc[-1].date().isoformat(),
+        "latest_publication_date": latest_publication["date"].date().isoformat(),
         "publication_days": int(len(daily)),
         "calendar_days": int(len(merged)),
-        "latest_raw": _round_or_none(float(daily["raw"].iloc[-1])),
-        "latest_7d": _round_or_none(latest_rolling),
-        "change_30d": _round_or_none(latest_rolling - previous_30) if previous_30 is not None else None,
+        "latest_raw": round_or_none(float(latest_publication["raw"])),
+        "latest_7d": round_or_none(latest_rolling),
+        "change_30d": round_or_none(latest_rolling - previous_30) if previous_30 is not None else None,
         "current_year": current_year,
-        "current_year_mean": _round_or_none(
+        "current_year_mean": round_or_none(
             float(merged.loc[merged["date"].dt.year == current_year, "rolling7"].mean())
         ),
+        "latest_title": str(latest_publication.get("title", "") or ""),
+        "latest_url": str(latest_publication.get("url", "") or ""),
+        "data_source": data_source,
         "file_json": f"data/{meta['code']}.json",
         "file_csv": f"data/{meta['code']}.csv",
     }
 
     export_frame = merged[["date", "raw", "rolling7", "publication"]].copy()
     export_frame["date"] = export_frame["date"].dt.strftime("%Y-%m-%d")
-
     return summary, export_frame
 
 
 def main() -> None:
-    if not RAW_DIR.exists():
-        raise SystemExit(f"Source directory not found: {RAW_DIR}")
-
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     countries: list[dict[str, object]] = []
     all_rows: list[pd.DataFrame] = []
 
     for meta in COUNTRIES:
-        summary, frame = _read_country(meta)
+        summary, frame = read_country(meta)
         countries.append(summary)
 
         json_payload = {
@@ -148,8 +188,8 @@ def main() -> None:
             "records": [
                 {
                     "date": row.date,
-                    "raw": _round_or_none(row.raw),
-                    "rolling7": _round_or_none(row.rolling7),
+                    "raw": round_or_none(row.raw),
+                    "rolling7": round_or_none(row.rolling7),
                     "publication": bool(row.publication),
                 }
                 for row in frame.itertuples(index=False)
@@ -168,7 +208,9 @@ def main() -> None:
         all_rows.append(country_frame)
 
     pd.concat(all_rows, ignore_index=True).to_csv(
-        OUTPUT_DIR / "wdsi_all_countries.csv", index=False, encoding="utf-8-sig"
+        OUTPUT_DIR / "wdsi_all_countries.csv",
+        index=False,
+        encoding="utf-8-sig",
     )
 
     summary_payload = {
