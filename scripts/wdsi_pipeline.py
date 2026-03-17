@@ -120,13 +120,21 @@ def parse_us_date(value: str) -> str:
 
 
 def request_json(session: requests.Session, url: str) -> object:
-    response = session.get(url, headers=STATE_HEADERS, timeout=30)
-    response.raise_for_status()
-    content_type = (response.headers.get("content-type") or "").lower()
-    if "json" not in content_type:
-        preview = response.text[:200].replace("\n", " ")
-        raise RuntimeError(f"Expected JSON from {url}, got {content_type or 'unknown'}: {preview}")
-    return response.json()
+    last_error: Exception | None = None
+    for timeout_seconds in (30, 45, 60):
+        try:
+            response = session.get(url, headers=STATE_HEADERS, timeout=timeout_seconds)
+            response.raise_for_status()
+            content_type = (response.headers.get("content-type") or "").lower()
+            if "json" not in content_type:
+                preview = response.text[:200].replace("\n", " ")
+                raise RuntimeError(f"Expected JSON from {url}, got {content_type or 'unknown'}: {preview}")
+            return response.json()
+        except (requests.RequestException, ValueError, RuntimeError) as exc:
+            last_error = exc
+            time.sleep(1.5)
+    assert last_error is not None
+    raise last_error
 
 
 def request_json_post(
@@ -143,13 +151,21 @@ def request_json_post(
     }
     if headers:
         merged_headers.update(headers)
-    response = session.post(url, headers=merged_headers, json=payload, timeout=30)
-    response.raise_for_status()
-    content_type = (response.headers.get("content-type") or "").lower()
-    if "json" not in content_type:
-        preview = response.text[:200].replace("\n", " ")
-        raise RuntimeError(f"Expected JSON from {url}, got {content_type or 'unknown'}: {preview}")
-    return response.json()
+    last_error: Exception | None = None
+    for timeout_seconds in (30, 45, 60):
+        try:
+            response = session.post(url, headers=merged_headers, json=payload, timeout=timeout_seconds)
+            response.raise_for_status()
+            content_type = (response.headers.get("content-type") or "").lower()
+            if "json" not in content_type:
+                preview = response.text[:200].replace("\n", " ")
+                raise RuntimeError(f"Expected JSON from {url}, got {content_type or 'unknown'}: {preview}")
+            return response.json()
+        except (requests.RequestException, ValueError, RuntimeError) as exc:
+            last_error = exc
+            time.sleep(1.5)
+    assert last_error is not None
+    raise last_error
 
 
 def request_html(session: requests.Session, url: str) -> str:
@@ -621,7 +637,15 @@ class OpenAIWDSIScorer:
             return self._score_flat_batch(records)
         except Exception:
             if len(records) <= 1:
-                raise
+                last_error: Exception | None = None
+                for _ in range(2):
+                    try:
+                        return self._score_flat_batch(records)
+                    except Exception as exc:
+                        last_error = exc
+                        time.sleep(2)
+                assert last_error is not None
+                raise last_error
             midpoint = max(1, len(records) // 2)
             return self._score_flat_batch_with_fallback(records[:midpoint]) + self._score_flat_batch_with_fallback(
                 records[midpoint:]
@@ -632,7 +656,15 @@ class OpenAIWDSIScorer:
             return self._score_conference_batch(records)
         except Exception:
             if len(records) <= 1:
-                raise
+                last_error: Exception | None = None
+                for _ in range(2):
+                    try:
+                        return self._score_conference_batch(records)
+                    except Exception as exc:
+                        last_error = exc
+                        time.sleep(2)
+                assert last_error is not None
+                raise last_error
             midpoint = max(1, len(records) // 2)
             return self._score_conference_batch_with_fallback(
                 records[:midpoint]
