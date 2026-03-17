@@ -132,6 +132,8 @@ def main() -> None:
         default=90,
         help="Maximum pages for source APIs that need explicit pagination.",
     )
+    parser.add_argument("--start-date", help="Override fetch start date in YYYY-MM-DD format.")
+    parser.add_argument("--end-date", help="Override fetch end date in YYYY-MM-DD format.")
     parser.add_argument(
         "--skip-build",
         action="store_true",
@@ -157,7 +159,12 @@ def main() -> None:
         source = sources[code]
         destination = RECORDS_DIR / f"{code}.csv"
         existing = load_records(destination)
-        start_date, end_date = determine_fetch_range(existing, args.lookback_days)
+        if args.start_date or args.end_date:
+            today = datetime.now(timezone.utc).date().isoformat()
+            start_date = args.start_date or determine_fetch_range(existing, args.lookback_days)[0]
+            end_date = args.end_date or today
+        else:
+            start_date, end_date = determine_fetch_range(existing, args.lookback_days)
 
         if code == "CN":
             fetched_records = source.fetch_between(start_date, end_date)

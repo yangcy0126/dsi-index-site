@@ -602,7 +602,7 @@ class OpenAIWDSIScorer:
     ) -> list[dict[str, object]]:
         scored: list[dict[str, object]] = []
         for start in range(0, len(records), batch_size):
-            scored.extend(self._score_flat_batch(records[start : start + batch_size]))
+            scored.extend(self._score_flat_batch_with_fallback(records[start : start + batch_size]))
         return scored
 
     def score_conference_records(
@@ -613,8 +613,30 @@ class OpenAIWDSIScorer:
     ) -> list[dict[str, object]]:
         scored: list[dict[str, object]] = []
         for start in range(0, len(records), batch_size):
-            scored.extend(self._score_conference_batch(records[start : start + batch_size]))
+            scored.extend(self._score_conference_batch_with_fallback(records[start : start + batch_size]))
         return scored
+
+    def _score_flat_batch_with_fallback(self, records: list[ScrapedRecord]) -> list[dict[str, object]]:
+        try:
+            return self._score_flat_batch(records)
+        except Exception:
+            if len(records) <= 1:
+                raise
+            midpoint = max(1, len(records) // 2)
+            return self._score_flat_batch_with_fallback(records[:midpoint]) + self._score_flat_batch_with_fallback(
+                records[midpoint:]
+            )
+
+    def _score_conference_batch_with_fallback(self, records: list[ScrapedRecord]) -> list[dict[str, object]]:
+        try:
+            return self._score_conference_batch(records)
+        except Exception:
+            if len(records) <= 1:
+                raise
+            midpoint = max(1, len(records) // 2)
+            return self._score_conference_batch_with_fallback(
+                records[:midpoint]
+            ) + self._score_conference_batch_with_fallback(records[midpoint:])
 
     def _score_flat_batch(self, records: list[ScrapedRecord]) -> list[dict[str, object]]:
         if not records:
