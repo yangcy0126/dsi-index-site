@@ -922,13 +922,25 @@ class OpenAIWDSIScorer:
         runs: list[dict[str, dict[str, object]]] = []
         response_ids: list[str] = []
         events: list[dict[str, str]] = []
+        recovered_units: set[str] = set()
         for variant in RELEVANCE_VARIANTS:
             payload, response_id = self._request_stage_payload(
                 self._relevance_system_prompt(),
                 self._relevance_user_prompt(record, units, variant),
             )
             response_ids.append(response_id)
-            runs.append(self._map_stage_results(payload, key="war_related"))
+            mapped = self._map_stage_results(payload, key="war_related")
+            mapped, repair_ids, repaired = self._recover_missing_stage_results(
+                stage_name="relevance",
+                record=record,
+                units=units,
+                variant=variant,
+                key="war_related",
+                mapped=mapped,
+            )
+            response_ids.extend(repair_ids)
+            recovered_units.update(repaired)
+            runs.append(mapped)
 
         final: dict[str, dict[str, object]] = {}
         for unit in units:
@@ -938,7 +950,8 @@ class OpenAIWDSIScorer:
                     "war_related": labels[0],
                     "rationale": clean_text(str(runs[0][unit.unit_id].get("rationale", ""))),
                 }
-                events.append({"kind": "relevance", "status": "unanimous"})
+                status = "retry" if unit.unit_id in recovered_units else "unanimous"
+                events.append({"kind": "relevance", "status": status})
                 continue
 
             validated, validation_id, status = self._resolve_disagreement(
@@ -963,13 +976,25 @@ class OpenAIWDSIScorer:
         runs: list[dict[str, dict[str, object]]] = []
         response_ids: list[str] = []
         events: list[dict[str, str]] = []
+        recovered_units: set[str] = set()
         for variant in CATEGORY_VARIANTS:
             payload, response_id = self._request_stage_payload(
                 self._category_system_prompt(),
                 self._category_user_prompt(record, war_units, variant),
             )
             response_ids.append(response_id)
-            runs.append(self._map_stage_results(payload, key="category"))
+            mapped = self._map_stage_results(payload, key="category")
+            mapped, repair_ids, repaired = self._recover_missing_stage_results(
+                stage_name="category",
+                record=record,
+                units=war_units,
+                variant=variant,
+                key="category",
+                mapped=mapped,
+            )
+            response_ids.extend(repair_ids)
+            recovered_units.update(repaired)
+            runs.append(mapped)
 
         final: dict[str, dict[str, object]] = {}
         for unit in war_units:
@@ -979,7 +1004,8 @@ class OpenAIWDSIScorer:
                     "category": labels[0],
                     "rationale": clean_text(str(runs[0][unit.unit_id].get("rationale", ""))),
                 }
-                events.append({"kind": "category", "status": "unanimous"})
+                status = "retry" if unit.unit_id in recovered_units else "unanimous"
+                events.append({"kind": "category", "status": status})
                 continue
 
             validated, validation_id, status = self._resolve_disagreement(
@@ -1005,13 +1031,26 @@ class OpenAIWDSIScorer:
         runs: list[dict[str, dict[str, object]]] = []
         response_ids: list[str] = []
         events: list[dict[str, str]] = []
+        recovered_units: set[str] = set()
         for variant in SCORE_VARIANTS:
             payload, response_id = self._request_stage_payload(
                 self._score_system_prompt(),
                 self._score_user_prompt(record, war_units, categories, variant),
             )
             response_ids.append(response_id)
-            runs.append(self._map_stage_results(payload, key="score"))
+            mapped = self._map_stage_results(payload, key="score")
+            mapped, repair_ids, repaired = self._recover_missing_stage_results(
+                stage_name="score",
+                record=record,
+                units=war_units,
+                variant=variant,
+                key="score",
+                mapped=mapped,
+                categories=categories,
+            )
+            response_ids.extend(repair_ids)
+            recovered_units.update(repaired)
+            runs.append(mapped)
 
         final: dict[str, dict[str, object]] = {}
         for unit in war_units:
@@ -1021,7 +1060,8 @@ class OpenAIWDSIScorer:
                     "score": labels[0],
                     "rationale": clean_text(str(runs[0][unit.unit_id].get("rationale", ""))),
                 }
-                events.append({"kind": "score", "status": "unanimous"})
+                status = "retry" if unit.unit_id in recovered_units else "unanimous"
+                events.append({"kind": "score", "status": status})
                 continue
 
             validated, validation_id, status = self._resolve_disagreement(
@@ -1037,6 +1077,80 @@ class OpenAIWDSIScorer:
             }
             events.append({"kind": "score", "status": status})
         return final, response_ids, events
+
+    def _recover_missing_stage_results(
+        self,
+        *,
+        stage_name: str,
+        record: ScrapedRecord,
+        units: list[TextUnit],
+        variant: str,
+        key: str,
+        mapped: dict[str, dict[str, object]],
+        categories: dict[str, dict[str, object]] | None = None,
+    ) -> tuple[dict[str, dict[str, object]], list[str], set[str]]:
+        response_ids: list[str] = []
+        repaired_units: set[str] = set()
+        missing = [unit for unit in units if unit.unit_id not in mapped]
+        if not missing:
+            return mapped, response_ids, repaired_units
+
+        repaired_units.update(unit.unit_id for unit in missing)
+        recovered, recovered_ids = self._request_stage_for_units(
+            stage_name=stage_name,
+            record=record,
+            units=missing,
+            variant=variant,
+            key=key,
+            categories=categories,
+        )
+        mapped.update(recovered)
+        response_ids.extend(recovered_ids)
+
+        still_missing = [unit for unit in units if unit.unit_id not in mapped]
+        for unit in still_missing:
+            recovered, recovered_ids = self._request_stage_for_units(
+                stage_name=stage_name,
+                record=record,
+                units=[unit],
+                variant=variant,
+                key=key,
+                categories=categories,
+            )
+            mapped.update(recovered)
+            response_ids.extend(recovered_ids)
+            if unit.unit_id not in mapped:
+                raise KeyError(unit.unit_id)
+            repaired_units.add(unit.unit_id)
+
+        return mapped, response_ids, repaired_units
+
+    def _request_stage_for_units(
+        self,
+        *,
+        stage_name: str,
+        record: ScrapedRecord,
+        units: list[TextUnit],
+        variant: str,
+        key: str,
+        categories: dict[str, dict[str, object]] | None = None,
+    ) -> tuple[dict[str, dict[str, object]], list[str]]:
+        if stage_name == "relevance":
+            system_prompt = self._relevance_system_prompt()
+            user_prompt = self._relevance_user_prompt(record, units, variant)
+        elif stage_name == "category":
+            system_prompt = self._category_system_prompt()
+            user_prompt = self._category_user_prompt(record, units, variant)
+        elif stage_name == "score":
+            if categories is None:
+                raise ValueError("Score-stage repair requires categories.")
+            system_prompt = self._score_system_prompt()
+            user_prompt = self._score_user_prompt(record, units, categories, variant)
+        else:
+            raise ValueError(f"Unsupported stage repair: {stage_name}")
+
+        payload, response_id = self._request_stage_payload(system_prompt, user_prompt)
+        return self._map_stage_results(payload, key=key), [response_id]
 
     def _aggregate_units(
         self,
