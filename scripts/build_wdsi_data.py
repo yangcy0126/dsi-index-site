@@ -1,0 +1,197 @@
+from __future__ import annotations
+
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+
+import pandas as pd
+
+
+ROOT = Path(__file__).resolve().parents[1]
+OUTPUT_DIR = ROOT / "data"
+RAW_DIR = ROOT.parent / "data" / "情绪测度结果数据"
+
+COUNTRIES = [
+    {
+        "code": "CN",
+        "label": "China",
+        "label_zh": "中国",
+        "series_zh": "中国外交部例行记者会",
+        "filename": "中国外交部例行记者会情绪测度结果.xlsx",
+        "color": "#0f6c74",
+    },
+    {
+        "code": "US",
+        "label": "United States",
+        "label_zh": "美国",
+        "series_zh": "美国国务院新闻办公室发言稿",
+        "filename": "美国国务院新闻办公室发言稿情绪测度结果.xlsx",
+        "color": "#b85f35",
+    },
+    {
+        "code": "UK",
+        "label": "United Kingdom",
+        "label_zh": "英国",
+        "series_zh": "英国外交办公室新闻稿",
+        "filename": "英国外交办公室新闻稿情绪测度结果.xlsx",
+        "color": "#5c7c5a",
+    },
+    {
+        "code": "JP",
+        "label": "Japan",
+        "label_zh": "日本",
+        "series_zh": "日本外交部官方文本",
+        "filename": "日本外交部数据情绪测度结果.xlsx",
+        "color": "#7851a9",
+    },
+    {
+        "code": "KR",
+        "label": "South Korea",
+        "label_zh": "韩国",
+        "series_zh": "韩国外交部新闻稿",
+        "filename": "韩国外交部新闻稿情绪测度结果.xlsx",
+        "color": "#9a6b2f",
+    },
+]
+
+EVENTS = [
+    {"date": "2014-03-18", "title_zh": "克里米亚危机升级", "title_en": "Crimea crisis escalates"},
+    {"date": "2016-07-12", "title_zh": "南海仲裁结果公布", "title_en": "South China Sea arbitration"},
+    {"date": "2022-02-24", "title_zh": "俄乌战争爆发", "title_en": "Russia-Ukraine war"},
+    {"date": "2023-10-07", "title_zh": "新一轮巴以冲突升级", "title_en": "Israel-Hamas war escalation"},
+]
+
+
+def _round_or_none(value: float | None, digits: int = 3) -> float | None:
+    if value is None or pd.isna(value):
+        return None
+    return round(float(value), digits)
+
+
+def _read_country(meta: dict[str, str]) -> tuple[dict[str, object], pd.DataFrame]:
+    path = RAW_DIR / meta["filename"]
+    if not path.exists():
+        raise FileNotFoundError(f"Missing source file: {path}")
+
+    frame = pd.read_excel(path)
+    score_col = next(column for column in frame.columns if str(column) == "2")
+    date_col = next(column for column in frame.columns if str(column).lower() == "time")
+
+    daily = frame[[date_col, score_col]].copy()
+    daily[date_col] = pd.to_datetime(daily[date_col], errors="coerce")
+    daily[score_col] = pd.to_numeric(daily[score_col], errors="coerce")
+    daily = daily.dropna(subset=[date_col, score_col])
+    daily = (
+        daily.groupby(date_col, as_index=False)[score_col]
+        .mean()
+        .rename(columns={date_col: "date", score_col: "raw"})
+        .sort_values("date")
+        .reset_index(drop=True)
+    )
+
+    calendar = pd.DataFrame({"date": pd.date_range(daily["date"].min(), daily["date"].max(), freq="D")})
+    merged = calendar.merge(daily.assign(publication=True), on="date", how="left")
+    merged["publication"] = merged["publication"].notna()
+    merged["filled"] = merged["raw"].ffill()
+    merged["rolling7"] = merged["filled"].rolling(7, min_periods=1).mean()
+
+    latest_rolling = float(merged["rolling7"].iloc[-1])
+    previous_30 = float(merged["rolling7"].shift(30).iloc[-1]) if len(merged) > 30 else None
+    current_year = int(merged["date"].dt.year.max())
+
+    summary = {
+        "code": meta["code"],
+        "label": meta["label"],
+        "label_zh": meta["label_zh"],
+        "series_zh": meta["series_zh"],
+        "color": meta["color"],
+        "start_date": merged["date"].iloc[0].date().isoformat(),
+        "latest_date": merged["date"].iloc[-1].date().isoformat(),
+        "latest_publication_date": daily["date"].iloc[-1].date().isoformat(),
+        "publication_days": int(len(daily)),
+        "calendar_days": int(len(merged)),
+        "latest_raw": _round_or_none(float(daily["raw"].iloc[-1])),
+        "latest_7d": _round_or_none(latest_rolling),
+        "change_30d": _round_or_none(latest_rolling - previous_30) if previous_30 is not None else None,
+        "current_year": current_year,
+        "current_year_mean": _round_or_none(
+            float(merged.loc[merged["date"].dt.year == current_year, "rolling7"].mean())
+        ),
+        "file_json": f"data/{meta['code']}.json",
+        "file_csv": f"data/{meta['code']}.csv",
+    }
+
+    export_frame = merged[["date", "raw", "rolling7", "publication"]].copy()
+    export_frame["date"] = export_frame["date"].dt.strftime("%Y-%m-%d")
+
+    return summary, export_frame
+
+
+def main() -> None:
+    if not RAW_DIR.exists():
+        raise SystemExit(f"Source directory not found: {RAW_DIR}")
+
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    countries: list[dict[str, object]] = []
+    all_rows: list[pd.DataFrame] = []
+
+    for meta in COUNTRIES:
+        summary, frame = _read_country(meta)
+        countries.append(summary)
+
+        json_payload = {
+            "code": summary["code"],
+            "label": summary["label"],
+            "label_zh": summary["label_zh"],
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "records": [
+                {
+                    "date": row.date,
+                    "raw": _round_or_none(row.raw),
+                    "rolling7": _round_or_none(row.rolling7),
+                    "publication": bool(row.publication),
+                }
+                for row in frame.itertuples(index=False)
+            ],
+        }
+
+        (OUTPUT_DIR / f"{meta['code']}.json").write_text(
+            json.dumps(json_payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        frame.to_csv(OUTPUT_DIR / f"{meta['code']}.csv", index=False, encoding="utf-8-sig")
+
+        country_frame = frame.copy()
+        country_frame.insert(0, "country", meta["label"])
+        country_frame.insert(0, "code", meta["code"])
+        all_rows.append(country_frame)
+
+    pd.concat(all_rows, ignore_index=True).to_csv(
+        OUTPUT_DIR / "wdsi_all_countries.csv", index=False, encoding="utf-8-sig"
+    )
+
+    summary_payload = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "overall": {
+            "country_count": len(countries),
+            "first_date": min(country["start_date"] for country in countries),
+            "last_date": max(country["latest_date"] for country in countries),
+        },
+        "countries": countries,
+    }
+
+    (OUTPUT_DIR / "summary.json").write_text(
+        json.dumps(summary_payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    (OUTPUT_DIR / "events.json").write_text(
+        json.dumps({"events": EVENTS}, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    print(f"Built WDSI web data in {OUTPUT_DIR}")
+
+
+if __name__ == "__main__":
+    main()

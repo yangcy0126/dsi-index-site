@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>WDSI 外交情绪观测台</title>
+    <meta
+      name="description"
+      content="基于官方外交文本的战争相关外交情绪指数展示站点，提供 WDSI 可视化、方法说明与数据下载。"
+    >
+    <meta name="theme-color" content="#0f3a3d">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    >
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="#top">
+          <span class="brand-kicker">Diplomatic Signal</span>
+          <span class="brand-name">WDSI Observatory</span>
+        </a>
+        <nav class="site-nav">
+          <a href="#overview">总览</a>
+          <a href="#explorer">指数</a>
+          <a href="#method">方法</a>
+          <a href="#download">下载</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero" id="top">
+          <div class="hero-copy">
+            <p class="eyebrow">From official language to market-facing signal</p>
+            <h1>WDSI 外交情绪观测台</h1>
+            <p class="hero-lede">
+              这是一个面向公开展示的 WDSI 静态站点原型。它把官方外交文本中的战争相关外交情绪，整理成可浏览、
+              可下载、可长期更新的指数界面。
+            </p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="#explorer">查看指数曲线</a>
+              <a class="button button-secondary" href="#download">下载数据</a>
+            </div>
+            <div class="hero-note">
+              <span class="note-label">适合部署在 GitHub Pages</span>
+              <span id="generated-at">正在读取最新构建时间…</span>
+            </div>
+          </div>
+
+          <div class="hero-panel">
+            <div class="metric-grid">
+              <article class="metric-card metric-card-primary">
+                <p class="metric-label">当前选择</p>
+                <h2 id="selected-country-name">载入中</h2>
+                <p class="metric-value" id="selected-latest-score">--</p>
+                <p class="metric-detail" id="selected-score-caption">读取摘要数据中…</p>
+              </article>
+              <article class="metric-card">
+                <p class="metric-label">近 30 天变化</p>
+                <p class="metric-value" id="selected-change-score">--</p>
+                <p class="metric-detail">基于 7 日平滑序列计算</p>
+              </article>
+              <article class="metric-card">
+                <p class="metric-label">最近发布日</p>
+                <p class="metric-value" id="selected-publication-date">--</p>
+                <p class="metric-detail" id="selected-publication-score">--</p>
+              </article>
+              <article class="metric-card">
+                <p class="metric-label">样本覆盖</p>
+                <p class="metric-value" id="selected-coverage">--</p>
+                <p class="metric-detail" id="selected-publication-days">--</p>
+              </article>
+            </div>
+
+            <div class="coverage-band">
+              <div>
+                <span>国家 / 地区</span>
+                <strong id="country-count">--</strong>
+              </div>
+              <div>
+                <span>总体起点</span>
+                <strong id="overall-start">--</strong>
+              </div>
+              <div>
+                <span>最新观测</span>
+                <strong id="overall-end">--</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="signal-board" id="overview">
+          <div class="section-heading">
+            <p class="eyebrow">Overview</p>
+            <h2>多国 WDSI 信号板</h2>
+            <p>
+              先看全局，再进入单国时间序列。卡片上的主数值是每个国家当前的 7 日平滑值，越负代表战争相关外交语气越紧张。
+            </p>
+          </div>
+          <div class="country-board" id="country-board"></div>
+        </section>
+
+        <section class="explorer" id="explorer">
+          <div class="section-heading">
+            <p class="eyebrow">Explorer</p>
+            <h2>指数浏览器</h2>
+            <p>
+              默认展示 7 日平滑后的 WDSI。你也可以切换成发布日原始均值，直接观察文本发布日上的离散跳动。
+            </p>
+          </div>
+
+          <div class="explorer-shell">
+            <div class="explorer-toolbar">
+              <div class="tabs" id="country-tabs" aria-label="Country selector"></div>
+              <div class="series-toggle" id="series-toggle" aria-label="Series selector">
+                <button class="toggle-button is-active" data-series="rolling" type="button">
+                  7 日平滑指数
+                </button>
+                <button class="toggle-button" data-series="raw" type="button">
+                  发布日原始均值
+                </button>
+              </div>
+            </div>
+
+            <div class="chart-frame">
+              <div id="wdsi-chart" class="chart"></div>
+            </div>
+
+            <div class="chart-foot">
+              <p id="chart-caption">
+                加载图表中…
+              </p>
+              <div class="event-chips" id="event-chips"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="method" id="method">
+          <div class="section-heading">
+            <p class="eyebrow">Method</p>
+            <h2>如何把外交文本变成 WDSI</h2>
+            <p>
+              这个站点当前读取的是你本地情绪测度结果表中的战争相关分数列，并进一步聚合成网页友好的日度指标。
+            </p>
+          </div>
+
+          <div class="method-grid">
+            <article class="method-card">
+              <span class="method-index">01</span>
+              <h3>抓取官方文本</h3>
+              <p>数据源来自外交部记者会、外交办公室新闻稿、国务院发言稿等官方文本材料，而不是新闻报道的二手转述。</p>
+            </article>
+            <article class="method-card">
+              <span class="method-index">02</span>
+              <h3>抽取战争相关情绪</h3>
+              <p>在情绪结果表中，`2` 列被解释为战争相关外交情绪分数，区间大致落在 `-3` 到 `3`。</p>
+            </article>
+            <article class="method-card">
+              <span class="method-index">03</span>
+              <h3>按天聚合</h3>
+              <p>如果同一天存在多条文本，先按日求均值；没有发文的日期则以前值向前填充，形成连续日历序列。</p>
+            </article>
+            <article class="method-card">
+              <span class="method-index">04</span>
+              <h3>生成网页数据</h3>
+              <p>最终输出为 `JSON + CSV`，适合静态部署、GitHub Pages 展示和后续自动化更新。</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="research" id="research">
+          <div class="section-heading">
+            <p class="eyebrow">Why It Matters</p>
+            <h2>这个网站应该讲清楚什么</h2>
+            <p>
+              如果它只是一个曲线容器，传播效果会很弱。更好的做法是把研究结论翻译成直观的问题意识。
+            </p>
+          </div>
+
+          <div class="research-grid">
+            <article class="research-card">
+              <h3>资本流动通道</h3>
+              <p>在论文语境里，WDSI 不是抽象情绪，而是与南向资金、净资本流和跨市场再配置相关的市场信号。</p>
+            </article>
+            <article class="research-card">
+              <h3>避险与再定价</h3>
+              <p>不同国家的负面外交语气不一定带来相同结果。有的对应避险流入，有的对应外流和相对定价调整。</p>
+            </article>
+            <article class="research-card">
+              <h3>官方表态的前瞻性</h3>
+              <p>和新闻型风险指标相比，官方表态往往更早进入市场预期，因此站点要突出“提前量”和“可解释性”。</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="download" id="download">
+          <div class="section-heading">
+            <p class="eyebrow">Download</p>
+            <h2>数据与部署入口</h2>
+            <p>
+              这个部分要像 GPR / EPU 官网一样清楚，别把数据下载埋深。用户应当一眼看到摘要文件、全量文件和分国文件。
+            </p>
+          </div>
+
+          <div class="download-panel">
+            <div class="download-list" id="download-list"></div>
+            <aside class="deployment-note">
+              <h3>部署方式</h3>
+              <p>
+                当前站点按纯静态资源组织，默认适合 GitHub Pages。只要把本目录作为独立仓库推上 GitHub，再启用 Pages
+                工作流，就能直接上线。
+              </p>
+              <p>
+                如果以后要加入私有后台、API 或自动更新函数，再迁到 Vercel / Cloudflare Pages 也不会太痛苦。
+              </p>
+            </aside>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <p>WDSI 外交情绪观测台原型 · 静态站点版本</p>
+        <p id="footer-build-note">数据摘要加载中…</p>
+      </footer>
+    </div>
+  </body>
+</html>

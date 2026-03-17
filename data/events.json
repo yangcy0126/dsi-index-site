@@ -1,0 +1,24 @@
+{
+  "events": [
+    {
+      "date": "2014-03-18",
+      "title_zh": "克里米亚危机升级",
+      "title_en": "Crimea crisis escalates"
+    },
+    {
+      "date": "2016-07-12",
+      "title_zh": "南海仲裁结果公布",
+      "title_en": "South China Sea arbitration"
+    },
+    {
+      "date": "2022-02-24",
+      "title_zh": "俄乌战争爆发",
+      "title_en": "Russia-Ukraine war"
+    },
+    {
+      "date": "2023-10-07",
+      "title_zh": "新一轮巴以冲突升级",
+      "title_en": "Israel-Hamas war escalation"
+    }
+  ]
+}
