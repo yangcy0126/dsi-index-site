@@ -270,19 +270,24 @@ class OpenAIWDSIScorer:
     def __init__(
         self,
         api_key: str | None = None,
+        base_url: str | None = None,
         model: str | None = None,
         reasoning_effort: str | None = None,
     ) -> None:
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.api_key = api_key or os.getenv("WDSI_API_KEY") or os.getenv("OPENAI_API_KEY")
         if not self.api_key:
-            raise ValueError("OPENAI_API_KEY is required for scoring.")
+            raise ValueError("WDSI_API_KEY or OPENAI_API_KEY is required for scoring.")
 
-        self.model = model or os.getenv("WDSI_OPENAI_MODEL") or "gpt-5-mini"
+        self.base_url = base_url or os.getenv("WDSI_API_BASE_URL") or os.getenv("OPENAI_BASE_URL") or ""
+        self.model = model or os.getenv("WDSI_MODEL") or os.getenv("WDSI_OPENAI_MODEL") or "gpt-5-mini"
         self.reasoning_effort = reasoning_effort or os.getenv("WDSI_REASONING_EFFORT") or "low"
 
         from openai import OpenAI
 
-        self.client = OpenAI(api_key=self.api_key)
+        client_kwargs = {"api_key": self.api_key}
+        if self.base_url:
+            client_kwargs["base_url"] = self.base_url
+        self.client = OpenAI(**client_kwargs)
 
     def score_record(self, record: ScrapedRecord) -> dict[str, object]:
         user_prompt = self._build_prompt(record)
@@ -290,16 +295,7 @@ class OpenAIWDSIScorer:
 
         for attempt in range(3):
             try:
-                response = self.client.responses.create(
-                    model=self.model,
-                    reasoning={"effort": self.reasoning_effort},
-                    input=[
-                        {"role": "system", "content": self._system_prompt()},
-                        {"role": "user", "content": user_prompt},
-                    ],
-                    max_output_tokens=400,
-                )
-                payload = extract_json_object(response.output_text)
+                payload = self._request_score_payload(user_prompt)
                 score = int(payload["score"])
                 if score < -3 or score > 3:
                     raise ValueError(f"Out-of-range score {score} for {record.url}")
@@ -310,7 +306,7 @@ class OpenAIWDSIScorer:
                     "confidence": float(payload.get("confidence", 0.0)),
                     "war_related": bool(payload.get("war_related", score != 0)),
                     "model": self.model,
-                    "response_id": getattr(response, "id", ""),
+                    "response_id": str(payload.get("_response_id", "")),
                     "scored_at": datetime.utcnow().isoformat(timespec="seconds") + "Z",
                 }
             except Exception as exc:  # pragma: no cover - retry logic
@@ -340,6 +336,39 @@ class OpenAIWDSIScorer:
             "score must be an integer from -3 to 3. confidence must be between 0 and 1. "
             "reasoning must be short and concrete."
         )
+
+    def _request_score_payload(self, user_prompt: str) -> dict[str, object]:
+        if self.base_url:
+            return self._request_with_chat_completions(user_prompt)
+        return self._request_with_responses_api(user_prompt)
+
+    def _request_with_responses_api(self, user_prompt: str) -> dict[str, object]:
+        response = self.client.responses.create(
+            model=self.model,
+            reasoning={"effort": self.reasoning_effort},
+            input=[
+                {"role": "system", "content": self._system_prompt()},
+                {"role": "user", "content": user_prompt},
+            ],
+            max_output_tokens=400,
+        )
+        payload = extract_json_object(response.output_text)
+        payload["_response_id"] = getattr(response, "id", "")
+        return payload
+
+    def _request_with_chat_completions(self, user_prompt: str) -> dict[str, object]:
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": self._system_prompt()},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0,
+        )
+        content = response.choices[0].message.content or ""
+        payload = extract_json_object(content)
+        payload["_response_id"] = getattr(response, "id", "")
+        return payload
 
     @staticmethod
     def _build_prompt(record: ScrapedRecord) -> str:

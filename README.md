@@ -68,8 +68,12 @@ Then open `http://127.0.0.1:8000`.
 
 Add these repository settings before relying on daily updates:
 
-- Repository secret: `OPENAI_API_KEY`
-- Optional repository variable: `WDSI_OPENAI_MODEL`
+- Preferred repository secret: `WDSI_API_KEY`
+- Backward-compatible secret: `OPENAI_API_KEY`
+- Optional repository variable: `WDSI_API_BASE_URL`
+- Optional repository variable: `OPENAI_BASE_URL`
+- Optional repository variable: `WDSI_MODEL`
+- Backward-compatible variable: `WDSI_OPENAI_MODEL`
 - Optional repository variable: `WDSI_REASONING_EFFORT`
 
 The scheduled workflow lives at:
@@ -77,6 +81,21 @@ The scheduled workflow lives at:
 - `.github/workflows/update-data.yml`
 
 It runs daily at `15:20 UTC`.
+
+## Using Qwen instead of OpenAI
+
+Yes. The scorer now supports OpenAI-compatible providers.
+
+For Qwen / Alibaba Cloud Model Studio, set:
+
+- Secret `WDSI_API_KEY`: your DashScope / Model Studio API key
+- Variable `WDSI_API_BASE_URL`: one of
+  - `https://dashscope-intl.aliyuncs.com/compatible-mode/v1`
+  - `https://dashscope-us.aliyuncs.com/compatible-mode/v1`
+  - `https://dashscope.aliyuncs.com/compatible-mode/v1`
+- Variable `WDSI_MODEL`: for example `qwen-plus` or `qwen-max`
+
+When `WDSI_API_BASE_URL` is set, the pipeline automatically uses the OpenAI-compatible `chat/completions` path, which is the compatibility mode documented by Alibaba Cloud Model Studio.
 
 ## Important directories
 
