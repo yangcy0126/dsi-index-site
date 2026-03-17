@@ -132,6 +132,11 @@ def main() -> None:
         default=90,
         help="Maximum pages for source APIs that need explicit pagination.",
     )
+    parser.add_argument(
+        "--skip-build",
+        action="store_true",
+        help="Update records without rebuilding site data.",
+    )
     args = parser.parse_args()
 
     countries = [code.strip().upper() for code in args.countries.split(",") if code.strip()]
@@ -193,21 +198,56 @@ def main() -> None:
             continue
 
         scored_rows: list[dict[str, object]] = []
-        for item in additions:
-            result = scorer.score_record(SimpleNamespace(**item))  # type: ignore[union-attr]
-            scored_rows.append(
-                {
-                    **item,
-                    "score": result["score"],
-                    "score_reasoning": result["score_reasoning"],
-                    "war_related": result["war_related"],
-                    "confidence": result["confidence"],
-                    "model": result["model"],
-                    "pipeline_version": result["pipeline_version"],
-                    "response_id": result["response_id"],
-                    "scored_at": result["scored_at"],
-                }
-            )
+        if code == "CN":
+            batched_inputs = [SimpleNamespace(**item) for item in additions]
+            batched_results = scorer.score_conference_records(batched_inputs)  # type: ignore[union-attr]
+            for item, result in zip(additions, batched_results, strict=False):
+                scored_rows.append(
+                    {
+                        **item,
+                        "score": result["score"],
+                        "score_reasoning": result["score_reasoning"],
+                        "war_related": result["war_related"],
+                        "confidence": result["confidence"],
+                        "model": result["model"],
+                        "pipeline_version": result["pipeline_version"],
+                        "response_id": result["response_id"],
+                        "scored_at": result["scored_at"],
+                    }
+                )
+        elif code == "US":
+            batched_inputs = [SimpleNamespace(**item) for item in additions]
+            batched_results = scorer.score_flat_records(batched_inputs)  # type: ignore[union-attr]
+            for item, result in zip(additions, batched_results, strict=False):
+                scored_rows.append(
+                    {
+                        **item,
+                        "score": result["score"],
+                        "score_reasoning": result["score_reasoning"],
+                        "war_related": result["war_related"],
+                        "confidence": result["confidence"],
+                        "model": result["model"],
+                        "pipeline_version": result["pipeline_version"],
+                        "response_id": result["response_id"],
+                        "scored_at": result["scored_at"],
+                    }
+                )
+        else:
+            for item in additions:
+                result = scorer.score_record(SimpleNamespace(**item))  # type: ignore[union-attr]
+                scored_rows.append(
+                    {
+                        **item,
+                        "score": result["score"],
+                        "score_reasoning": result["score_reasoning"],
+                        "war_related": result["war_related"],
+                        "confidence": result["confidence"],
+                        "model": result["model"],
+                        "pipeline_version": result["pipeline_version"],
+                        "response_id": result["response_id"],
+                        "scored_at": result["scored_at"],
+                    }
+                )
 
         for row in scored_rows:
             row.pop("content", None)
@@ -227,9 +267,11 @@ def main() -> None:
     if args.dry_run:
         return
 
-    if changed:
+    if changed and not args.skip_build:
         build_site_data()
         print("Rebuilt site JSON/CSV assets.")
+    elif changed:
+        print("Record changes written without rebuilding site data.")
     else:
         print("No record changes detected.")
 

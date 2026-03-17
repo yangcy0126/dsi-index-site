@@ -7,6 +7,7 @@ import os
 import re
 import time
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from typing import Iterable
@@ -341,7 +342,7 @@ class UsStateDepartmentSource:
         *,
         max_pages: int,
     ) -> list[ScrapedRecord]:
-        records: list[ScrapedRecord] = []
+        candidates: list[tuple[str, str, str]] = []
         for page in range(1, max_pages + 1):
             url = self.press_archive_url if page == 1 else f"{self.press_archive_url}page/{page}/"
             soup = BeautifulSoup(request_html(self.session, url), "html.parser")
@@ -370,11 +371,28 @@ class UsStateDepartmentSource:
                     continue
 
                 title = clean_text(link_node.get_text(" ", strip=True))
-                records.append(self._parse_press_release_article(link, title, published_at))
+                candidates.append((link, title, published_at))
 
             if oldest_on_page is not None and oldest_on_page < start_date:
                 break
-        return records
+
+        if not candidates:
+            return []
+
+        records: list[ScrapedRecord] = []
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {
+                executor.submit(self._parse_press_release_article_threadsafe, link, title, published_at): (
+                    link,
+                    title,
+                    published_at,
+                )
+                for link, title, published_at in candidates
+            }
+            for future in as_completed(futures):
+                records.append(future.result())
+
+        return sorted(records, key=lambda record: (record.published_at, record.url), reverse=True)
 
     def _fetch_press_briefings(self, start_date: str, end_date: str, max_pages: int = 8) -> list[ScrapedRecord]:
         records: list[ScrapedRecord] = []
@@ -446,6 +464,20 @@ class UsStateDepartmentSource:
 
     def _parse_press_release_article(self, url: str, title: str, published_at: str) -> ScrapedRecord:
         html_text = request_html(self.session, url)
+        return self._make_press_release_record_from_html(html_text, url, title, published_at)
+
+    def _parse_press_release_article_threadsafe(self, url: str, title: str, published_at: str) -> ScrapedRecord:
+        with requests.Session() as session:
+            html_text = request_html(session, url)
+        return self._make_press_release_record_from_html(html_text, url, title, published_at)
+
+    def _make_press_release_record_from_html(
+        self,
+        html_text: str,
+        url: str,
+        title: str,
+        published_at: str,
+    ) -> ScrapedRecord:
         soup = BeautifulSoup(html_text, "html.parser")
         content_node = soup.select_one(".entry-content")
         if content_node is None:
@@ -561,6 +593,210 @@ class OpenAIWDSIScorer:
             "scored_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
             "pipeline_version": self.pipeline_version,
         }
+
+    def score_flat_records(
+        self,
+        records: list[ScrapedRecord],
+        *,
+        batch_size: int = 12,
+    ) -> list[dict[str, object]]:
+        scored: list[dict[str, object]] = []
+        for start in range(0, len(records), batch_size):
+            scored.extend(self._score_flat_batch(records[start : start + batch_size]))
+        return scored
+
+    def score_conference_records(
+        self,
+        records: list[ScrapedRecord],
+        *,
+        batch_size: int = 2,
+    ) -> list[dict[str, object]]:
+        scored: list[dict[str, object]] = []
+        for start in range(0, len(records), batch_size):
+            scored.extend(self._score_conference_batch(records[start : start + batch_size]))
+        return scored
+
+    def _score_flat_batch(self, records: list[ScrapedRecord]) -> list[dict[str, object]]:
+        if not records:
+            return []
+
+        synthetic_record = ScrapedRecord(
+            country_code=records[0].country_code,
+            published_at=f"{records[0].published_at} to {records[-1].published_at}",
+            url="",
+            title=f"{len(records)} batched official statements",
+            content="",
+            source_kind=records[0].source_kind,
+            language=records[0].language,
+            speaker="",
+        )
+        units = [
+            TextUnit(
+                unit_id=f"u{index}",
+                label=f"{record.published_at} | {record.title}",
+                text=truncate_text(record.content, 2200),
+            )
+            for index, record in enumerate(records, start=1)
+        ]
+
+        relevance, stage_ids, stage_events = self._score_relevance(synthetic_record, units)
+        war_units = [unit for unit in units if relevance[unit.unit_id]["war_related"]]
+        categories: dict[str, dict[str, object]] = {}
+        scores: dict[str, dict[str, object]] = {}
+        category_ids: list[str] = []
+        score_ids: list[str] = []
+        category_events: list[dict[str, str]] = []
+        score_events: list[dict[str, str]] = []
+
+        if war_units:
+            categories, category_ids, category_events = self._score_categories(synthetic_record, war_units)
+            scores, score_ids, score_events = self._score_intensity(synthetic_record, war_units, categories)
+
+        response_id = self._join_response_ids(stage_ids + category_ids + score_ids)
+        scored_at = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+        confidence = self._confidence_from_events(stage_events + category_events + score_events)
+
+        results: list[dict[str, object]] = []
+        for record, unit in zip(records, units, strict=False):
+            if not relevance[unit.unit_id]["war_related"]:
+                results.append(
+                    {
+                        "score": 0,
+                        "score_reasoning": clean_text(
+                            f"No war-related sentiment detected. {relevance[unit.unit_id].get('rationale', '')}"
+                        ),
+                        "confidence": confidence,
+                        "war_related": False,
+                        "model": self.model,
+                        "response_id": response_id,
+                        "scored_at": scored_at,
+                        "pipeline_version": self.pipeline_version,
+                    }
+                )
+                continue
+
+            category = clean_text(str(categories[unit.unit_id]["category"]))
+            score_value = int(scores[unit.unit_id]["score"])
+            rationale = clean_text(str(scores[unit.unit_id].get("rationale", "")))
+            results.append(
+                {
+                    "score": score_value,
+                    "score_reasoning": clean_text(f"{category.capitalize()} tone. {rationale}"),
+                    "confidence": confidence,
+                    "war_related": True,
+                    "model": self.model,
+                    "response_id": response_id,
+                    "scored_at": scored_at,
+                    "pipeline_version": self.pipeline_version,
+                }
+            )
+
+        return results
+
+    def _score_conference_batch(self, records: list[ScrapedRecord]) -> list[dict[str, object]]:
+        if not records:
+            return []
+
+        synthetic_record = ScrapedRecord(
+            country_code=records[0].country_code,
+            published_at=f"{records[0].published_at} to {records[-1].published_at}",
+            url="",
+            title=f"{len(records)} batched press conferences",
+            content="",
+            source_kind=records[0].source_kind,
+            language=records[0].language,
+            speaker="",
+        )
+
+        units_by_record: list[tuple[ScrapedRecord, list[TextUnit]]] = []
+        batch_units: list[TextUnit] = []
+        for record_index, record in enumerate(records, start=1):
+            original_units = self._build_units(record)
+            renamed_units: list[TextUnit] = []
+            for unit in original_units:
+                renamed = TextUnit(
+                    unit_id=f"r{record_index}_{unit.unit_id}",
+                    label=f"{record.published_at} | {record.title} | {unit.label}",
+                    text=unit.text,
+                )
+                renamed_units.append(renamed)
+                batch_units.append(renamed)
+            units_by_record.append((record, renamed_units))
+
+        if not batch_units:
+            return [
+                {
+                    "score": 0,
+                    "score_reasoning": "No usable Q&A units were extracted from the press conference.",
+                    "confidence": 0.65,
+                    "war_related": False,
+                    "model": self.model,
+                    "response_id": "",
+                    "scored_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+                    "pipeline_version": self.pipeline_version,
+                }
+                for _ in records
+            ]
+
+        relevance, stage_ids, stage_events = self._score_relevance(synthetic_record, batch_units)
+        war_units = [unit for unit in batch_units if relevance[unit.unit_id]["war_related"]]
+        categories: dict[str, dict[str, object]] = {}
+        scores: dict[str, dict[str, object]] = {}
+        category_ids: list[str] = []
+        score_ids: list[str] = []
+        category_events: list[dict[str, str]] = []
+        score_events: list[dict[str, str]] = []
+
+        if war_units:
+            categories, category_ids, category_events = self._score_categories(synthetic_record, war_units)
+            scores, score_ids, score_events = self._score_intensity(synthetic_record, war_units, categories)
+
+        base_response_ids = stage_ids + category_ids + score_ids
+        base_confidence = self._confidence_from_events(stage_events + category_events + score_events)
+        scored_at = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+        results: list[dict[str, object]] = []
+
+        for record, record_units in units_by_record:
+            own_war_units = [unit for unit in record_units if relevance[unit.unit_id]["war_related"]]
+            if not own_war_units:
+                results.append(
+                    {
+                        "score": 0,
+                        "score_reasoning": "No war-related unit survived the paper-style screening stage.",
+                        "confidence": base_confidence,
+                        "war_related": False,
+                        "model": self.model,
+                        "response_id": self._join_response_ids(base_response_ids),
+                        "scored_at": scored_at,
+                        "pipeline_version": self.pipeline_version,
+                    }
+                )
+                continue
+
+            aggregate_id = ""
+            if len(own_war_units) == 1:
+                unit = own_war_units[0]
+                aggregate_payload = {
+                    "score": int(scores[unit.unit_id]["score"]),
+                    "reasoning": clean_text(str(scores[unit.unit_id]["rationale"])),
+                }
+            else:
+                aggregate_payload, aggregate_id = self._aggregate_units(record, own_war_units, categories, scores)
+
+            results.append(
+                {
+                    "score": int(aggregate_payload["score"]),
+                    "score_reasoning": clean_text(str(aggregate_payload["reasoning"])),
+                    "confidence": base_confidence,
+                    "war_related": True,
+                    "model": self.model,
+                    "response_id": self._join_response_ids(base_response_ids + ([aggregate_id] if aggregate_id else [])),
+                    "scored_at": scored_at,
+                    "pipeline_version": self.pipeline_version,
+                }
+            )
+
+        return results
 
     def _build_units(self, record: ScrapedRecord) -> list[TextUnit]:
         if record.country_code == "CN" and record.source_kind == "mfa_regular_press_conference":
