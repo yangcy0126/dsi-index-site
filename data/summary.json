@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-03-18T16:22:49.539800+00:00",
+  "generated_at": "2026-03-18T17:32:02.790907+00:00",
   "overall": {
-    "country_count": 5,
+    "country_count": 6,
     "first_date": "2001-01-03",
     "last_date": "2026-03-18"
   },
@@ -65,13 +65,13 @@
       "latest_publication_date": "2026-03-18",
       "publication_days": 4676,
       "calendar_days": 5790,
-      "latest_raw": 1.5,
-      "latest_7d": -0.654,
-      "latest_30d": -0.836,
-      "change_7d": -1.069,
-      "change_30d": 0.656,
+      "latest_raw": 1.667,
+      "latest_7d": -0.63,
+      "latest_30d": -0.831,
+      "change_7d": -1.045,
+      "change_30d": 0.68,
       "current_year": 2026,
-      "current_year_mean": -0.543,
+      "current_year_mean": -0.542,
       "latest_title": "Change of His Majesty’s Ambassador to Denmark: Victoria Billing",
       "latest_url": "https://www.gov.uk/government/news/change-of-his-majestys-ambassador-to-denmark-victoria-billing",
       "data_source": "records",
@@ -125,6 +125,30 @@
       "data_source": "records",
       "file_json": "data/KR.json",
       "file_csv": "data/KR.csv"
+    },
+    {
+      "code": "FR",
+      "label": "France",
+      "label_zh": "France",
+      "series_zh": "France MFA spokesperson live Q&A",
+      "color": "#2f5aa8",
+      "start_date": "2025-09-25",
+      "latest_date": "2026-03-18",
+      "latest_publication_date": "2026-03-11",
+      "publication_days": 21,
+      "calendar_days": 175,
+      "latest_raw": -2.0,
+      "latest_7d": -2.0,
+      "latest_30d": -0.267,
+      "change_7d": -3.429,
+      "change_30d": -1.143,
+      "current_year": 2026,
+      "current_year_mean": 0.286,
+      "latest_title": "Q&R - Point de presse live (11.03.26)",
+      "latest_url": "https://www.diplomatie.gouv.fr/fr/salle-de-presse/point-de-presse-live-du-porte-parole-du-meae/fr/salle-de-presse/point-de-presse-live-du-porte-parole-du-meae/article/q-r-point-de-presse-live-11-03-26",
+      "data_source": "records",
+      "file_json": "data/FR.json",
+      "file_csv": "data/FR.csv"
     }
   ]
 }
