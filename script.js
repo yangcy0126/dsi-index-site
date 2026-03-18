@@ -159,7 +159,7 @@ function renderSelectedMetrics(country) {
     `发布日 ${country.publication_days} 天 · 日历序列 ${country.calendar_days} 天`;
 }
 
-function renderDownloadList() {
+function renderLegacyDownloadList() {
   const list = document.getElementById("download-list");
   list.innerHTML = "";
 
@@ -206,6 +206,65 @@ function renderDownloadList() {
     `;
     list.appendChild(row);
   });
+}
+
+function renderCsvOnlyDownloadList() {
+  const list = document.getElementById("download-list");
+  list.innerHTML = "";
+
+  const masterDownloads = [
+    {
+      title: "全量日度数据（CSV）",
+      meta: "包含全部国家的日历日序列、发布日原始均值与 7 日平滑值",
+      href: "data/wdsi_all_countries.csv",
+    },
+  ];
+
+  const countryDownloads = state.summary.countries.map((country) => ({
+    title: `${country.label_zh} 数据（CSV）`,
+    meta: `${country.label} · 发布日 ${country.publication_days} 天`,
+    href: country.file_csv,
+  }));
+
+  [...masterDownloads, ...countryDownloads].forEach((item) => {
+    const row = document.createElement("div");
+    row.className = "download-item";
+    row.innerHTML = `
+      <div>
+        <strong>${item.title}</strong>
+        <div class="download-meta">${item.meta}</div>
+      </div>
+      <a class="download-link" href="${item.href}" target="_blank" rel="noreferrer">打开 CSV</a>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function applyStaticCopyAdjustments() {
+  const noteLabel = document.querySelector(".hero-note .note-label");
+  if (noteLabel) {
+    noteLabel.textContent = "公开 CSV 下载";
+  }
+
+  const methodCopy = document.querySelector("#method .method-card:last-child p");
+  if (methodCopy) {
+    methodCopy.textContent = "站点会把日度结果整理成可视化序列，并对外统一提供可直接下载的 CSV 文件。";
+  }
+
+  const downloadHeading = document.querySelector("#download .section-heading h2");
+  if (downloadHeading) {
+    downloadHeading.textContent = "CSV 数据下载";
+  }
+
+  const downloadDescription = document.querySelector("#download .section-heading p:not(.eyebrow)");
+  if (downloadDescription) {
+    downloadDescription.textContent = "这里只保留 CSV 下载入口，方便直接查看、整理和做后续实证分析。";
+  }
+
+  const deploymentNote = document.querySelector("#download .deployment-note");
+  if (deploymentNote) {
+    deploymentNote.remove();
+  }
 }
 
 function updateEventChips(countryData) {
@@ -369,10 +428,11 @@ async function init() {
         ? state.selectedCode
         : state.summary.countries[0]?.code ?? null;
 
+    applyStaticCopyAdjustments();
     renderGlobalMeta();
     renderCountryBoard();
     renderCountryTabs();
-    renderDownloadList();
+    renderCsvOnlyDownloadList();
     bindSeriesToggle();
 
     if (state.selectedCode) {

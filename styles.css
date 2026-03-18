@@ -454,9 +454,11 @@ h3 {
 }
 
 .download-panel {
-  display: grid;
-  grid-template-columns: 1.25fr 0.75fr;
-  gap: 16px;
+  display: block;
+}
+
+.deployment-note {
+  display: none;
 }
 
 .download-list {
