@@ -227,6 +227,12 @@ h3 {
   color: var(--muted);
 }
 
+.hero-paper-citation {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -440,13 +446,6 @@ h3 {
   color: var(--accent);
 }
 
-.paper-citation-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  margin-bottom: 18px;
-}
-
 .paper-card,
 .citation-card {
   padding: 22px;
@@ -578,8 +577,7 @@ h3 {
 
 @media (max-width: 980px) {
   .hero,
-  .download-panel,
-  .paper-citation-grid {
+  .download-panel {
     grid-template-columns: 1fr;
   }
 }
