@@ -112,7 +112,7 @@ function renderCountryBoard() {
       <h3>${country.label_zh}</h3>
       <div class="country-meta">
         <span>${country.label}</span>
-        <span>${formatDate(country.latest_date)}</span>
+        <span>最新发文 ${formatDate(country.latest_publication_date)}</span>
       </div>
       <div class="country-score ${tone.className}">${formatScore(country.latest_7d)}</div>
       <div class="country-tone">${tone.label}</div>
