@@ -11,8 +11,10 @@ This repository hosts a static WDSI website on GitHub Pages and a daily automati
   - China MFA regular press conferences
   - U.S. State Department `Office of the Spokesperson` press releases
   - U.S. State Department `Department Press Briefing`
+  - France MEAE spokesperson live Q&A transcripts
+  - Russia MFA foreign policy news
 
-The UK, Japan, and South Korea series are still included in the website, but they currently update from the historical baseline only. The automation code is structured so more source adapters can be added later.
+The UK, Japan, and South Korea series are still included in the website. The automation code is structured so more source adapters can be added later.
 
 ## Local setup
 
@@ -37,14 +39,21 @@ python scripts/build_wdsi_data.py
 Preview recent source fetches without scoring or writing:
 
 ```bash
-python scripts/update_wdsi_records.py --countries CN,US --dry-run
+python scripts/update_wdsi_records.py --countries CN,US,FR,RU --dry-run
 ```
 
 Run the full update locally:
 
 ```bash
 set OPENAI_API_KEY=your_key_here
-python scripts/update_wdsi_records.py --countries CN,US
+python scripts/update_wdsi_records.py --countries CN,US,FR,RU
+```
+
+If you are fetching `RU` locally and the Russian MFA site blocks headless Chromium, run it with a visible browser session:
+
+```bash
+set WDSI_PLAYWRIGHT_HEADLESS=0
+python scripts/update_wdsi_records.py --countries RU --dry-run --max-pages 1
 ```
 
 Serve locally:

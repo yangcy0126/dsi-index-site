@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        country: [CN, US, UK, JP, KR]
+        country: [CN, US, UK, JP, KR, FR, RU]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,7 +43,7 @@ jobs:
         run: python -m pip install -r requirements.txt
 
       - name: Install browser fallback
-        if: matrix.country == 'JP' || matrix.country == 'UK'
+        if: matrix.country == 'JP' || matrix.country == 'UK' || matrix.country == 'RU'
         run: |
           python -m pip install playwright
           python -m playwright install chromium
@@ -58,7 +58,8 @@ jobs:
           WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
-      - name: Update records
+      - name: Update records (standard)
+        if: matrix.country != 'RU'
         run: python scripts/update_wdsi_records.py --countries ${{ matrix.country }} --lookback-days 200 --max-pages 90 --skip-build
         env:
           WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
@@ -68,6 +69,19 @@ jobs:
           WDSI_MODEL: ${{ vars.WDSI_MODEL }}
           WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
+
+      - name: Update records (headed browser for RU)
+        if: matrix.country == 'RU'
+        run: xvfb-run -a python scripts/update_wdsi_records.py --countries ${{ matrix.country }} --lookback-days 200 --max-pages 90 --skip-build
+        env:
+          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
+          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
+          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
+          WDSI_PLAYWRIGHT_HEADLESS: "0"
 
       - name: Upload country record
         uses: actions/upload-artifact@v4
@@ -127,6 +141,20 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: records-KR
+          path: records
+
+      - name: Download FR record
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: records-FR
+          path: records
+
+      - name: Download RU record
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: records-RU
           path: records
 
       - name: Rebuild site data

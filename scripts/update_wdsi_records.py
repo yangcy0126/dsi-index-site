@@ -11,9 +11,11 @@ import requests
 from build_wdsi_data import main as build_site_data
 from wdsi_pipeline import (
     ChinaMfaRegularPressSource,
+    FranceMfaSpokespersonSource,
     JapanMofaPressReleaseSource,
     KoreaMofaPressReleaseSource,
     OpenAIWDSIScorer,
+    RussiaMfaNewsSource,
     UkFcdoNewsSource,
     UsStateDepartmentSource,
 )
@@ -22,7 +24,7 @@ from wdsi_pipeline import (
 ROOT = Path(__file__).resolve().parents[1]
 RECORDS_DIR = ROOT / "records"
 
-SUPPORTED_COUNTRIES = {"CN", "US", "UK", "JP", "KR"}
+SUPPORTED_COUNTRIES = {"CN", "US", "UK", "JP", "KR", "FR", "RU"}
 
 
 def load_records(path: Path) -> pd.DataFrame:
@@ -126,6 +128,10 @@ def make_sources(session: requests.Session, countries: list[str]) -> dict[str, o
         sources["JP"] = JapanMofaPressReleaseSource(session)
     if "KR" in countries:
         sources["KR"] = KoreaMofaPressReleaseSource(session)
+    if "FR" in countries:
+        sources["FR"] = FranceMfaSpokespersonSource(session)
+    if "RU" in countries:
+        sources["RU"] = RussiaMfaNewsSource(session)
     return sources
 
 
@@ -181,7 +187,7 @@ def main() -> None:
 
         if code == "CN":
             fetched_records = source.fetch_between(start_date, end_date)
-        elif code in {"US", "UK", "KR"}:
+        elif code in {"US", "UK", "KR", "FR", "RU"}:
             fetched_records = source.fetch_between(start_date, end_date, max_pages=args.max_pages)
         else:
             fetched_records = source.fetch_between(start_date, end_date)
@@ -237,7 +243,7 @@ def main() -> None:
                         "scored_at": result["scored_at"],
                     }
                 )
-        elif code in {"US", "UK", "JP", "KR"}:
+        elif code in {"US", "UK", "JP", "KR", "FR", "RU"}:
             batched_inputs = [SimpleNamespace(**item) for item in additions]
             batched_results = scorer.score_flat_records(batched_inputs)  # type: ignore[union-attr]
             for item, result in zip(additions, batched_results, strict=False):

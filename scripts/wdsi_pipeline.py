@@ -54,6 +54,12 @@ JP_TITLE_DATE_RE = re.compile(rf"\((?P<date>{MONTH_NAME_PATTERN}\s+\d{{1,2}},\s+
 JP_CONFERENCE_HEADER_RE = re.compile(
     rf"^###\s+(?:[A-Za-z]+,\s+)?(?P<date>{MONTH_NAME_PATTERN}\s+\d{{1,2}},\s+\d{{4}})(?:,[^.]+)?"
 )
+FR_TITLE_DATE_RE = re.compile(r"\((?P<day>\d{2})\.(?P<month>\d{2})\.(?P<year>\d{2})\)")
+FR_URL_DATE_RE = re.compile(r"-(?P<day>\d{2})-(?P<month>\d{2})-(?P<year>\d{2})/?$")
+RU_LIST_TIMESTAMP_RE = re.compile(
+    rf"(?P<date>\d{{1,2}}\s+{MONTH_NAME_PATTERN}\s+\d{{4}}\s+\d{{2}}:\d{{2}})"
+)
+RU_ARTICLE_ID_RE = re.compile(r"^\d{2,4}-\d{2}-\d{2}-\d{4}$")
 JINA_CACHE: dict[str, str] = {}
 
 RELEVANCE_VARIANTS = (
@@ -169,7 +175,7 @@ def iter_months(start_date: str, end_date: str) -> list[tuple[int, int]]:
 
 def parse_us_date(value: str) -> str:
     text = clean_text(value)
-    for fmt in ("%B %d, %Y %H:%M", "%B %d, %Y", "%d %B %Y", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
+    for fmt in ("%B %d, %Y %H:%M", "%B %d, %Y", "%d %B %Y %H:%M", "%d %B %Y", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
         try:
             return datetime.strptime(text, fmt).date().isoformat()
         except ValueError:
@@ -341,7 +347,7 @@ def request_json_with_curl(url: str, *, headers: dict[str, str] | None = None) -
 
 
 def _supports_curl_fallback(url: str) -> bool:
-    return any(domain in url for domain in ("mofa.go.jp", "gov.uk"))
+    return any(domain in url for domain in ("mofa.go.jp", "gov.uk", "diplomatie.gouv.fr"))
 
 
 def _supports_browser_fallback(url: str) -> bool:
@@ -1378,6 +1384,415 @@ class KoreaMofaPressReleaseSource:
             language="en",
             speaker="",
         )
+
+
+class FranceMfaSpokespersonSource:
+    country_code = "FR"
+    list_url = "https://www.diplomatie.gouv.fr/fr/salle-de-presse/point-de-presse-live-du-porte-parole-du-meae/"
+    article_path_fragment = "/fr/salle-de-presse/point-de-presse-live-du-porte-parole-du-meae/article/"
+
+    def __init__(self, session: requests.Session) -> None:
+        self.session = session
+
+    def fetch_recent(self, max_pages: int = 6) -> list[ScrapedRecord]:
+        end_date = datetime.now(timezone.utc).date()
+        start_date = end_date - timedelta(days=max(max_pages * 20, 60))
+        return self.fetch_between(start_date.isoformat(), end_date.isoformat(), max_pages=max_pages)
+
+    def fetch_between(self, start_date: str, end_date: str, max_pages: int = 20) -> list[ScrapedRecord]:
+        candidates: list[tuple[str, str, str]] = []
+        seen_urls: set[str] = set()
+        start_bound = iso_to_date(start_date)
+
+        for page_number in range(1, max_pages + 1):
+            page_url = self.list_url if page_number == 1 else self._page_url(page_number)
+            soup = BeautifulSoup(request_html(self.session, page_url), "html.parser")
+            page_candidates = self._extract_list_candidates(soup)
+            if not page_candidates:
+                break
+
+            oldest_on_page = min(iso_to_date(published_at) for _, _, published_at in page_candidates)
+            for url, title, published_at in page_candidates:
+                if not (start_date <= published_at <= end_date):
+                    continue
+                if url in seen_urls:
+                    continue
+                seen_urls.add(url)
+                candidates.append((url, title, published_at))
+
+            if oldest_on_page < start_bound:
+                break
+
+        if not candidates:
+            return []
+
+        records: list[ScrapedRecord] = []
+        with ThreadPoolExecutor(max_workers=6) as executor:
+            futures = {
+                executor.submit(self._parse_article_threadsafe, url, title, published_at): (url, title, published_at)
+                for url, title, published_at in candidates
+            }
+            for future in as_completed(futures):
+                try:
+                    records.append(future.result())
+                except Exception:
+                    continue
+
+        deduped = {record.url: record for record in records}
+        return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
+
+    def _extract_list_candidates(self, soup: BeautifulSoup) -> list[tuple[str, str, str]]:
+        candidates: list[tuple[str, str, str]] = []
+        seen_urls: set[str] = set()
+
+        for node in soup.select("a[href]"):
+            href = clean_text(str(node.get("href", "")))
+            absolute_url = normalize_generic_url(urljoin(self.list_url, href))
+            if self.article_path_fragment not in absolute_url:
+                continue
+
+            title = clean_text(node.get_text(" ", strip=True))
+            if not title:
+                continue
+
+            published_at = self._extract_candidate_date(title, href)
+            if not published_at:
+                continue
+
+            if absolute_url in seen_urls:
+                continue
+            seen_urls.add(absolute_url)
+            candidates.append((absolute_url, title, published_at))
+
+        return candidates
+
+    def _parse_article_threadsafe(self, url: str, title: str, published_at: str) -> ScrapedRecord:
+        with requests.Session() as session:
+            html_text = request_html(session, url)
+        return self._make_record_from_html(html_text, url, title, published_at)
+
+    def _make_record_from_html(self, html_text: str, url: str, title: str, published_at: str) -> ScrapedRecord:
+        soup = BeautifulSoup(html_text, "html.parser")
+        article = soup.select_one("article") or soup.select_one("#main") or soup.body
+        if article is None:
+            raise ValueError(f"Missing article body for {url}")
+
+        title_node = article.select_one("h1")
+        if title_node is not None:
+            title_candidate = clean_text(title_node.get_text(" ", strip=True))
+            if title_candidate:
+                title = title_candidate
+
+        content_root = article.select_one(".texte") or article
+        paragraphs = [clean_text(node.get_text(" ", strip=True)) for node in content_root.select("p, li")]
+        content = clean_text("\n".join(text for text in paragraphs if text))
+        if not content:
+            content = clean_text(content_root.get_text("\n"))
+        if not content:
+            raise ValueError(f"Missing parsed content for {url}")
+
+        return ScrapedRecord(
+            country_code=self.country_code,
+            published_at=published_at,
+            url=normalize_generic_url(url),
+            title=title,
+            content=content,
+            source_kind="fr_meae_live_qa",
+            language="fr",
+            speaker="MEAE spokesperson",
+        )
+
+    @staticmethod
+    def _page_url(page_number: int) -> str:
+        offset = (page_number - 1) * 10
+        return (
+            "https://www.diplomatie.gouv.fr/fr/salle-de-presse/point-de-presse-live-du-porte-parole-du-meae/"
+            f"?debut_sra={offset}&page_courante={page_number}#pagination_sra"
+        )
+
+    @staticmethod
+    def _extract_candidate_date(title: str, href: str) -> str:
+        for pattern in (FR_TITLE_DATE_RE, FR_URL_DATE_RE):
+            match = pattern.search(title) or pattern.search(href)
+            if match:
+                year = 2000 + int(match.group("year"))
+                month = int(match.group("month"))
+                day = int(match.group("day"))
+                return date(year, month, day).isoformat()
+        return ""
+
+
+class RussiaMfaNewsSource:
+    country_code = "RU"
+    list_url = "https://mid.ru/en/foreign_policy/news/"
+
+    def __init__(self, session: requests.Session) -> None:
+        self.session = session
+
+    def fetch_recent(self, max_pages: int = 6) -> list[ScrapedRecord]:
+        end_date = datetime.now(timezone.utc).date()
+        start_date = end_date - timedelta(days=max(max_pages * 12, 60))
+        return self.fetch_between(start_date.isoformat(), end_date.isoformat(), max_pages=max_pages)
+
+    def fetch_between(self, start_date: str, end_date: str, max_pages: int = 20) -> list[ScrapedRecord]:
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError as exc:  # pragma: no cover - optional dependency in CI/local fetches
+            raise RuntimeError("Playwright is required to fetch Russian MFA records.") from exc
+
+        start_bound = iso_to_date(start_date)
+        candidates: list[dict[str, str]] = []
+        seen_urls: set[str] = set()
+
+        with sync_playwright() as playwright:
+            headless = os.getenv("WDSI_PLAYWRIGHT_HEADLESS", "1").strip().lower() not in {"0", "false", "no"}
+            browser = playwright.chromium.launch(
+                headless=headless,
+                args=["--disable-blink-features=AutomationControlled"],
+            )
+            context = browser.new_context(
+                user_agent=BROWSER_HEADERS["User-Agent"],
+                locale="en-US",
+                extra_http_headers={
+                    "Accept": BROWSER_HEADERS["Accept"],
+                    "Accept-Language": BROWSER_HEADERS["Accept-Language"],
+                },
+            )
+            list_page = context.new_page()
+
+            previous_page_url = ""
+            for page_number in range(1, max_pages + 1):
+                page_url = self.list_url if page_number == 1 else f"{self.list_url}?PAGEN_1={page_number}"
+                self._load_mid_list_page(list_page, page_url, referer=previous_page_url or None)
+
+                page_candidates = self._extract_list_candidates(list_page)
+                if not page_candidates:
+                    break
+
+                oldest_on_page = min(iso_to_date(candidate["published_at"]) for candidate in page_candidates)
+                for candidate in page_candidates:
+                    url = candidate["url"]
+                    if url in seen_urls:
+                        continue
+                    seen_urls.add(url)
+                    if start_date <= candidate["published_at"] <= end_date:
+                        candidate["page_url"] = page_url
+                        candidates.append(candidate)
+
+                previous_page_url = page_url
+                if oldest_on_page < start_bound:
+                    break
+
+            if not candidates:
+                context.close()
+                browser.close()
+                return []
+
+            records: list[ScrapedRecord] = []
+            browse_page = context.new_page()
+            for candidate in candidates:
+                try:
+                    body_text = self._fetch_article_text(
+                        browse_page,
+                        candidate["url"],
+                        candidate["page_url"],
+                        candidate["title"],
+                    )
+                    content = self._extract_article_content(body_text, candidate["title"])
+                    records.append(
+                        ScrapedRecord(
+                            country_code=self.country_code,
+                            published_at=candidate["published_at"],
+                            url=normalize_generic_url(candidate["url"]),
+                            title=candidate["title"],
+                            content=content,
+                            source_kind=self._source_kind(candidate["title"]),
+                            language="en",
+                            speaker=self._speaker(candidate["title"]),
+                        )
+                    )
+                except Exception:
+                    continue
+            browse_page.close()
+
+            context.close()
+            browser.close()
+
+        deduped = {record.url: record for record in records}
+        return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
+
+    def _extract_list_candidates(self, page: object) -> list[dict[str, str]]:
+        items = page.evaluate(
+            """
+() => Array.from(document.querySelectorAll('.announce__item')).map((item) => {
+  const link = item.querySelector('a[href*="/en/foreign_policy/news/"]');
+  if (!link) {
+    return null;
+  }
+  return {
+    url: link.href,
+    title: (link.innerText || '').trim(),
+    context: (item.innerText || '').trim(),
+  };
+}).filter(Boolean)
+"""
+        )
+        candidates: list[dict[str, str]] = []
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            url = normalize_generic_url(str(item.get("url", "")))
+            title = clean_text(str(item.get("title", "")))
+            context_text = clean_text(str(item.get("context", "")))
+            if not title or not re.search(r"/en/foreign_policy/news/\d+", url):
+                continue
+            match = RU_LIST_TIMESTAMP_RE.search(context_text)
+            if not match:
+                continue
+            candidates.append(
+                {
+                    "url": url,
+                    "title": title,
+                    "published_at": parse_us_date(match.group("date")),
+                }
+            )
+        return candidates
+
+    def _fetch_article_text(self, page: object, article_url: str, list_page_url: str, title: str) -> str:
+        body_text = ""
+        for _ in range(3):
+            self._load_mid_list_page(page, list_page_url, referer=self.list_url if list_page_url != self.list_url else None)
+            body_text = self._open_article_via_click(page, article_url, title)
+            if not self._is_rejected_text(body_text) and len(body_text) > 500:
+                return body_text
+        raise RuntimeError(f"Russian MFA blocked article fetch for {article_url}")
+
+    def _open_article_via_click(self, page: object, article_url: str, title: str) -> str:
+        relative_path = urlsplit(article_url).path
+        relative_with_slash = relative_path if relative_path.endswith("/") else f"{relative_path}/"
+        full_with_slash = article_url if article_url.endswith("/") else f"{article_url}/"
+        selector = (
+            f'a[href="{relative_path}"], '
+            f'a[href="{relative_with_slash}"], '
+            f'a[href="{article_url}"], '
+            f'a[href="{full_with_slash}"]'
+        )
+        locator = page.locator(selector).first
+        if locator.count() == 0:
+            locator = page.locator("a[href]").filter(has_text=title).first
+        if locator.count() == 0:
+            return ""
+        with page.expect_navigation(wait_until="domcontentloaded", timeout=90_000):
+            locator.click(timeout=30_000)
+        return self._read_mid_body_text(page)
+
+    def _load_mid_list_page(self, page: object, page_url: str, referer: str | None = None) -> None:
+        for attempt in range(4):
+            self._navigate_mid_page(page, page_url, referer=referer, warmup=attempt == 0)
+            try:
+                if page.locator(".announce__item").count() > 0:
+                    return
+            except Exception:
+                pass
+        raise RuntimeError(f"Russian MFA list page did not load candidates for {page_url}")
+
+    def _navigate_mid_page(
+        self,
+        page: object,
+        url: str,
+        *,
+        referer: str | None = None,
+        warmup: bool = False,
+    ) -> None:
+        goto_kwargs: dict[str, object] = {"wait_until": "domcontentloaded", "timeout": 90_000}
+        if referer:
+            goto_kwargs["referer"] = referer
+        page.goto(url, **goto_kwargs)
+        page.wait_for_timeout(8_000 if warmup else 4_000)
+
+    @staticmethod
+    def _read_mid_body_text(page: object) -> str:
+        last_error: Exception | None = None
+        latest_text = ""
+        for attempt in range(6):
+            try:
+                if attempt:
+                    page.wait_for_timeout(2_500)
+                text = clean_text(str(page.evaluate("() => document.body ? document.body.innerText : ''")))
+                latest_text = text
+                if text and "the requested url was rejected" not in text.lower():
+                    return text
+            except Exception as exc:  # pragma: no cover - browser timing dependent
+                last_error = exc
+                page.wait_for_timeout(1_500)
+        if latest_text:
+            return latest_text
+        assert last_error is not None
+        raise last_error
+
+    @staticmethod
+    def _extract_article_content(body_text: str, title: str) -> str:
+        lines = [clean_text(line) for line in body_text.splitlines()]
+        lines = [line for line in lines if line]
+
+        normalized_title = RussiaMfaNewsSource._normalize_compare_text(title)
+        started = False
+        content_lines: list[str] = []
+        footer_markers = ("The main foreign policy news", "Using website content", "Technical information")
+
+        for line in lines:
+            if not started:
+                if RussiaMfaNewsSource._normalize_compare_text(line) == normalized_title:
+                    started = True
+                continue
+
+            if any(line.startswith(marker) for marker in footer_markers) or line.startswith("© "):
+                break
+            if RU_ARTICLE_ID_RE.fullmatch(line):
+                continue
+            if RU_LIST_TIMESTAMP_RE.fullmatch(line):
+                continue
+            if re.fullmatch(rf"{MONTH_NAME_PATTERN}\s+\d{{4}}", line):
+                continue
+            if re.fullmatch(r"\d{1,2}", line):
+                continue
+            if line == "photo":
+                continue
+            content_lines.append(line)
+
+        content = clean_text("\n".join(content_lines))
+        if not content:
+            raise ValueError(f"Missing parsed Russian MFA content for {title}")
+        return content
+
+    @staticmethod
+    def _normalize_compare_text(value: str) -> str:
+        return clean_text(value).replace("’", "'").replace("“", '"').replace("”", '"')
+
+    @staticmethod
+    def _is_rejected_text(value: str) -> bool:
+        lowered = clean_text(value).lower()
+        return not lowered or "the requested url was rejected" in lowered
+
+    @staticmethod
+    def _source_kind(title: str) -> str:
+        lowered = clean_text(title).lower()
+        if "briefing" in lowered:
+            return "ru_mfa_briefing"
+        if lowered.startswith("statement"):
+            return "ru_mfa_statement"
+        if lowered.startswith("comment"):
+            return "ru_mfa_comment"
+        return "ru_mfa_press_release"
+
+    @staticmethod
+    def _speaker(title: str) -> str:
+        lowered = clean_text(title).lower()
+        if "maria zakharova" in lowered:
+            return "Maria Zakharova"
+        if "sergey lavrov" in lowered:
+            return "Sergey Lavrov"
+        return ""
 
 
 class OpenAIWDSIScorer:

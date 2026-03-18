@@ -53,9 +53,25 @@ COUNTRIES = [
         "legacy_filename": "韩国外交部新闻稿情绪测度结果.xlsx",
         "color": "#9a6b2f",
     },
+    {
+        "code": "FR",
+        "label": "France",
+        "label_zh": "France",
+        "series_zh": "France MFA spokesperson live Q&A",
+        "legacy_filename": "",
+        "color": "#2f5aa8",
+    },
+    {
+        "code": "RU",
+        "label": "Russia",
+        "label_zh": "Russia",
+        "series_zh": "Russian MFA foreign policy news",
+        "legacy_filename": "",
+        "color": "#a24a3f",
+    },
 ]
 
-COUNTRY_ORDER = ["US", "CN", "UK", "JP", "KR"]
+COUNTRY_ORDER = ["US", "CN", "UK", "JP", "KR", "FR", "RU"]
 COUNTRIES = sorted(COUNTRIES, key=lambda meta: COUNTRY_ORDER.index(meta["code"]))
 
 EVENTS = [
@@ -100,6 +116,8 @@ def load_from_records(meta: dict[str, str]) -> pd.DataFrame:
 
 
 def load_from_legacy(meta: dict[str, str]) -> pd.DataFrame:
+    if not meta.get("legacy_filename"):
+        raise FileNotFoundError(f"No legacy baseline configured for {meta['code']}")
     path = LEGACY_DIR / meta["legacy_filename"]
     if not path.exists():
         raise FileNotFoundError(path)
@@ -131,6 +149,9 @@ def read_country(meta: dict[str, str]) -> tuple[dict[str, object], pd.DataFrame]
     except FileNotFoundError:
         daily = load_from_legacy(meta)
         data_source = "legacy_excel"
+
+    if daily.empty:
+        raise ValueError(f"No usable observations for {meta['code']}")
 
     today = pd.Timestamp(datetime.now(timezone.utc).date())
     end_date = max(daily["date"].max(), today)
@@ -187,7 +208,11 @@ def main() -> None:
     all_rows: list[pd.DataFrame] = []
 
     for meta in COUNTRIES:
-        summary, frame = read_country(meta)
+        try:
+            summary, frame = read_country(meta)
+        except (FileNotFoundError, ValueError) as exc:
+            print(f"Skipping {meta['code']}: {exc}")
+            continue
         countries.append(summary)
 
         json_payload = {
@@ -217,6 +242,9 @@ def main() -> None:
         country_frame.insert(0, "country", meta["label"])
         country_frame.insert(0, "code", meta["code"])
         all_rows.append(country_frame)
+
+    if not countries or not all_rows:
+        raise RuntimeError("No country data available to build site assets.")
 
     pd.concat(all_rows, ignore_index=True).to_csv(
         OUTPUT_DIR / "wdsi_all_countries.csv",
