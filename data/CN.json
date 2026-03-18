@@ -2,7 +2,7 @@
   "code": "CN",
   "label": "China",
   "label_zh": "中国",
-  "generated_at": "2026-03-18T04:32:41.700623+00:00",
+  "generated_at": "2026-03-18T04:55:46.163337+00:00",
   "records": [
     {
       "date": "2010-01-05",
@@ -35448,62 +35448,62 @@
     },
     {
       "date": "2026-03-09",
-      "raw": 1.0,
-      "rolling7": 1.571,
+      "raw": -3.0,
+      "rolling7": 1.0,
       "publication": true
     },
     {
       "date": "2026-03-10",
-      "raw": 2.0,
-      "rolling7": 1.429,
+      "raw": 3.0,
+      "rolling7": 1.0,
       "publication": true
     },
     {
       "date": "2026-03-11",
-      "raw": 2.0,
-      "rolling7": 2.0,
+      "raw": 3.0,
+      "rolling7": 1.714,
       "publication": true
     },
     {
       "date": "2026-03-12",
-      "raw": -1.0,
-      "rolling7": 1.429,
+      "raw": 2.0,
+      "rolling7": 1.571,
       "publication": true
     },
     {
       "date": "2026-03-13",
-      "raw": 2.0,
-      "rolling7": 1.429,
+      "raw": 0.0,
+      "rolling7": 1.286,
       "publication": true
     },
     {
       "date": "2026-03-14",
       "raw": null,
-      "rolling7": 1.429,
+      "rolling7": 1.0,
       "publication": false
     },
     {
       "date": "2026-03-15",
       "raw": null,
-      "rolling7": 1.429,
+      "rolling7": 0.714,
       "publication": false
     },
     {
       "date": "2026-03-16",
       "raw": -2.0,
-      "rolling7": 1.0,
+      "rolling7": 0.857,
       "publication": true
     },
     {
       "date": "2026-03-17",
-      "raw": 1.0,
+      "raw": 3.0,
       "rolling7": 0.857,
       "publication": true
     },
     {
       "date": "2026-03-18",
       "raw": null,
-      "rolling7": 0.714,
+      "rolling7": 0.857,
       "publication": false
     }
   ]
