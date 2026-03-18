@@ -551,6 +551,23 @@ h3 {
   font-size: 0.92rem;
 }
 
+.site-credit {
+  position: fixed;
+  right: 18px;
+  bottom: 14px;
+  z-index: 30;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(248, 245, 236, 0.88);
+  border: 1px solid rgba(15, 58, 61, 0.12);
+  backdrop-filter: blur(10px);
+  color: rgba(33, 49, 50, 0.78);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  box-shadow: 0 10px 24px rgba(20, 38, 40, 0.08);
+}
+
 .tone-negative {
   color: #a03e2a;
 }
@@ -600,5 +617,12 @@ h3 {
   .download-item {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .site-credit {
+    right: 12px;
+    bottom: 12px;
+    font-size: 0.72rem;
+    padding: 7px 10px;
   }
 }
