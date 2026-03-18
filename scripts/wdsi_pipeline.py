@@ -744,6 +744,16 @@ class UkFcdoNewsSource:
     country_code = "UK"
     site_root = "https://www.gov.uk"
     search_api_url = "https://www.gov.uk/api/search.json"
+    allowed_document_types = {
+        "press_release": "fcdo_press_release",
+        "speech": "fcdo_speech",
+        "oral_statement": "fcdo_oral_statement_to_parliament",
+        "written_statement": "fcdo_written_statement_to_parliament",
+        "news_article": "fcdo_news_story",
+        "world_news_story": "fcdo_world_news_story",
+        "world_location_news_article": "fcdo_world_news_story",
+        "authored_article": "fcdo_authored_article",
+    }
     search_fields = (
         "title",
         "description",
@@ -789,6 +799,8 @@ class UkFcdoNewsSource:
                     continue
 
                 source_kind = self._extract_result_format(item)
+                if not source_kind:
+                    continue
                 candidates.append((urljoin(self.site_root, href), title, published_at, source_kind))
 
             if len(items) < page_size:
@@ -830,24 +842,7 @@ class UkFcdoNewsSource:
     @staticmethod
     def _extract_result_format(item: dict[str, object]) -> str:
         document_type = clean_text(str(item.get("content_store_document_type", ""))).lower()
-        known_types = {
-            "press_release": "fcdo_press_release",
-            "speech": "fcdo_speech",
-            "oral_statement": "fcdo_oral_statement_to_parliament",
-            "written_statement": "fcdo_written_statement_to_parliament",
-            "news_article": "fcdo_news_story",
-            "world_news_story": "fcdo_world_news_story",
-            "world_location_news_article": "fcdo_world_news_story",
-            "authored_article": "fcdo_authored_article",
-        }
-        if document_type in known_types:
-            return known_types[document_type]
-        if document_type:
-            return f"fcdo_{document_type}"
-        format_name = clean_text(str(item.get("format", ""))).lower()
-        if format_name:
-            return f"fcdo_{format_name.replace(' ', '_')}"
-        return "fcdo_news_communication"
+        return UkFcdoNewsSource.allowed_document_types.get(document_type, "")
 
     def _parse_article_threadsafe(
         self,
