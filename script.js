@@ -58,14 +58,14 @@ function scoreSentence(labelZh, score, windowLabel) {
   return `${labelZh} 当前 ${windowLabel}平滑值为 ${formatScore(score)}，属于${tone.label}区间。`;
 }
 
-function scoreDeltaSentence(delta) {
+function scoreDeltaSentence(delta, dayCount = 30) {
   if (delta === null || delta === undefined || Number.isNaN(delta)) {
     return "样本长度不足，暂不计算。";
   }
   if (Math.abs(delta) < 0.05) {
-    return "近 30 天整体变化很小。";
+    return `近 ${dayCount} 天整体变化很小。`;
   }
-  return delta < 0 ? "近 30 天更偏向紧张。" : "近 30 天更偏向缓和。";
+  return delta < 0 ? `近 ${dayCount} 天更偏向紧张。` : `近 ${dayCount} 天更偏向缓和。`;
 }
 
 function getCountryByCode(code) {
@@ -138,8 +138,7 @@ function renderCountryTabs() {
 
 function renderSelectedMetrics(country) {
   const tone = toneMeta(country.latest_7d);
-  const tone30 = toneMeta(country.latest_30d);
-  const latestDelta = country.change_30d ?? 0;
+  const latestDelta = country.change_7d ?? 0;
   const deltaTone =
     latestDelta < -0.05 ? "tone-negative" : latestDelta > 0.05 ? "tone-positive" : "tone-neutral";
 
@@ -152,13 +151,13 @@ function renderSelectedMetrics(country) {
     "7 日",
   );
 
-  const rolling30El = document.getElementById("selected-rolling30-score");
-  rolling30El.textContent = formatScore(country.latest_30d);
-  rolling30El.className = `metric-value ${tone30.className}`;
-  document.getElementById("selected-rolling30-caption").textContent = scoreSentence(
+  const rolling7El = document.getElementById("selected-rolling7-score");
+  rolling7El.textContent = formatScore(country.latest_7d);
+  rolling7El.className = `metric-value ${tone.className}`;
+  document.getElementById("selected-rolling7-caption").textContent = scoreSentence(
     country.label_zh,
-    country.latest_30d,
-    "30 日",
+    country.latest_7d,
+    "7 日",
   );
 
   const deltaEl = document.getElementById("selected-change-score");
@@ -166,7 +165,7 @@ function renderSelectedMetrics(country) {
   deltaEl.className = `metric-value ${deltaTone}`;
   document.getElementById("selected-publication-date").textContent = formatDate(country.latest_publication_date);
   document.getElementById("selected-publication-score").textContent =
-    `最近发布日原始均值：${formatScore(country.latest_raw)} · ${scoreDeltaSentence(latestDelta)}`;
+    `最近发布日原始均值：${formatScore(country.latest_raw)} · ${scoreDeltaSentence(latestDelta, 7)}`;
   document.getElementById("selected-coverage").textContent =
     `${formatDate(country.start_date)} — ${formatDate(country.latest_date)}`;
   document.getElementById("selected-publication-days").textContent =

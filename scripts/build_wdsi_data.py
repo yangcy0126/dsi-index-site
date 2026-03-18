@@ -143,6 +143,7 @@ def read_country(meta: dict[str, str]) -> tuple[dict[str, object], pd.DataFrame]
 
     latest_rolling = float(merged["rolling7"].iloc[-1])
     latest_rolling30 = float(merged["rolling30"].iloc[-1])
+    previous_7 = float(merged["rolling7"].shift(7).iloc[-1]) if len(merged) > 7 else None
     previous_30 = float(merged["rolling7"].shift(30).iloc[-1]) if len(merged) > 30 else None
     current_year = int(merged["date"].dt.year.max())
 
@@ -161,6 +162,7 @@ def read_country(meta: dict[str, str]) -> tuple[dict[str, object], pd.DataFrame]
         "latest_raw": round_or_none(float(latest_publication["raw"])),
         "latest_7d": round_or_none(latest_rolling),
         "latest_30d": round_or_none(latest_rolling30),
+        "change_7d": round_or_none(latest_rolling - previous_7) if previous_7 is not None else None,
         "change_30d": round_or_none(latest_rolling - previous_30) if previous_30 is not None else None,
         "current_year": current_year,
         "current_year_mean": round_or_none(
