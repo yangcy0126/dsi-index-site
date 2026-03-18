@@ -139,8 +139,10 @@ def read_country(meta: dict[str, str]) -> tuple[dict[str, object], pd.DataFrame]
     merged["publication"] = merged["publication"].notna()
     merged["filled"] = merged["raw"].ffill()
     merged["rolling7"] = merged["filled"].rolling(7, min_periods=1).mean()
+    merged["rolling30"] = merged["filled"].rolling(30, min_periods=1).mean()
 
     latest_rolling = float(merged["rolling7"].iloc[-1])
+    latest_rolling30 = float(merged["rolling30"].iloc[-1])
     previous_30 = float(merged["rolling7"].shift(30).iloc[-1]) if len(merged) > 30 else None
     current_year = int(merged["date"].dt.year.max())
 
@@ -158,6 +160,7 @@ def read_country(meta: dict[str, str]) -> tuple[dict[str, object], pd.DataFrame]
         "calendar_days": int(len(merged)),
         "latest_raw": round_or_none(float(latest_publication["raw"])),
         "latest_7d": round_or_none(latest_rolling),
+        "latest_30d": round_or_none(latest_rolling30),
         "change_30d": round_or_none(latest_rolling - previous_30) if previous_30 is not None else None,
         "current_year": current_year,
         "current_year_mean": round_or_none(
@@ -170,7 +173,7 @@ def read_country(meta: dict[str, str]) -> tuple[dict[str, object], pd.DataFrame]
         "file_csv": f"data/{meta['code']}.csv",
     }
 
-    export_frame = merged[["date", "raw", "rolling7", "publication"]].copy()
+    export_frame = merged[["date", "raw", "rolling7", "rolling30", "publication"]].copy()
     export_frame["date"] = export_frame["date"].dt.strftime("%Y-%m-%d")
     return summary, export_frame
 
@@ -195,6 +198,7 @@ def main() -> None:
                     "date": row.date,
                     "raw": round_or_none(row.raw),
                     "rolling7": round_or_none(row.rolling7),
+                    "rolling30": round_or_none(row.rolling30),
                     "publication": bool(row.publication),
                 }
                 for row in frame.itertuples(index=False)

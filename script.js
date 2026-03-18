@@ -2,7 +2,7 @@ const state = {
   summary: null,
   events: [],
   selectedCode: null,
-  seriesMode: "rolling",
+  seriesMode: "rolling7",
   cache: new Map(),
 };
 
@@ -53,9 +53,9 @@ function toneMeta(score) {
   return { label: "明显偏缓和", className: "tone-positive" };
 }
 
-function scoreSentence(country) {
-  const tone = toneMeta(country.latest_7d);
-  return `${country.label_zh} 当前 7 日平滑值为 ${formatScore(country.latest_7d)}，属于${tone.label}区间。`;
+function scoreSentence(labelZh, score, windowLabel) {
+  const tone = toneMeta(score);
+  return `${labelZh} 当前 ${windowLabel}平滑值为 ${formatScore(score)}，属于${tone.label}区间。`;
 }
 
 function scoreDeltaSentence(delta) {
@@ -138,6 +138,7 @@ function renderCountryTabs() {
 
 function renderSelectedMetrics(country) {
   const tone = toneMeta(country.latest_7d);
+  const tone30 = toneMeta(country.latest_30d);
   const latestDelta = country.change_30d ?? 0;
   const deltaTone =
     latestDelta < -0.05 ? "tone-negative" : latestDelta > 0.05 ? "tone-positive" : "tone-neutral";
@@ -145,7 +146,20 @@ function renderSelectedMetrics(country) {
   document.getElementById("selected-country-name").textContent = `${country.label_zh} · ${country.label}`;
   document.getElementById("selected-latest-score").textContent = formatScore(country.latest_7d);
   document.getElementById("selected-latest-score").className = `metric-value ${tone.className}`;
-  document.getElementById("selected-score-caption").textContent = scoreSentence(country);
+  document.getElementById("selected-score-caption").textContent = scoreSentence(
+    country.label_zh,
+    country.latest_7d,
+    "7 日",
+  );
+
+  const rolling30El = document.getElementById("selected-rolling30-score");
+  rolling30El.textContent = formatScore(country.latest_30d);
+  rolling30El.className = `metric-value ${tone30.className}`;
+  document.getElementById("selected-rolling30-caption").textContent = scoreSentence(
+    country.label_zh,
+    country.latest_30d,
+    "30 日",
+  );
 
   const deltaEl = document.getElementById("selected-change-score");
   deltaEl.textContent = `${latestDelta >= 0 ? "+" : ""}${formatScore(latestDelta)}`;
@@ -166,7 +180,7 @@ function renderLegacyDownloadList() {
   const masterDownloads = [
     {
       title: "全量日度数据（CSV）",
-      meta: "包含全部国家的日历日序列、原始发布日均值与 7 日平滑值",
+      meta: "包含全部国家的日历日序列、原始发布日均值、7 日平滑值与 30 日平滑值",
       href: "data/wdsi_all_countries.csv",
     },
     {
@@ -215,7 +229,7 @@ function renderCsvOnlyDownloadList() {
   const masterDownloads = [
     {
       title: "全量日度数据（CSV）",
-      meta: "包含全部国家的日历日序列、发布日原始均值与 7 日平滑值",
+      meta: "包含全部国家的日历日序列、发布日原始均值、7 日平滑值与 30 日平滑值",
       href: "data/wdsi_all_countries.csv",
     },
   ];
@@ -310,26 +324,43 @@ function buildChartLayout(country, countryData) {
 function renderChart(country, countryData) {
   const records = countryData.records;
   const rollingDates = records.map((record) => record.date);
-  const rollingValues = records.map((record) => record.rolling7);
+  const rolling7Values = records.map((record) => record.rolling7);
+  const rolling30Values = records.map((record) => record.rolling30);
   const rawRecords = records.filter((record) => record.publication && record.raw !== null);
   const rawDates = rawRecords.map((record) => record.date);
   const rawValues = rawRecords.map((record) => record.raw);
-  const showRolling = state.seriesMode === "rolling";
+  const showRolling7 = state.seriesMode === "rolling7";
+  const showRolling30 = state.seriesMode === "rolling30";
+  const showRaw = state.seriesMode === "raw";
 
   const traces = [
     {
       x: rollingDates,
-      y: rollingValues,
+      y: rolling7Values,
       type: "scatter",
       mode: "lines",
       name: "7 日平滑指数",
       line: {
         color: country.color,
-        width: showRolling ? 2.8 : 1.6,
-        dash: showRolling ? "solid" : "dot",
+        width: showRolling7 ? 3.2 : 1.8,
+        dash: "solid",
       },
-      opacity: showRolling ? 1 : 0.38,
+      opacity: showRolling7 ? 1 : showRaw ? 0.42 : 0.3,
       hovertemplate: "%{x}<br>7 日平滑值：%{y:.3f}<extra></extra>",
+    },
+    {
+      x: rollingDates,
+      y: rolling30Values,
+      type: "scatter",
+      mode: "lines",
+      name: "30 日平滑指数",
+      line: {
+        color: country.color,
+        width: showRolling30 ? 3.2 : 2,
+        dash: "longdash",
+      },
+      opacity: showRolling30 ? 0.95 : showRaw ? 0.38 : 0.32,
+      hovertemplate: "%{x}<br>30 日平滑值：%{y:.3f}<extra></extra>",
     },
     {
       x: rawDates,
@@ -339,8 +370,8 @@ function renderChart(country, countryData) {
       name: "发布日原始均值",
       marker: {
         color: "#b85f35",
-        size: showRolling ? 6 : 8,
-        opacity: showRolling ? 0.28 : 0.88,
+        size: showRaw ? 8 : 6,
+        opacity: showRaw ? 0.88 : 0.22,
       },
       hovertemplate: "%{x}<br>原始发布日均值：%{y:.3f}<extra></extra>",
     },
@@ -354,8 +385,8 @@ function renderChart(country, countryData) {
   });
 
   document.getElementById("chart-caption").textContent =
-    `${country.label_zh} 的 WDSI 由发布日原始均值和 7 日平滑值共同组成。当前视图重点展示：${
-      showRolling ? "更平滑的趋势线" : "发布日上的离散变化"
+    `${country.label_zh} 的 WDSI 提供发布日原始均值、7 日平滑值和 30 日平滑值三种口径。当前视图重点展示：${
+      showRolling7 ? "7 日平滑趋势" : showRolling30 ? "30 日平滑趋势" : "发布日上的离散变化"
     }。`;
 
   updateEventChips(countryData);
