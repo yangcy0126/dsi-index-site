@@ -43,6 +43,7 @@ JSON_BLOCK_RE = re.compile(r"\{.*\}", re.S)
 WHITESPACE_RE = re.compile(r"\s+")
 QUESTION_LABEL_RE = re.compile(r"^(?P<label>[A-Z][A-Za-z0-9 .&/'()\\-]{0,80}|Q)\s*:\s*(?P<body>.*)$")
 SPEAKER_TITLE_RE = re.compile(r"Foreign Ministry Spokesperson (.+?)'s Regular Press Conference", re.I)
+ISO_LIKE_DATE_RE = re.compile(r"(\d{4}[./-]\d{2}[./-]\d{2})")
 MONTH_DAY_RE = re.compile(
     r"^(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})$"
 )
@@ -231,12 +232,17 @@ def request_html(session: requests.Session, url: str) -> str:
             return response.text
         except requests.RequestException as exc:
             last_error = exc
-            if "mofa.go.jp" in url:
-                try:
-                    return request_html_with_curl(url)
-                except Exception as curl_exc:  # pragma: no cover - external fallback
-                    last_error = curl_exc
             time.sleep(1.5)
+    if _supports_curl_fallback(url):
+        try:
+            return request_html_with_curl(url)
+        except Exception as curl_exc:  # pragma: no cover - external fallback
+            last_error = curl_exc
+    if _supports_browser_fallback(url):
+        try:
+            return request_html_with_playwright(url)
+        except Exception as browser_exc:  # pragma: no cover - external fallback
+            last_error = browser_exc
     assert last_error is not None
     raise last_error
 
@@ -271,6 +277,50 @@ def request_html_with_curl(url: str) -> str:
         message = clean_text(result.stderr or result.stdout or f"curl failed for {url}")
         raise RuntimeError(message)
     return result.stdout
+
+
+def _supports_curl_fallback(url: str) -> bool:
+    return any(domain in url for domain in ("mofa.go.jp", "gov.uk"))
+
+
+def _supports_browser_fallback(url: str) -> bool:
+    return any(domain in url for domain in ("mofa.go.jp", "gov.uk"))
+
+
+def request_html_with_playwright(url: str) -> str:
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError as exc:  # pragma: no cover - optional dependency in CI fallback
+        raise RuntimeError("Playwright fallback is not installed.") from exc
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(
+            headless=True,
+            args=["--disable-blink-features=AutomationControlled"],
+        )
+        context = browser.new_context(
+            user_agent=BROWSER_HEADERS["User-Agent"],
+            locale="en-US",
+            extra_http_headers={
+                "Accept": BROWSER_HEADERS["Accept"],
+                "Accept-Language": BROWSER_HEADERS["Accept-Language"],
+                "Cache-Control": "max-age=0",
+                "Upgrade-Insecure-Requests": "1",
+            },
+        )
+        page = context.new_page()
+        try:
+            response = page.goto(url, wait_until="domcontentloaded", timeout=90_000)
+            page.wait_for_load_state("networkidle", timeout=15_000)
+            if response is not None and response.status >= 400:
+                raise RuntimeError(f"Playwright got HTTP {response.status} for {url}")
+            content = page.content()
+            if not clean_text(content):
+                raise RuntimeError(f"Playwright returned empty content for {url}")
+            return content
+        finally:
+            context.close()
+            browser.close()
 
 
 def extract_json_object(text: str) -> dict[str, object]:
@@ -827,8 +877,8 @@ class UkFcdoNewsSource:
 
 class JapanMofaPressReleaseSource:
     country_code = "JP"
-    current_index_url = "https://www.mofa.go.jp/whats/index.html"
-    monthly_index_template = "https://www.mofa.go.jp/whats/{year:04d}_index{month:02d}.html"
+    current_index_url = "https://www.mofa.go.jp/press/release/index.html"
+    monthly_index_template = "https://www.mofa.go.jp/press/release/{year:04d}{month:02d}_index.html"
 
     def __init__(self, session: requests.Session) -> None:
         self.session = session
@@ -887,13 +937,13 @@ class JapanMofaPressReleaseSource:
         started = False
         seen_urls: set[str] = set()
 
-        for element in main.find_all(["h1", "h2", "h3", "h4", "a"]):
+        for element in main.find_all(["h1", "h2", "h3", "h4", "dt", "a"]):
             text = clean_text(element.get_text(" ", strip=True))
             if not text:
                 continue
 
-            if element.name in {"h1", "h2", "h3", "h4"}:
-                if text == "Press Releases":
+            if element.name in {"h1", "h2", "h3", "h4", "dt"}:
+                if text.startswith("Press Releases"):
                     started = True
                     continue
                 if started and text == "Archives":
@@ -1045,7 +1095,7 @@ class KoreaMofaPressReleaseSource:
             href = str(link_node.get("href", "")).strip()
             title = clean_text(link_node.get_text(" ", strip=True))
             row_text = clean_text(row.get_text(" ", strip=True))
-            match = re.search(r"(\d{4}\.\d{2}\.\d{2})", row_text)
+            match = ISO_LIKE_DATE_RE.search(row_text)
             if not match:
                 continue
             published_at = parse_iso_like_date(match.group(1))
@@ -1074,7 +1124,7 @@ class KoreaMofaPressReleaseSource:
             title = title_candidate
 
         whole_text = clean_text(main.get_text("\n"))
-        match = re.search(r"(\d{4}\.\d{2}\.\d{2})", whole_text)
+        match = ISO_LIKE_DATE_RE.search(whole_text)
         if match:
             published_at = parse_iso_like_date(match.group(1))
 
