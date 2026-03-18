@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-18T02:56:47.186310+00:00",
+  "generated_at": "2026-03-18T04:32:42.116808+00:00",
   "overall": {
     "country_count": 5,
     "first_date": "2001-01-03",
@@ -17,13 +17,13 @@
       "latest_publication_date": "2026-03-17",
       "publication_days": 3074,
       "calendar_days": 5917,
-      "latest_raw": 2.0,
-      "latest_7d": 0.143,
-      "change_30d": 0.857,
+      "latest_raw": 1.0,
+      "latest_7d": 0.714,
+      "change_30d": 1.429,
       "current_year": 2026,
-      "current_year_mean": 0.067,
-      "latest_title": "Foreign Ministry Spokesperson Lin Jian’s Regular Press Conference on March 17, 2026",
-      "latest_url": "https://www.fmprc.gov.cn/eng/xw/fyrbt/lxjzh/202603/t20260317_11876423.html",
+      "current_year_mean": -0.115,
+      "latest_title": "Foreign Ministry Spokesperson Lin Jianâs Regular Press Conference on March 17, 2026",
+      "latest_url": "https://www.mfa.gov.cn/eng/xw/fyrbt/lxjzh/202603/t20260317_11876423.html",
       "data_source": "records",
       "file_json": "data/CN.json",
       "file_csv": "data/CN.csv"

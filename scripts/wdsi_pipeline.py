@@ -106,6 +106,14 @@ def strip_html(value: str) -> str:
     return clean_text(soup.get_text("\n"))
 
 
+def normalize_cn_article_url(value: str) -> str:
+    url = clean_text(value)
+    url = url.replace("http://www.mfa.gov.cn", "https://www.mfa.gov.cn")
+    url = url.replace("http://www.fmprc.gov.cn", "https://www.fmprc.gov.cn")
+    url = url.replace("https://www.fmprc.gov.cn/eng/", "https://www.mfa.gov.cn/eng/")
+    return url
+
+
 def parse_us_date(value: str) -> str:
     text = clean_text(value)
     for fmt in ("%B %d, %Y %H:%M", "%B %d, %Y", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
@@ -271,7 +279,7 @@ class ChinaMfaRegularPressSource:
 
             for item in items:
                 entry = item.get("data") if isinstance(item, dict) else {}
-                url = str(entry.get("url", "")).strip()
+                url = normalize_cn_article_url(str(entry.get("url", "")).strip())
                 if "/xw/fyrbt/lxjzh/" not in url:
                     continue
                 article_urls.append(url)
@@ -282,6 +290,7 @@ class ChinaMfaRegularPressSource:
         return [self._parse_article(url) for url in unique_urls]
 
     def _parse_article(self, url: str) -> ScrapedRecord:
+        url = normalize_cn_article_url(url)
         html_text = request_html(self.session, url)
         soup = BeautifulSoup(html_text, "html.parser")
         title = clean_text(self._select_text(soup, [".news_header_title", "meta[name='ArticleTitle']", "title"]))
