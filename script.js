@@ -240,33 +240,6 @@ function renderCsvOnlyDownloadList() {
   });
 }
 
-function applyStaticCopyAdjustments() {
-  const noteLabel = document.querySelector(".hero-note .note-label");
-  if (noteLabel) {
-    noteLabel.textContent = "公开 CSV 下载";
-  }
-
-  const methodCopy = document.querySelector("#method .method-card:last-child p");
-  if (methodCopy) {
-    methodCopy.textContent = "站点会把日度结果整理成可视化序列，并对外统一提供可直接下载的 CSV 文件。";
-  }
-
-  const downloadHeading = document.querySelector("#download .section-heading h2");
-  if (downloadHeading) {
-    downloadHeading.textContent = "CSV 数据下载";
-  }
-
-  const downloadDescription = document.querySelector("#download .section-heading p:not(.eyebrow)");
-  if (downloadDescription) {
-    downloadDescription.textContent = "这里只保留 CSV 下载入口，方便直接查看、整理和做后续实证分析。";
-  }
-
-  const deploymentNote = document.querySelector("#download .deployment-note");
-  if (deploymentNote) {
-    deploymentNote.remove();
-  }
-}
-
 function updateEventChips(countryData) {
   const chips = document.getElementById("event-chips");
   chips.innerHTML = "";
@@ -428,7 +401,6 @@ async function init() {
         ? state.selectedCode
         : state.summary.countries[0]?.code ?? null;
 
-    applyStaticCopyAdjustments();
     renderGlobalMeta();
     renderCountryBoard();
     renderCountryTabs();
@@ -440,7 +412,7 @@ async function init() {
     }
   } catch (error) {
     document.getElementById("chart-caption").textContent =
-      "站点数据加载失败。请确认你正在通过本地服务器或 GitHub Pages 访问，而不是直接双击 HTML 文件。";
+      "页面数据加载失败。请确认数据文件可访问后重试。";
     console.error(error);
   }
 }

@@ -6,7 +6,7 @@
     <title>WDSI 外交情绪观测台</title>
     <meta
       name="description"
-      content="基于官方外交文本的战争相关外交情绪指数展示站点，提供 WDSI 可视化、方法说明与数据下载。"
+      content="基于官方外交文本的战争相关外交情绪指数展示页面，提供 WDSI 可视化、方法说明与数据下载。"
     >
     <meta name="theme-color" content="#0f3a3d">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -40,15 +40,13 @@
             <p class="eyebrow">From official language to market-facing signal</p>
             <h1>WDSI 外交情绪观测台</h1>
             <p class="hero-lede">
-              这是一个面向公开展示的 WDSI 静态站点原型。它把官方外交文本中的战争相关外交情绪，整理成可浏览、
-              可下载、可长期更新的指数界面。
+              这里集中展示基于官方外交文本整理得到的 WDSI 指标，支持多国对比、单国时序浏览和 CSV 下载。
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href="#explorer">查看指数曲线</a>
               <a class="button button-secondary" href="#download">下载数据</a>
             </div>
             <div class="hero-note">
-              <span class="note-label">适合部署在 GitHub Pages</span>
               <span id="generated-at">正在读取最新构建时间…</span>
             </div>
           </div>
@@ -146,7 +144,7 @@
             <p class="eyebrow">Method</p>
             <h2>如何把外交文本变成 WDSI</h2>
             <p>
-              这个站点当前读取的是你本地情绪测度结果表中的战争相关分数列，并进一步聚合成网页友好的日度指标。
+              数据来自官方外交文本中的战争相关情绪测度结果，并按统一口径整理成可浏览、可比较、可下载的日度指标。
             </p>
           </div>
 
@@ -168,8 +166,8 @@
             </article>
             <article class="method-card">
               <span class="method-index">04</span>
-              <h3>生成网页数据</h3>
-              <p>最终输出为 `JSON + CSV`，适合静态部署、GitHub Pages 展示和后续自动化更新。</p>
+              <h3>整理下载文件</h3>
+              <p>结果会整理成页面可视化序列，并统一提供可直接下载的 CSV 文件。</p>
             </article>
           </div>
         </section>
@@ -177,9 +175,9 @@
         <section class="research" id="research">
           <div class="section-heading">
             <p class="eyebrow">Why It Matters</p>
-            <h2>这个网站应该讲清楚什么</h2>
+            <h2>这个指标为什么值得看</h2>
             <p>
-              如果它只是一个曲线容器，传播效果会很弱。更好的做法是把研究结论翻译成直观的问题意识。
+              除了曲线本身，更重要的是它所对应的市场含义，以及为什么这类官方表态值得持续跟踪。
             </p>
           </div>
 
@@ -202,30 +200,20 @@
         <section class="download" id="download">
           <div class="section-heading">
             <p class="eyebrow">Download</p>
-            <h2>数据与部署入口</h2>
+            <h2>CSV 数据下载</h2>
             <p>
-              这个部分要像 GPR / EPU 官网一样清楚，别把数据下载埋深。用户应当一眼看到摘要文件、全量文件和分国文件。
+              这里保留最直接的下载入口，方便查看全量文件和分国 CSV，并继续做后续整理与实证分析。
             </p>
           </div>
 
           <div class="download-panel">
             <div class="download-list" id="download-list"></div>
-            <aside class="deployment-note">
-              <h3>部署方式</h3>
-              <p>
-                当前站点按纯静态资源组织，默认适合 GitHub Pages。只要把本目录作为独立仓库推上 GitHub，再启用 Pages
-                工作流，就能直接上线。
-              </p>
-              <p>
-                如果以后要加入私有后台、API 或自动更新函数，再迁到 Vercel / Cloudflare Pages 也不会太痛苦。
-              </p>
-            </aside>
           </div>
         </section>
       </main>
 
       <footer class="site-footer">
-        <p>WDSI 外交情绪观测台原型 · 静态站点版本</p>
+        <p>WDSI 外交情绪观测台</p>
         <p id="footer-build-note">数据摘要加载中…</p>
       </footer>
     </div>

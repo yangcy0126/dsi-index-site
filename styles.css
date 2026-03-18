@@ -137,8 +137,7 @@ section {
 .country-card,
 .method-card,
 .research-card,
-.download-item,
-.deployment-note {
+.download-item {
   animation: slide-up 700ms ease both;
 }
 
@@ -177,7 +176,6 @@ h3 {
 .metric-detail,
 .method-card p,
 .research-card p,
-.deployment-note p,
 .site-footer,
 #chart-caption {
   color: var(--muted);
@@ -225,16 +223,6 @@ h3 {
   margin-top: 20px;
   font-size: 0.92rem;
   color: var(--muted);
-}
-
-.note-label {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(183, 138, 50, 0.16);
-  color: #7b5d1f;
-  font-weight: 700;
 }
 
 .metric-grid {
@@ -432,8 +420,7 @@ h3 {
 
 .method-card,
 .research-card,
-.download-item,
-.deployment-note {
+.download-item {
   padding: 20px;
   border-radius: var(--radius-lg);
   border: 1px solid rgba(20, 38, 40, 0.08);
@@ -455,10 +442,6 @@ h3 {
 
 .download-panel {
   display: block;
-}
-
-.deployment-note {
-  display: none;
 }
 
 .download-list {
