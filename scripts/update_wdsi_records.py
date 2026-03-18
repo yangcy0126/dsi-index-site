@@ -9,13 +9,20 @@ import pandas as pd
 import requests
 
 from build_wdsi_data import main as build_site_data
-from wdsi_pipeline import ChinaMfaRegularPressSource, OpenAIWDSIScorer, UsStateDepartmentSource
+from wdsi_pipeline import (
+    ChinaMfaRegularPressSource,
+    JapanMofaPressReleaseSource,
+    KoreaMofaPressReleaseSource,
+    OpenAIWDSIScorer,
+    UkFcdoNewsSource,
+    UsStateDepartmentSource,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
 RECORDS_DIR = ROOT / "records"
 
-SUPPORTED_COUNTRIES = {"CN", "US"}
+SUPPORTED_COUNTRIES = {"CN", "US", "UK", "JP", "KR"}
 
 
 def load_records(path: Path) -> pd.DataFrame:
@@ -113,6 +120,12 @@ def make_sources(session: requests.Session, countries: list[str]) -> dict[str, o
         sources["CN"] = ChinaMfaRegularPressSource(session)
     if "US" in countries:
         sources["US"] = UsStateDepartmentSource(session)
+    if "UK" in countries:
+        sources["UK"] = UkFcdoNewsSource(session)
+    if "JP" in countries:
+        sources["JP"] = JapanMofaPressReleaseSource(session)
+    if "KR" in countries:
+        sources["KR"] = KoreaMofaPressReleaseSource(session)
     return sources
 
 
@@ -168,8 +181,10 @@ def main() -> None:
 
         if code == "CN":
             fetched_records = source.fetch_between(start_date, end_date)
-        else:
+        elif code in {"US", "UK", "KR"}:
             fetched_records = source.fetch_between(start_date, end_date, max_pages=args.max_pages)
+        else:
+            fetched_records = source.fetch_between(start_date, end_date)
 
         fetched_rows = [
             {
@@ -222,7 +237,7 @@ def main() -> None:
                         "scored_at": result["scored_at"],
                     }
                 )
-        elif code == "US":
+        elif code in {"US", "UK", "JP", "KR"}:
             batched_inputs = [SimpleNamespace(**item) for item in additions]
             batched_results = scorer.score_flat_records(batched_inputs)  # type: ignore[union-attr]
             for item, result in zip(additions, batched_results, strict=False):

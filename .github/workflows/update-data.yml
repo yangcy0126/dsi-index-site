@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        country: [CN, US]
+        country: [CN, US, UK, JP, KR]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -100,6 +100,27 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: records-US
+          path: records
+
+      - name: Download UK record
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: records-UK
+          path: records
+
+      - name: Download JP record
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: records-JP
+          path: records
+
+      - name: Download KR record
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: records-KR
           path: records
 
       - name: Rebuild site data

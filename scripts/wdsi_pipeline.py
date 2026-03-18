@@ -11,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from typing import Iterable
+from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 
 import requests
 from bs4 import BeautifulSoup
@@ -41,6 +42,9 @@ JSON_BLOCK_RE = re.compile(r"\{.*\}", re.S)
 WHITESPACE_RE = re.compile(r"\s+")
 QUESTION_LABEL_RE = re.compile(r"^(?P<label>[A-Z][A-Za-z0-9 .&/'()\\-]{0,80}|Q)\s*:\s*(?P<body>.*)$")
 SPEAKER_TITLE_RE = re.compile(r"Foreign Ministry Spokesperson (.+?)'s Regular Press Conference", re.I)
+MONTH_DAY_RE = re.compile(
+    r"^(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})$"
+)
 
 RELEVANCE_VARIANTS = (
     "Apply a literal reading and do not infer military relevance unless the text itself supports it.",
@@ -112,6 +116,45 @@ def normalize_cn_article_url(value: str) -> str:
     url = url.replace("http://www.fmprc.gov.cn", "https://www.fmprc.gov.cn")
     url = url.replace("https://www.fmprc.gov.cn/eng/", "https://www.mfa.gov.cn/eng/")
     return url
+
+
+def normalize_generic_url(value: str) -> str:
+    parts = urlsplit(clean_text(value))
+    path = parts.path.rstrip("/") or "/"
+    return urlunsplit((parts.scheme, parts.netloc.lower(), path, parts.query, ""))
+
+
+def parse_iso_like_date(value: str) -> str:
+    text = clean_text(value)
+    for fmt in ("%Y.%m.%d", "%Y-%m-%d", "%Y/%m/%d"):
+        try:
+            return datetime.strptime(text, fmt).date().isoformat()
+        except ValueError:
+            continue
+    return parse_us_date(text)
+
+
+def month_day_with_year_to_iso(value: str, year: int) -> str | None:
+    text = clean_text(value)
+    match = MONTH_DAY_RE.fullmatch(text)
+    if not match:
+        return None
+    month_name, day_number = match.groups()
+    return datetime.strptime(f"{month_name} {day_number} {year}", "%B %d %Y").date().isoformat()
+
+
+def iter_months(start_date: str, end_date: str) -> list[tuple[int, int]]:
+    start = iso_to_date(start_date).replace(day=1)
+    end = iso_to_date(end_date).replace(day=1)
+    months: list[tuple[int, int]] = []
+    cursor = start
+    while cursor <= end:
+        months.append((cursor.year, cursor.month))
+        if cursor.month == 12:
+            cursor = cursor.replace(year=cursor.year + 1, month=1)
+        else:
+            cursor = cursor.replace(month=cursor.month + 1)
+    return months
 
 
 def parse_us_date(value: str) -> str:
@@ -554,6 +597,504 @@ class UsStateDepartmentSource:
             if re.fullmatch(r"[A-Za-z]+ \d{1,2}, \d{4}", text):
                 return parse_us_date(text)
         return ""
+
+
+class UkFcdoNewsSource:
+    country_code = "UK"
+    search_url = "https://www.gov.uk/search/news-and-communications"
+
+    def __init__(self, session: requests.Session) -> None:
+        self.session = session
+
+    def fetch_recent(self, max_pages: int = 6) -> list[ScrapedRecord]:
+        end_date = datetime.now(timezone.utc).date()
+        start_date = end_date - timedelta(days=max(max_pages * 25, 45))
+        return self.fetch_between(start_date.isoformat(), end_date.isoformat(), max_pages=max_pages)
+
+    def fetch_between(self, start_date: str, end_date: str, max_pages: int = 20) -> list[ScrapedRecord]:
+        candidates: list[tuple[str, str, str, str]] = []
+        for page in range(1, max_pages + 1):
+            page_url = f"{self.search_url}?{urlencode(self._search_params(page), doseq=True)}"
+            soup = BeautifulSoup(request_html(self.session, page_url), "html.parser")
+            items = soup.select("li.gem-c-document-list__item")
+            if not items:
+                items = soup.select("li.govuk-document-list__item")
+            if not items:
+                break
+
+            oldest_on_page: str | None = None
+            for item in items:
+                link_node = item.select_one("a[href]")
+                if link_node is None:
+                    continue
+                href = str(link_node.get("href", "")).strip()
+                if not href.startswith("/government/"):
+                    continue
+
+                title = clean_text(link_node.get_text(" ", strip=True))
+                published_at = self._extract_result_date(item)
+                if not published_at:
+                    continue
+
+                if oldest_on_page is None or published_at < oldest_on_page:
+                    oldest_on_page = published_at
+
+                if not (start_date <= published_at <= end_date):
+                    continue
+
+                source_kind = self._extract_result_format(item)
+                candidates.append((urljoin(self.search_url, href), title, published_at, source_kind))
+
+            if oldest_on_page is not None and oldest_on_page < start_date:
+                break
+
+        if not candidates:
+            return []
+
+        records: list[ScrapedRecord] = []
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {
+                executor.submit(self._parse_article_threadsafe, url, title, published_at, source_kind): (
+                    url,
+                    title,
+                    published_at,
+                    source_kind,
+                )
+                for url, title, published_at, source_kind in candidates
+            }
+            for future in as_completed(futures):
+                records.append(future.result())
+
+        deduped = {record.url: record for record in records}
+        return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
+
+    @staticmethod
+    def _search_params(page: int) -> list[tuple[str, str]]:
+        return [
+            ("organisations[]", "foreign-commonwealth-development-office"),
+            ("parent", "foreign-commonwealth-development-office"),
+            ("order", "updated-newest"),
+            ("page", str(page)),
+        ]
+
+    @staticmethod
+    def _extract_result_date(item: BeautifulSoup) -> str:
+        texts = [clean_text(node.get_text(" ", strip=True)) for node in item.select("time, li, p, span")]
+        for text in texts:
+            if re.fullmatch(r"\d{1,2} [A-Za-z]+ \d{4}", text):
+                return parse_us_date(text)
+            if re.fullmatch(r"[A-Za-z]+ \d{1,2}, \d{4}", text):
+                return parse_us_date(text)
+        whole = clean_text(item.get_text(" ", strip=True))
+        match = re.search(r"([A-Za-z]+ \d{1,2}, \d{4})", whole)
+        if match:
+            return parse_us_date(match.group(1))
+        match = re.search(r"(\d{1,2} [A-Za-z]+ \d{4})", whole)
+        if match:
+            return parse_us_date(match.group(1))
+        return ""
+
+    @staticmethod
+    def _extract_result_format(item: BeautifulSoup) -> str:
+        whole = clean_text(item.get_text(" ", strip=True)).lower()
+        for kind in [
+            "press release",
+            "news story",
+            "speech",
+            "oral statement to parliament",
+            "written statement to parliament",
+            "world news story",
+            "authored article",
+        ]:
+            if kind in whole:
+                return f"fcdo_{kind.replace(' ', '_')}"
+        return "fcdo_news_communication"
+
+    def _parse_article_threadsafe(
+        self,
+        url: str,
+        title: str,
+        published_at: str,
+        source_kind: str,
+    ) -> ScrapedRecord:
+        with requests.Session() as session:
+            html_text = request_html(session, url)
+        return self._make_record_from_html(html_text, url, title, published_at, source_kind)
+
+    def _make_record_from_html(
+        self,
+        html_text: str,
+        url: str,
+        title: str,
+        published_at: str,
+        source_kind: str,
+    ) -> ScrapedRecord:
+        soup = BeautifulSoup(html_text, "html.parser")
+        main = soup.select_one("main") or soup.body
+        if main is None:
+            raise ValueError(f"Missing main article body for {url}")
+
+        for selector in [
+            "nav",
+            "header",
+            "footer",
+            "aside",
+            "form",
+            ".gem-c-share-links",
+            ".govuk-related-navigation",
+            ".gem-c-contextual-footer",
+            ".gem-c-contextual-sidebar",
+            ".govuk-!-display-none-print",
+            "script",
+            "style",
+        ]:
+            for node in main.select(selector):
+                node.decompose()
+
+        content_parts: list[str] = []
+        lead = main.select_one(".gem-c-lead-paragraph, .govuk-lead-paragraph")
+        if lead is not None:
+            lead_text = clean_text(lead.get_text(" ", strip=True))
+            if lead_text:
+                content_parts.append(lead_text)
+
+        body = main.select_one(".gem-c-govspeak, .govuk-govspeak")
+        if body is not None:
+            for node in body.select("p, li"):
+                text = clean_text(node.get_text(" ", strip=True))
+                if text:
+                    content_parts.append(text)
+
+        if not content_parts:
+            content = clean_text(main.get_text("\n"))
+        else:
+            content = clean_text("\n".join(dict.fromkeys(content_parts)))
+
+        if not content:
+            raise ValueError(f"Missing parsed content for {url}")
+
+        speaker_nodes = main.select(".gem-c-metadata a[href*='/government/people/'], .gem-c-metadata a[href*='/government/organisations/']")
+        speaker = clean_text("; ".join(node.get_text(" ", strip=True) for node in speaker_nodes))
+
+        return ScrapedRecord(
+            country_code=self.country_code,
+            published_at=published_at,
+            url=normalize_generic_url(url),
+            title=title,
+            content=content,
+            source_kind=source_kind,
+            language="en",
+            speaker=speaker,
+        )
+
+
+class JapanMofaPressReleaseSource:
+    country_code = "JP"
+    current_index_url = "https://www.mofa.go.jp/press/release/index.html"
+    monthly_index_template = "https://www.mofa.go.jp/press/release/{year:04d}{month:02d}_index.html"
+
+    def __init__(self, session: requests.Session) -> None:
+        self.session = session
+
+    def fetch_recent(self, max_pages: int = 4) -> list[ScrapedRecord]:
+        del max_pages
+        end_date = datetime.now(timezone.utc).date()
+        start_date = end_date - timedelta(days=120)
+        return self.fetch_between(start_date.isoformat(), end_date.isoformat())
+
+    def fetch_between(self, start_date: str, end_date: str, max_pages: int = 0) -> list[ScrapedRecord]:
+        del max_pages
+        candidates: list[tuple[str, str, str]] = []
+        for year, month in iter_months(start_date, end_date):
+            index_url = (
+                self.current_index_url
+                if (year, month) == (datetime.now(timezone.utc).year, datetime.now(timezone.utc).month)
+                else self.monthly_index_template.format(year=year, month=month)
+            )
+            soup = BeautifulSoup(request_html(self.session, index_url), "html.parser")
+            candidates.extend(self._extract_index_candidates(soup, year, month, start_date, end_date))
+
+        if not candidates:
+            return []
+
+        records: list[ScrapedRecord] = []
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {
+                executor.submit(self._parse_article_threadsafe, url, title, published_at): (
+                    url,
+                    title,
+                    published_at,
+                )
+                for url, title, published_at in candidates
+            }
+            for future in as_completed(futures):
+                records.append(future.result())
+
+        deduped = {record.url: record for record in records}
+        return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
+
+    def _extract_index_candidates(
+        self,
+        soup: BeautifulSoup,
+        year: int,
+        month: int,
+        start_date: str,
+        end_date: str,
+    ) -> list[tuple[str, str, str]]:
+        main = soup.select_one("main") or soup.body
+        if main is None:
+            return []
+
+        candidates: list[tuple[str, str, str]] = []
+        current_date: str | None = None
+        started = False
+        seen_urls: set[str] = set()
+
+        for element in main.find_all(["h1", "h2", "h3", "h4", "a"]):
+            text = clean_text(element.get_text(" ", strip=True))
+            if not text:
+                continue
+
+            if element.name in {"h1", "h2", "h3", "h4"}:
+                if text == "Press Releases":
+                    started = True
+                    continue
+                if started and text == "Archives":
+                    break
+                if started:
+                    parsed_date = month_day_with_year_to_iso(text, year)
+                    if parsed_date:
+                        current_date = parsed_date
+                continue
+
+            if not started or current_date is None:
+                continue
+
+            href = str(element.get("href", "")).strip()
+            if not href:
+                continue
+            if href.endswith("index.html") or href.endswith("_index.html"):
+                continue
+            if "/press/release/" not in href:
+                continue
+            if not re.search(r"/press/release/[^/]+\.html$", href):
+                continue
+
+            url = normalize_generic_url(urljoin(self.current_index_url, href))
+            if url in seen_urls:
+                continue
+            seen_urls.add(url)
+
+            if not (start_date <= current_date <= end_date):
+                continue
+
+            title = clean_text(element.get_text(" ", strip=True))
+            if title:
+                candidates.append((url, title, current_date))
+
+        return candidates
+
+    def _parse_article_threadsafe(self, url: str, title: str, published_at: str) -> ScrapedRecord:
+        with requests.Session() as session:
+            html_text = request_html(session, url)
+        return self._make_record_from_html(html_text, url, title, published_at)
+
+    def _make_record_from_html(self, html_text: str, url: str, title: str, published_at: str) -> ScrapedRecord:
+        soup = BeautifulSoup(html_text, "html.parser")
+        main = soup.select_one("main") or soup.body
+        if main is None:
+            raise ValueError(f"Missing main article body for {url}")
+
+        title_node = main.find(["h2", "h1"])
+        if title_node is not None:
+            title = clean_text(title_node.get_text(" ", strip=True)) or title
+            subtitle_node = title_node.find_next_sibling()
+            if subtitle_node is not None:
+                subtitle = clean_text(subtitle_node.get_text(" ", strip=True))
+                if subtitle.startswith("(") and subtitle.endswith(")"):
+                    title = f"{title} {subtitle}"
+
+        section_stop_texts = {"Related Links", "Share this page", "Updates to this page", "Explore the topic"}
+        content_parts: list[str] = []
+        for element in main.find_all(["h2", "h3", "p", "li"]):
+            text = clean_text(element.get_text(" ", strip=True))
+            if not text:
+                continue
+            if element.name in {"h2", "h3"} and text in section_stop_texts:
+                break
+            if element.name not in {"p", "li"}:
+                continue
+            if text == "Japanese" or text == title:
+                continue
+            if re.fullmatch(r"[A-Za-z]+ \d{1,2}, \d{4}", text):
+                published_at = parse_us_date(text)
+                continue
+            content_parts.append(text)
+
+        content = clean_text("\n".join(content_parts))
+        if not content:
+            raise ValueError(f"Missing parsed content for {url}")
+
+        return ScrapedRecord(
+            country_code=self.country_code,
+            published_at=published_at,
+            url=normalize_generic_url(url),
+            title=title,
+            content=content,
+            source_kind="jp_mofa_press_release",
+            language="en",
+            speaker="",
+        )
+
+
+class KoreaMofaPressReleaseSource:
+    country_code = "KR"
+    list_url = "https://www.mofa.go.kr/eng/brd/m_5676/list.do"
+
+    def __init__(self, session: requests.Session) -> None:
+        self.session = session
+
+    def fetch_recent(self, max_pages: int = 6) -> list[ScrapedRecord]:
+        end_date = datetime.now(timezone.utc).date()
+        start_date = end_date - timedelta(days=max(max_pages * 20, 45))
+        return self.fetch_between(start_date.isoformat(), end_date.isoformat(), max_pages=max_pages)
+
+    def fetch_between(self, start_date: str, end_date: str, max_pages: int = 20) -> list[ScrapedRecord]:
+        candidates: list[tuple[str, str, str]] = []
+        for page in range(1, max_pages + 1):
+            page_url = f"{self.list_url}?page={page}"
+            soup = BeautifulSoup(request_html(self.session, page_url), "html.parser")
+            rows = soup.select("tbody tr")
+            if not rows:
+                rows = soup.select("tr")
+            page_candidates = self._extract_list_candidates(rows)
+            if not page_candidates:
+                break
+
+            oldest_on_page = min(published_at for _, _, published_at in page_candidates)
+            for url, title, published_at in page_candidates:
+                if start_date <= published_at <= end_date:
+                    candidates.append((url, title, published_at))
+
+            if oldest_on_page < start_date:
+                break
+
+        if not candidates:
+            return []
+
+        records: list[ScrapedRecord] = []
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {
+                executor.submit(self._parse_article_threadsafe, url, title, published_at): (
+                    url,
+                    title,
+                    published_at,
+                )
+                for url, title, published_at in candidates
+            }
+            for future in as_completed(futures):
+                records.append(future.result())
+
+        deduped = {record.url: record for record in records}
+        return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
+
+    def _extract_list_candidates(self, rows: list[BeautifulSoup]) -> list[tuple[str, str, str]]:
+        candidates: list[tuple[str, str, str]] = []
+        for row in rows:
+            link_node = row.select_one("a[href*='/eng/brd/m_5676/view.do?seq=']")
+            if link_node is None:
+                continue
+
+            href = str(link_node.get("href", "")).strip()
+            title = clean_text(link_node.get_text(" ", strip=True))
+            row_text = clean_text(row.get_text(" ", strip=True))
+            match = re.search(r"(\d{4}\.\d{2}\.\d{2})", row_text)
+            if not match:
+                continue
+            published_at = parse_iso_like_date(match.group(1))
+            candidates.append((normalize_generic_url(urljoin(self.list_url, href)), title, published_at))
+        return candidates
+
+    def _parse_article_threadsafe(self, url: str, title: str, published_at: str) -> ScrapedRecord:
+        with requests.Session() as session:
+            html_text = request_html(session, url)
+        return self._make_record_from_html(html_text, url, title, published_at)
+
+    def _make_record_from_html(self, html_text: str, url: str, title: str, published_at: str) -> ScrapedRecord:
+        soup = BeautifulSoup(html_text, "html.parser")
+        main = soup.select_one("main") or soup.body
+        if main is None:
+            raise ValueError(f"Missing main article body for {url}")
+
+        title_candidate = ""
+        for selector in [".board_view_tit", ".view_tit", ".title", "h3", "h2", "h1", "title"]:
+            node = soup.select_one(selector)
+            if node is not None:
+                title_candidate = clean_text(node.get_text(" ", strip=True))
+                if title_candidate:
+                    break
+        if title_candidate:
+            title = title_candidate
+
+        whole_text = clean_text(main.get_text("\n"))
+        match = re.search(r"(\d{4}\.\d{2}\.\d{2})", whole_text)
+        if match:
+            published_at = parse_iso_like_date(match.group(1))
+
+        for selector in [
+            "nav",
+            "header",
+            "footer",
+            "aside",
+            ".board_navi",
+            ".board_btn",
+            ".article_btn",
+            ".view_file",
+            ".attach",
+            ".sns",
+            "script",
+            "style",
+        ]:
+            for node in main.select(selector):
+                node.decompose()
+
+        candidate_nodes = [
+            ".board_view_cont",
+            ".board_view_con",
+            ".board_view_body",
+            ".view_cont",
+            ".cont_view",
+            ".editor_view",
+            ".board_view",
+            ".bbs_view",
+            ".content",
+        ]
+        content = ""
+        for selector in candidate_nodes:
+            node = main.select_one(selector)
+            if node is None:
+                continue
+            text = clean_text(node.get_text("\n"))
+            if len(text) > len(content):
+                content = text
+
+        if not content:
+            paragraphs = [clean_text(node.get_text(" ", strip=True)) for node in main.select("p, li")]
+            content = clean_text("\n".join(text for text in paragraphs if text))
+
+        if not content:
+            raise ValueError(f"Missing parsed content for {url}")
+
+        return ScrapedRecord(
+            country_code=self.country_code,
+            published_at=published_at,
+            url=normalize_generic_url(url),
+            title=title,
+            content=content,
+            source_kind="kr_mofa_press_release",
+            language="en",
+            speaker="",
+        )
 
 
 class OpenAIWDSIScorer:
