@@ -54,13 +54,43 @@ JP_TITLE_DATE_RE = re.compile(rf"\((?P<date>{MONTH_NAME_PATTERN}\s+\d{{1,2}},\s+
 JP_CONFERENCE_HEADER_RE = re.compile(
     rf"^###\s+(?:[A-Za-z]+,\s+)?(?P<date>{MONTH_NAME_PATTERN}\s+\d{{1,2}},\s+\d{{4}})(?:,[^.]+)?"
 )
-FR_TITLE_DATE_RE = re.compile(r"\((?P<day>\d{2})\.(?P<month>\d{2})\.(?P<year>\d{2})\)")
-FR_URL_DATE_RE = re.compile(r"-(?P<day>\d{2})-(?P<month>\d{2})-(?P<year>\d{2})/?$")
+FR_MONTH_NAME_PATTERN = (
+    r"(janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|"
+    r"septembre|octobre|novembre|décembre|decembre)"
+)
+FR_SHORT_DATE_RE = re.compile(r"(?P<day>\d{2})[./-](?P<month>\d{2})[./-](?P<year>\d{2,4})")
+FR_TEXTUAL_DATE_RE = re.compile(
+    rf"(?P<day>\d{{1,2}})\s+(?P<month>{FR_MONTH_NAME_PATTERN})\s+(?P<year>\d{{4}})",
+    re.I,
+)
+FR_TITLE_TEXTUAL_DATE_RE = re.compile(
+    rf"\((?:[^()]*,\s*)?(?P<date>\d{{1,2}}\s+{FR_MONTH_NAME_PATTERN}\s+\d{{4}})\)",
+    re.I,
+)
+FR_SLASH_DATE_RE = re.compile(r"(?P<day>\d{2})/(?P<month>\d{2})/(?P<year>\d{4})")
 RU_LIST_TIMESTAMP_RE = re.compile(
     rf"(?P<date>\d{{1,2}}\s+{MONTH_NAME_PATTERN}\s+\d{{4}}\s+\d{{2}}:\d{{2}})"
 )
 RU_ARTICLE_ID_RE = re.compile(r"^\d{2,4}-\d{2}-\d{2}-\d{4}$")
 JINA_CACHE: dict[str, str] = {}
+
+FR_MONTHS = {
+    "janvier": 1,
+    "fevrier": 2,
+    "février": 2,
+    "mars": 3,
+    "avril": 4,
+    "mai": 5,
+    "juin": 6,
+    "juillet": 7,
+    "aout": 8,
+    "août": 8,
+    "septembre": 9,
+    "octobre": 10,
+    "novembre": 11,
+    "decembre": 12,
+    "décembre": 12,
+}
 
 RELEVANCE_VARIANTS = (
     "Apply a literal reading and do not infer military relevance unless the text itself supports it.",
@@ -184,6 +214,29 @@ def parse_us_date(value: str) -> str:
         return datetime.fromisoformat(text.replace("Z", "+00:00")).date().isoformat()
     except ValueError as exc:
         raise ValueError(f"Unsupported date format: {value}") from exc
+
+
+def parse_fr_date(value: str) -> str:
+    text = clean_text(value)
+
+    match = FR_TEXTUAL_DATE_RE.search(text)
+    if match:
+        month_name = clean_text(match.group("month")).lower()
+        month_number = FR_MONTHS.get(month_name)
+        if month_number is None:
+            raise ValueError(f"Unsupported French month: {match.group('month')}")
+        return date(int(match.group("year")), month_number, int(match.group("day"))).isoformat()
+
+    for pattern in (FR_SLASH_DATE_RE, FR_SHORT_DATE_RE):
+        match = pattern.search(text)
+        if not match:
+            continue
+        year = int(match.group("year"))
+        if year < 100:
+            year += 2000
+        return date(year, int(match.group("month")), int(match.group("day"))).isoformat()
+
+    raise ValueError(f"Unsupported French date format: {value}")
 
 
 def request_json(
@@ -1388,108 +1441,97 @@ class KoreaMofaPressReleaseSource:
 
 class FranceMfaSpokespersonSource:
     country_code = "FR"
-    list_url = "https://www.diplomatie.gouv.fr/fr/salle-de-presse/point-de-presse-live-du-porte-parole-du-meae/"
-    article_path_fragment = "/fr/salle-de-presse/point-de-presse-live-du-porte-parole-du-meae/article/"
+    history_start_date = "2022-01-01"
+    sitemap_url = "https://www.diplomatie.gouv.fr/sitemap.xml"
+    relevant_patterns = (
+        re.compile(r"/fr/salle-de-presse/point-de-presse-live-du-porte-parole-du-meae/article/"),
+        re.compile(r"/fr/les-ministres/[^/]+/presse-et-medias/article/"),
+        re.compile(r"/fr/les-ministres/[^/]+/discours/article/"),
+        re.compile(r"/fr/dossiers-pays/.+/evenements(?:/.+)?/article/"),
+        re.compile(r"/fr/dossiers-pays/.+/actualites-et-evenements(?:/.+)?/article/"),
+    )
 
     def __init__(self, session: requests.Session) -> None:
         self.session = session
+        self._candidate_urls: list[str] | None = None
 
     def fetch_recent(self, max_pages: int = 6) -> list[ScrapedRecord]:
         end_date = datetime.now(timezone.utc).date()
-        start_date = end_date - timedelta(days=max(max_pages * 20, 60))
+        start_date = end_date - timedelta(days=max(max_pages * 35, 120))
         return self.fetch_between(start_date.isoformat(), end_date.isoformat(), max_pages=max_pages)
 
     def fetch_between(self, start_date: str, end_date: str, max_pages: int = 20) -> list[ScrapedRecord]:
-        candidates: list[tuple[str, str, str]] = []
-        seen_urls: set[str] = set()
-        start_bound = iso_to_date(start_date)
-
-        for page_number in range(1, max_pages + 1):
-            page_url = self.list_url if page_number == 1 else self._page_url(page_number)
-            soup = BeautifulSoup(request_html(self.session, page_url), "html.parser")
-            page_candidates = self._extract_list_candidates(soup)
-            if not page_candidates:
-                break
-
-            oldest_on_page = min(iso_to_date(published_at) for _, _, published_at in page_candidates)
-            for url, title, published_at in page_candidates:
-                if not (start_date <= published_at <= end_date):
-                    continue
-                if url in seen_urls:
-                    continue
-                seen_urls.add(url)
-                candidates.append((url, title, published_at))
-
-            if oldest_on_page < start_bound:
-                break
-
-        if not candidates:
-            return []
-
         records: list[ScrapedRecord] = []
-        with ThreadPoolExecutor(max_workers=6) as executor:
-            futures = {
-                executor.submit(self._parse_article_threadsafe, url, title, published_at): (url, title, published_at)
-                for url, title, published_at in candidates
-            }
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = {executor.submit(self._parse_article_threadsafe, url): url for url in self._load_candidate_urls()}
             for future in as_completed(futures):
                 try:
-                    records.append(future.result())
+                    record = future.result()
                 except Exception:
                     continue
+                if start_date <= record.published_at <= end_date:
+                    records.append(record)
 
         deduped = {record.url: record for record in records}
         return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
 
-    def _extract_list_candidates(self, soup: BeautifulSoup) -> list[tuple[str, str, str]]:
-        candidates: list[tuple[str, str, str]] = []
-        seen_urls: set[str] = set()
+    def _load_candidate_urls(self) -> list[str]:
+        if self._candidate_urls is not None:
+            return self._candidate_urls
 
-        for node in soup.select("a[href]"):
-            href = clean_text(str(node.get("href", "")))
-            absolute_url = normalize_generic_url(urljoin(self.list_url, href))
-            if self.article_path_fragment not in absolute_url:
+        sitemap_xml = request_html(self.session, self.sitemap_url)
+        urls = re.findall(r"<loc>(.*?)</loc>", sitemap_xml)
+        filtered: list[str] = []
+        for url in urls:
+            normalized = normalize_generic_url(clean_text(url))
+            if not normalized.startswith("https://www.diplomatie.gouv.fr/fr/"):
                 continue
+            if any(pattern.search(normalized) for pattern in self.relevant_patterns):
+                filtered.append(normalized)
 
-            title = clean_text(node.get_text(" ", strip=True))
-            if not title:
-                continue
+        self._candidate_urls = list(dict.fromkeys(filtered))
+        return self._candidate_urls
 
-            published_at = self._extract_candidate_date(title, href)
-            if not published_at:
-                continue
-
-            if absolute_url in seen_urls:
-                continue
-            seen_urls.add(absolute_url)
-            candidates.append((absolute_url, title, published_at))
-
-        return candidates
-
-    def _parse_article_threadsafe(self, url: str, title: str, published_at: str) -> ScrapedRecord:
+    def _parse_article_threadsafe(self, url: str) -> ScrapedRecord:
         with requests.Session() as session:
             html_text = request_html(session, url)
-        return self._make_record_from_html(html_text, url, title, published_at)
+        return self._make_record_from_html(html_text, url)
 
-    def _make_record_from_html(self, html_text: str, url: str, title: str, published_at: str) -> ScrapedRecord:
+    def _make_record_from_html(self, html_text: str, url: str) -> ScrapedRecord:
         soup = BeautifulSoup(html_text, "html.parser")
         article = soup.select_one("article") or soup.select_one("#main") or soup.body
         if article is None:
             raise ValueError(f"Missing article body for {url}")
 
         title_node = article.select_one("h1")
-        if title_node is not None:
-            title_candidate = clean_text(title_node.get_text(" ", strip=True))
-            if title_candidate:
-                title = title_candidate
+        title = clean_text(title_node.get_text(" ", strip=True)) if title_node else ""
+        if not title:
+            raise ValueError(f"Missing French MFA title for {url}")
+
+        for selector in [
+            "nav",
+            "aside",
+            "button",
+            "script",
+            "style",
+            ".aria",
+            ".social",
+            ".partager",
+            ".bloc_rss",
+            ".toolbar",
+        ]:
+            for node in article.select(selector):
+                node.decompose()
 
         content_root = article.select_one(".texte") or article
-        paragraphs = [clean_text(node.get_text(" ", strip=True)) for node in content_root.select("p, li")]
+        paragraphs = [clean_text(node.get_text(" ", strip=True)) for node in content_root.select("p, li, h2, h3")]
         content = clean_text("\n".join(text for text in paragraphs if text))
         if not content:
             content = clean_text(content_root.get_text("\n"))
         if not content:
             raise ValueError(f"Missing parsed content for {url}")
+
+        published_at = self._extract_published_at(url, title, html_text, content)
 
         return ScrapedRecord(
             country_code=self.country_code,
@@ -1497,41 +1539,66 @@ class FranceMfaSpokespersonSource:
             url=normalize_generic_url(url),
             title=title,
             content=content,
-            source_kind="fr_meae_live_qa",
+            source_kind=self._source_kind(url),
             language="fr",
-            speaker="MEAE spokesperson",
+            speaker=self._speaker(url, title),
         )
 
     @staticmethod
-    def _page_url(page_number: int) -> str:
-        offset = (page_number - 1) * 10
-        return (
-            "https://www.diplomatie.gouv.fr/fr/salle-de-presse/point-de-presse-live-du-porte-parole-du-meae/"
-            f"?debut_sra={offset}&page_courante={page_number}#pagination_sra"
-        )
+    def _extract_published_at(url: str, title: str, html_text: str, content: str) -> str:
+        for candidate in (title, url, html_text[:3000], content[:2000]):
+            try:
+                return parse_fr_date(candidate)
+            except ValueError:
+                continue
+        raise ValueError(f"Could not determine French MFA publication date for {url}")
 
     @staticmethod
-    def _extract_candidate_date(title: str, href: str) -> str:
-        for pattern in (FR_TITLE_DATE_RE, FR_URL_DATE_RE):
-            match = pattern.search(title) or pattern.search(href)
-            if match:
-                year = 2000 + int(match.group("year"))
-                month = int(match.group("month"))
-                day = int(match.group("day"))
-                return date(year, month, day).isoformat()
-        return ""
+    def _source_kind(url: str) -> str:
+        normalized = normalize_generic_url(url)
+        if "/point-de-presse-live-du-porte-parole-du-meae/article/" in normalized:
+            return "fr_meae_live_qa"
+        if "/presse-et-medias/article/" in normalized:
+            return "fr_meae_press_statement"
+        if "/discours/article/" in normalized:
+            return "fr_meae_speech"
+        if "/dossiers-pays/" in normalized:
+            return "fr_meae_country_event"
+        return "fr_meae_statement"
+
+    @staticmethod
+    def _speaker(url: str, title: str) -> str:
+        normalized = normalize_generic_url(url)
+        lowered_title = clean_text(title).lower()
+        if "/point-de-presse-live-du-porte-parole-du-meae/article/" in normalized or "point de presse" in lowered_title:
+            return "MEAE spokesperson"
+        if "jean-noel barrot" in lowered_title:
+            return "Jean-Noel Barrot"
+        if "nicolas forissier" in lowered_title:
+            return "Nicolas Forissier"
+        if "benjamin haddad" in lowered_title:
+            return "Benjamin Haddad"
+        return "France Diplomatie"
 
 
 class RussiaMfaNewsSource:
     country_code = "RU"
-    list_url = "https://mid.ru/en/foreign_policy/news/"
+    history_start_date = "2010-01-01"
+    sections = (
+        {
+            "list_url": "https://mid.ru/en/press_service/spokesman/official_statement/",
+            "item_url_fragment": "/en/press_service/spokesman/official_statement/",
+            "source_kind": "ru_mfa_statement",
+            "speaker": "",
+        },
+    )
 
     def __init__(self, session: requests.Session) -> None:
         self.session = session
 
     def fetch_recent(self, max_pages: int = 6) -> list[ScrapedRecord]:
         end_date = datetime.now(timezone.utc).date()
-        start_date = end_date - timedelta(days=max(max_pages * 12, 60))
+        start_date = end_date - timedelta(days=max(max_pages * 20, 120))
         return self.fetch_between(start_date.isoformat(), end_date.isoformat(), max_pages=max_pages)
 
     def fetch_between(self, start_date: str, end_date: str, max_pages: int = 20) -> list[ScrapedRecord]:
@@ -1541,7 +1608,6 @@ class RussiaMfaNewsSource:
             raise RuntimeError("Playwright is required to fetch Russian MFA records.") from exc
 
         start_bound = iso_to_date(start_date)
-        candidates: list[dict[str, str]] = []
         seen_urls: set[str] = set()
 
         with sync_playwright() as playwright:
@@ -1559,61 +1625,47 @@ class RussiaMfaNewsSource:
                 },
             )
             list_page = context.new_page()
+            article_page = context.new_page()
+            records: list[ScrapedRecord] = []
 
-            previous_page_url = ""
-            for page_number in range(1, max_pages + 1):
-                page_url = self.list_url if page_number == 1 else f"{self.list_url}?PAGEN_1={page_number}"
-                self._load_mid_list_page(list_page, page_url, referer=previous_page_url or None)
-
-                page_candidates = self._extract_list_candidates(list_page)
-                if not page_candidates:
-                    break
-
-                oldest_on_page = min(iso_to_date(candidate["published_at"]) for candidate in page_candidates)
-                for candidate in page_candidates:
+            for section in self.sections:
+                section_candidates = self._collect_candidates(
+                    list_page,
+                    section,
+                    start_date,
+                    end_date,
+                    start_bound,
+                    max_pages,
+                )
+                for candidate in section_candidates:
                     url = candidate["url"]
                     if url in seen_urls:
                         continue
                     seen_urls.add(url)
-                    if start_date <= candidate["published_at"] <= end_date:
-                        candidate["page_url"] = page_url
-                        candidates.append(candidate)
-
-                previous_page_url = page_url
-                if oldest_on_page < start_bound:
-                    break
-
-            if not candidates:
-                context.close()
-                browser.close()
-                return []
-
-            records: list[ScrapedRecord] = []
-            browse_page = context.new_page()
-            for candidate in candidates:
-                try:
-                    body_text = self._fetch_article_text(
-                        browse_page,
-                        candidate["url"],
-                        candidate["page_url"],
-                        candidate["title"],
-                    )
-                    content = self._extract_article_content(body_text, candidate["title"])
-                    records.append(
-                        ScrapedRecord(
-                            country_code=self.country_code,
-                            published_at=candidate["published_at"],
-                            url=normalize_generic_url(candidate["url"]),
-                            title=candidate["title"],
-                            content=content,
-                            source_kind=self._source_kind(candidate["title"]),
-                            language="en",
-                            speaker=self._speaker(candidate["title"]),
+                    try:
+                        body_text = self._fetch_article_text(
+                            article_page,
+                            url,
+                            str(candidate["section_url"]),
                         )
-                    )
-                except Exception:
-                    continue
-            browse_page.close()
+                        content = self._extract_article_content(body_text, candidate["title"])
+                        records.append(
+                            ScrapedRecord(
+                                country_code=self.country_code,
+                                published_at=candidate["published_at"],
+                                url=normalize_generic_url(url),
+                                title=candidate["title"],
+                                content=content,
+                                source_kind=str(candidate["source_kind"]),
+                                language="en",
+                                speaker=self._speaker(candidate["title"], str(candidate["speaker"])),
+                            )
+                        )
+                    except Exception:
+                        continue
+
+            article_page.close()
+            list_page.close()
 
             context.close()
             browser.close()
@@ -1621,20 +1673,57 @@ class RussiaMfaNewsSource:
         deduped = {record.url: record for record in records}
         return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
 
-    def _extract_list_candidates(self, page: object) -> list[dict[str, str]]:
+    def _collect_candidates(
+        self,
+        page: object,
+        section: dict[str, str],
+        start_date: str,
+        end_date: str,
+        start_bound: date,
+        max_pages: int,
+    ) -> list[dict[str, str]]:
+        section_url = str(section["list_url"])
+        collected: list[dict[str, str]] = []
+
+        for page_number in range(1, max_pages + 1):
+            page_url = section_url if page_number == 1 else f"{section_url}?PAGEN_1={page_number}"
+            try:
+                self._load_mid_list_page(page, page_url, referer=section_url if page_number > 1 else None)
+            except RuntimeError:
+                break
+
+            page_candidates = self._extract_list_candidates(page, str(section["item_url_fragment"]))
+            if not page_candidates:
+                break
+
+            oldest_on_page = min(iso_to_date(candidate["published_at"]) for candidate in page_candidates)
+            for candidate in page_candidates:
+                if not (start_date <= candidate["published_at"] <= end_date):
+                    continue
+                candidate["section_url"] = section_url
+                candidate["source_kind"] = str(section["source_kind"])
+                candidate["speaker"] = str(section["speaker"])
+                collected.append(candidate)
+
+            if oldest_on_page < start_bound:
+                break
+
+        return collected
+
+    def _extract_list_candidates(self, page: object, item_url_fragment: str) -> list[dict[str, str]]:
         items = page.evaluate(
-            """
-() => Array.from(document.querySelectorAll('.announce__item')).map((item) => {
-  const link = item.querySelector('a[href*="/en/foreign_policy/news/"]');
-  if (!link) {
+            f"""
+() => Array.from(document.querySelectorAll('.announce__item')).map((item) => {{
+  const link = item.querySelector('a[href*="{item_url_fragment}"]');
+  if (!link) {{
     return null;
-  }
-  return {
+  }}
+  return {{
     url: link.href,
     title: (link.innerText || '').trim(),
     context: (item.innerText || '').trim(),
-  };
-}).filter(Boolean)
+  }};
+}}).filter(Boolean)
 """
         )
         candidates: list[dict[str, str]] = []
@@ -1644,7 +1733,7 @@ class RussiaMfaNewsSource:
             url = normalize_generic_url(str(item.get("url", "")))
             title = clean_text(str(item.get("title", "")))
             context_text = clean_text(str(item.get("context", "")))
-            if not title or not re.search(r"/en/foreign_policy/news/\d+", url):
+            if not title or item_url_fragment not in url or not re.search(r"/\d+/?$", url):
                 continue
             match = RU_LIST_TIMESTAMP_RE.search(context_text)
             if not match:
@@ -1658,33 +1747,14 @@ class RussiaMfaNewsSource:
             )
         return candidates
 
-    def _fetch_article_text(self, page: object, article_url: str, list_page_url: str, title: str) -> str:
+    def _fetch_article_text(self, page: object, article_url: str, referer: str) -> str:
         body_text = ""
         for _ in range(3):
-            self._load_mid_list_page(page, list_page_url, referer=self.list_url if list_page_url != self.list_url else None)
-            body_text = self._open_article_via_click(page, article_url, title)
+            self._navigate_mid_page(page, article_url, referer=referer, warmup=False)
+            body_text = self._read_mid_body_text(page)
             if not self._is_rejected_text(body_text) and len(body_text) > 500:
                 return body_text
         raise RuntimeError(f"Russian MFA blocked article fetch for {article_url}")
-
-    def _open_article_via_click(self, page: object, article_url: str, title: str) -> str:
-        relative_path = urlsplit(article_url).path
-        relative_with_slash = relative_path if relative_path.endswith("/") else f"{relative_path}/"
-        full_with_slash = article_url if article_url.endswith("/") else f"{article_url}/"
-        selector = (
-            f'a[href="{relative_path}"], '
-            f'a[href="{relative_with_slash}"], '
-            f'a[href="{article_url}"], '
-            f'a[href="{full_with_slash}"]'
-        )
-        locator = page.locator(selector).first
-        if locator.count() == 0:
-            locator = page.locator("a[href]").filter(has_text=title).first
-        if locator.count() == 0:
-            return ""
-        with page.expect_navigation(wait_until="domcontentloaded", timeout=90_000):
-            locator.click(timeout=30_000)
-        return self._read_mid_body_text(page)
 
     def _load_mid_list_page(self, page: object, page_url: str, referer: str | None = None) -> None:
         for attempt in range(4):
@@ -1708,7 +1778,7 @@ class RussiaMfaNewsSource:
         if referer:
             goto_kwargs["referer"] = referer
         page.goto(url, **goto_kwargs)
-        page.wait_for_timeout(8_000 if warmup else 4_000)
+        page.wait_for_timeout(5_000 if warmup else 2_500)
 
     @staticmethod
     def _read_mid_body_text(page: object) -> str:
@@ -1717,14 +1787,14 @@ class RussiaMfaNewsSource:
         for attempt in range(6):
             try:
                 if attempt:
-                    page.wait_for_timeout(2_500)
+                    page.wait_for_timeout(1_500)
                 text = clean_text(str(page.evaluate("() => document.body ? document.body.innerText : ''")))
                 latest_text = text
                 if text and "the requested url was rejected" not in text.lower():
                     return text
             except Exception as exc:  # pragma: no cover - browser timing dependent
                 last_error = exc
-                page.wait_for_timeout(1_500)
+                page.wait_for_timeout(1_000)
         if latest_text:
             return latest_text
         assert last_error is not None
@@ -1786,13 +1856,13 @@ class RussiaMfaNewsSource:
         return "ru_mfa_press_release"
 
     @staticmethod
-    def _speaker(title: str) -> str:
+    def _speaker(title: str, default_speaker: str = "") -> str:
         lowered = clean_text(title).lower()
         if "maria zakharova" in lowered:
             return "Maria Zakharova"
         if "sergey lavrov" in lowered:
             return "Sergey Lavrov"
-        return ""
+        return default_speaker
 
 
 class OpenAIWDSIScorer:

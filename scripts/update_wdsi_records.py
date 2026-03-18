@@ -116,6 +116,21 @@ def determine_fetch_range(existing: pd.DataFrame, lookback_days: int) -> tuple[s
     return start_date.isoformat(), today.isoformat()
 
 
+def maybe_expand_history_start(existing: pd.DataFrame, source: object, start_date: str) -> str:
+    history_start_date = str(getattr(source, "history_start_date", "") or "")
+    if not history_start_date:
+        return start_date
+
+    published_dates = pd.to_datetime(existing.get("published_at"), errors="coerce").dropna()
+    if published_dates.empty:
+        return history_start_date
+
+    earliest_existing = published_dates.min().date().isoformat()
+    if earliest_existing > history_start_date and start_date > history_start_date:
+        return history_start_date
+    return start_date
+
+
 def make_sources(session: requests.Session, countries: list[str]) -> dict[str, object]:
     sources: dict[str, object] = {}
     if "CN" in countries:
@@ -178,17 +193,19 @@ def main() -> None:
         source = sources[code]
         destination = RECORDS_DIR / f"{code}.csv"
         existing = load_records(destination)
+        effective_max_pages = args.max_pages
         if args.start_date or args.end_date:
             today = datetime.now(timezone.utc).date().isoformat()
             start_date = args.start_date or determine_fetch_range(existing, args.lookback_days)[0]
             end_date = args.end_date or today
         else:
             start_date, end_date = determine_fetch_range(existing, args.lookback_days)
+            start_date = maybe_expand_history_start(existing, source, start_date)
 
         if code == "CN":
             fetched_records = source.fetch_between(start_date, end_date)
         elif code in {"US", "UK", "KR", "FR", "RU"}:
-            fetched_records = source.fetch_between(start_date, end_date, max_pages=args.max_pages)
+            fetched_records = source.fetch_between(start_date, end_date, max_pages=effective_max_pages)
         else:
             fetched_records = source.fetch_between(start_date, end_date)
 
