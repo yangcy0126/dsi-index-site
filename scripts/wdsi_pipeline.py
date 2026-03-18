@@ -159,7 +159,7 @@ def iter_months(start_date: str, end_date: str) -> list[tuple[int, int]]:
 
 def parse_us_date(value: str) -> str:
     text = clean_text(value)
-    for fmt in ("%B %d, %Y %H:%M", "%B %d, %Y", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
+    for fmt in ("%B %d, %Y %H:%M", "%B %d, %Y", "%d %B %Y", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
         try:
             return datetime.strptime(text, fmt).date().isoformat()
         except ValueError:
@@ -790,8 +790,8 @@ class UkFcdoNewsSource:
 
 class JapanMofaPressReleaseSource:
     country_code = "JP"
-    current_index_url = "https://www.mofa.go.jp/press/release/index.html"
-    monthly_index_template = "https://www.mofa.go.jp/press/release/{year:04d}{month:02d}_index.html"
+    current_index_url = "https://www.mofa.go.jp/whats/index.html"
+    monthly_index_template = "https://www.mofa.go.jp/whats/{year:04d}_index{month:02d}.html"
 
     def __init__(self, session: requests.Session) -> None:
         self.session = session
@@ -875,9 +875,9 @@ class JapanMofaPressReleaseSource:
                 continue
             if href.endswith("index.html") or href.endswith("_index.html"):
                 continue
-            if "/press/release/" not in href:
+            if href.startswith("#") or href.startswith("mailto:"):
                 continue
-            if not re.search(r"/press/release/[^/]+\.html$", href):
+            if not href.endswith(".html"):
                 continue
 
             url = normalize_generic_url(urljoin(self.current_index_url, href))
@@ -941,7 +941,7 @@ class JapanMofaPressReleaseSource:
             url=normalize_generic_url(url),
             title=title,
             content=content,
-            source_kind="jp_mofa_press_release",
+            source_kind="jp_mofa_official_text",
             language="en",
             speaker="",
         )
