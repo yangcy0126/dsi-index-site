@@ -8,6 +8,12 @@ const state = {
 
 const summaryPath = "data/summary.json";
 const eventsPath = "data/events.json";
+const assetVersion = "20260318-en-2";
+
+function versionedPath(path) {
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}v=${assetVersion}`;
+}
 
 function formatDate(dateText) {
   const date = new Date(`${dateText}T00:00:00`);
@@ -75,7 +81,7 @@ function getCountryByCode(code) {
 }
 
 async function fetchJson(path) {
-  const response = await fetch(path);
+  const response = await fetch(versionedPath(path), { cache: "no-cache" });
   if (!response.ok) {
     throw new Error(`Failed to fetch ${path}`);
   }
