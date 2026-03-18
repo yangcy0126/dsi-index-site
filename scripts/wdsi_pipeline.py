@@ -1054,7 +1054,7 @@ class KoreaMofaPressReleaseSource:
             rows = soup.select("tbody tr")
             if not rows:
                 rows = soup.select("tr")
-            page_candidates = self._extract_list_candidates(rows)
+            page_candidates = self._extract_list_candidates(rows, page)
             if not page_candidates:
                 break
 
@@ -1085,20 +1085,26 @@ class KoreaMofaPressReleaseSource:
         deduped = {record.url: record for record in records}
         return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
 
-    def _extract_list_candidates(self, rows: list[BeautifulSoup]) -> list[tuple[str, str, str]]:
+    def _extract_list_candidates(self, rows: list[BeautifulSoup], page: int) -> list[tuple[str, str, str]]:
         candidates: list[tuple[str, str, str]] = []
         for row in rows:
-            link_node = row.select_one("a[href*='/eng/brd/m_5676/view.do?seq=']")
+            link_node = row.select_one("a[href]")
             if link_node is None:
                 continue
 
-            href = str(link_node.get("href", "")).strip()
             title = clean_text(link_node.get_text(" ", strip=True))
             row_text = clean_text(row.get_text(" ", strip=True))
             match = ISO_LIKE_DATE_RE.search(row_text)
             if not match:
                 continue
             published_at = parse_iso_like_date(match.group(1))
+            href = str(link_node.get("href", "")).strip()
+            onclick = str(link_node.get("onclick", "")).strip()
+            seq_match = re.search(r"f_view\('(?P<seq>\d+)'\)", onclick)
+            if seq_match:
+                href = f"./view.do?seq={seq_match.group('seq')}&page={page}"
+            if href == "#" or not href:
+                continue
             candidates.append((normalize_generic_url(urljoin(self.list_url, href)), title, published_at))
         return candidates
 
@@ -1109,12 +1115,12 @@ class KoreaMofaPressReleaseSource:
 
     def _make_record_from_html(self, html_text: str, url: str, title: str, published_at: str) -> ScrapedRecord:
         soup = BeautifulSoup(html_text, "html.parser")
-        main = soup.select_one("main") or soup.body
+        main = soup.select_one("#contents") or soup.select_one("main") or soup.body
         if main is None:
             raise ValueError(f"Missing main article body for {url}")
 
         title_candidate = ""
-        for selector in [".board_view_tit", ".view_tit", ".title", "h3", "h2", "h1", "title"]:
+        for selector in [".board_detail .bo_head h2", ".bo_head h2", ".board_view_tit", ".view_tit", ".title", "h3", "h2", "h1", "title"]:
             node = soup.select_one(selector)
             if node is not None:
                 title_candidate = clean_text(node.get_text(" ", strip=True))
@@ -1133,6 +1139,7 @@ class KoreaMofaPressReleaseSource:
             "header",
             "footer",
             "aside",
+            ".bo_head",
             ".board_navi",
             ".board_btn",
             ".article_btn",
@@ -1146,6 +1153,9 @@ class KoreaMofaPressReleaseSource:
                 node.decompose()
 
         candidate_nodes = [
+            ".board_detail .bo_con",
+            ".bo_con",
+            ".se-contents",
             ".board_view_cont",
             ".board_view_con",
             ".board_view_body",
