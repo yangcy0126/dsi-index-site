@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>WDSI 外交情绪观测台</title>
+    <title>WDSI Diplomatic Sentiment Observatory</title>
     <meta
       name="description"
-      content="基于官方外交文本的战争相关外交情绪指数展示页面，提供 WDSI 可视化、方法说明与数据下载。"
+      content="An interactive site for war-related diplomatic sentiment indices built from official diplomatic texts, with WDSI visualization, methodology notes, and data downloads."
     >
     <meta name="theme-color" content="#0f3a3d">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,10 +27,10 @@
           <span class="brand-name">WDSI Observatory</span>
         </a>
         <nav class="site-nav">
-          <a href="#overview">总览</a>
-          <a href="#explorer">指数</a>
-          <a href="#method">方法</a>
-          <a href="#download">下载</a>
+          <a href="#overview">Overview</a>
+          <a href="#explorer">Explorer</a>
+          <a href="#method">Method</a>
+          <a href="#download">Download</a>
         </nav>
       </header>
 
@@ -38,16 +38,16 @@
         <section class="hero" id="top">
           <div class="hero-copy">
             <p class="eyebrow">From official language to market-facing signal</p>
-            <h1>WDSI 外交情绪观测台</h1>
+            <h1>WDSI Diplomatic Sentiment Observatory</h1>
             <p class="hero-lede">
-              这里集中展示基于官方外交文本整理得到的 WDSI 指标，支持多国对比、7 日与 30 日平滑浏览、发布日原始值查看和 CSV 下载。
+              This site presents WDSI series built from official diplomatic texts, with cross-country comparison, 7-day and 30-day smoothed views, raw publication-day values, and CSV downloads.
             </p>
             <div class="hero-actions">
-              <a class="button button-primary" href="#explorer">查看指数曲线</a>
-              <a class="button button-secondary" href="#download">下载数据</a>
+              <a class="button button-primary" href="#explorer">View the series</a>
+              <a class="button button-secondary" href="#download">Download data</a>
             </div>
             <div class="hero-note">
-              <span id="generated-at">正在读取最新构建时间…</span>
+              <span id="generated-at">Loading latest build time...</span>
             </div>
 
             <div class="hero-paper-citation">
@@ -55,16 +55,16 @@
                 <p class="eyebrow">Paper</p>
                 <h3>When Words Move Money: Diplomatic Sentiment and International Capital Flows</h3>
                 <div class="paper-actions">
-                  <a class="download-link" href="ssrn-6437669.pdf" download="ssrn-6437669.pdf">下载论文 PDF</a>
+                  <a class="download-link" href="ssrn-6437669.pdf" download="ssrn-6437669.pdf">Download PDF</a>
                   <a class="download-link download-link-secondary" href="ssrn-6437669.bib" download="ssrn-6437669.bib">
-                    下载 BibTeX
+                    Download BibTeX
                   </a>
                 </div>
               </article>
 
               <article class="citation-card">
                 <p class="eyebrow">Citation</p>
-                <h3>使用本数据请引用论文</h3>
+                <h3>Please cite the paper when using this dataset</h3>
 
                 <div class="citation-entry">
                   <strong>APA Style</strong>
@@ -80,8 +80,8 @@
                 <div class="citation-entry">
                   <strong>Chicago Style</strong>
                   <p>
-                    Yang, Cunyi, Shuchi Zhang, Ioannis Kyriakou, and Nikos C. Papapostolou. 2026. “When Words Move
-                    Money: Diplomatic Sentiment and International Capital Flows.” SSRN.
+                    Yang, Cunyi, Shuchi Zhang, Ioannis Kyriakou, and Nikos C. Papapostolou. 2026. "When Words Move
+                    Money: Diplomatic Sentiment and International Capital Flows." SSRN.
                     <a href="https://ssrn.com/abstract=6437669" target="_blank" rel="noreferrer">
                       https://ssrn.com/abstract=6437669
                     </a>
@@ -94,28 +94,28 @@
           <div class="hero-panel">
             <div class="metric-grid">
               <article class="metric-card metric-card-primary">
-                <p class="metric-label">当前选择</p>
-                <h2 id="selected-country-name">载入中</h2>
+                <p class="metric-label">Current selection</p>
+                <h2 id="selected-country-name">Loading</h2>
                 <p class="metric-value" id="selected-latest-score">--</p>
-                <p class="metric-detail" id="selected-score-caption">读取摘要数据中…</p>
+                <p class="metric-detail" id="selected-score-caption">Loading summary data...</p>
               </article>
               <article class="metric-card">
-                <p class="metric-label">7 日平滑</p>
+                <p class="metric-label">7-day smoothing</p>
                 <p class="metric-value" id="selected-rolling7-score">--</p>
-                <p class="metric-detail" id="selected-rolling7-caption">读取摘要数据中…</p>
+                <p class="metric-detail" id="selected-rolling7-caption">Loading summary data...</p>
               </article>
               <article class="metric-card">
-                <p class="metric-label">近 7 天变化</p>
+                <p class="metric-label">7-day change</p>
                 <p class="metric-value" id="selected-change-score">--</p>
-                <p class="metric-detail">基于 7 日平滑序列与 7 天前对比</p>
+                <p class="metric-detail">Compared with the 7-day smoothed value 7 days earlier</p>
               </article>
               <article class="metric-card">
-                <p class="metric-label">最近发布日</p>
+                <p class="metric-label">Latest publication</p>
                 <p class="metric-value" id="selected-publication-date">--</p>
                 <p class="metric-detail" id="selected-publication-score">--</p>
               </article>
               <article class="metric-card">
-                <p class="metric-label">样本覆盖</p>
+                <p class="metric-label">Sample coverage</p>
                 <p class="metric-value" id="selected-coverage">--</p>
                 <p class="metric-detail" id="selected-publication-days">--</p>
               </article>
@@ -123,15 +123,15 @@
 
             <div class="coverage-band">
               <div>
-                <span>国家 / 地区</span>
+                <span>Countries / regions</span>
                 <strong id="country-count">--</strong>
               </div>
               <div>
-                <span>总体起点</span>
+                <span>Earliest observation</span>
                 <strong id="overall-start">--</strong>
               </div>
               <div>
-                <span>最新观测</span>
+                <span>Latest observation</span>
                 <strong id="overall-end">--</strong>
               </div>
             </div>
@@ -141,9 +141,9 @@
         <section class="signal-board" id="overview">
           <div class="section-heading">
             <p class="eyebrow">Overview</p>
-            <h2>多国 WDSI 信号板</h2>
+            <h2>Cross-Country WDSI Signal Board</h2>
             <p>
-              先看全局，再进入单国时间序列。卡片上的主数值是每个国家当前的 7 日平滑值，越负代表战争相关外交语气越紧张。
+              Start with the full cross-country picture, then move into each country series. The headline number on each card is the latest 7-day smoothed value: the more negative it is, the more tense the war-related diplomatic tone.
             </p>
           </div>
           <div class="country-board" id="country-board"></div>
@@ -152,9 +152,9 @@
         <section class="explorer" id="explorer">
           <div class="section-heading">
             <p class="eyebrow">Explorer</p>
-            <h2>指数浏览器</h2>
+            <h2>Index Explorer</h2>
             <p>
-              默认展示 7 日平滑后的 WDSI。你也可以切换到 30 日平滑指数，或查看发布日原始均值，直接观察文本发布日上的离散跳动。
+              The default view shows the 7-day smoothed WDSI. You can also switch to the 30-day smoothed series or the raw publication-day mean to see the more discrete jumps on release days.
             </p>
           </div>
 
@@ -163,13 +163,13 @@
               <div class="tabs" id="country-tabs" aria-label="Country selector"></div>
               <div class="series-toggle" id="series-toggle" aria-label="Series selector">
                 <button class="toggle-button is-active" data-series="rolling7" type="button">
-                  7 日平滑指数
+                  7-day smoothed WDSI
                 </button>
                 <button class="toggle-button" data-series="rolling30" type="button">
-                  30 日平滑指数
+                  30-day smoothed WDSI
                 </button>
                 <button class="toggle-button" data-series="raw" type="button">
-                  发布日原始均值
+                  Raw publication-day mean
                 </button>
               </div>
             </div>
@@ -180,7 +180,7 @@
 
             <div class="chart-foot">
               <p id="chart-caption">
-                加载图表中…
+                Loading chart...
               </p>
               <div class="event-chips" id="event-chips"></div>
             </div>
@@ -190,32 +190,32 @@
         <section class="method" id="method">
           <div class="section-heading">
             <p class="eyebrow">Method</p>
-            <h2>如何把外交文本变成 WDSI</h2>
+            <h2>How Diplomatic Text Becomes WDSI</h2>
             <p>
-              WDSI 不是关键词计数，也不是一次性情绪打分；它来自官方外交文本的清洗、分阶段识别、共识校验和日度聚合，是一个可以持续更新的高频指标。
+              WDSI is neither keyword counting nor one-shot sentiment scoring. It comes from cleaning official diplomatic texts, identifying war-related sentiment in stages, validating the results through consensus checks, and aggregating them into a daily high-frequency index.
             </p>
           </div>
 
           <div class="method-grid">
             <article class="method-card">
               <span class="method-index">01</span>
-              <h3>采集并清洗官方文本</h3>
-              <p>论文以多国外交部门的官方发布为语料基础，统一收集记者会实录、声明、简报和书面回应等文本；随后按相同规则切分内容、去除寒暄与流程性表述，并整理成可比的日度序列。</p>
+              <h3>Collect and clean official texts</h3>
+              <p>The paper starts from official releases by multiple foreign ministries, including press-conference transcripts, statements, briefings, and written responses. These texts are segmented, stripped of greetings and procedural language, and reorganized into comparable daily series.</p>
             </article>
             <article class="method-card">
               <span class="method-index">02</span>
-              <h3>三阶段识别情绪</h3>
-              <p>论文采用多阶段 LLM 流程，先筛出是否与战争、武装冲突或军事安全相关，再判断情绪方向，最后给出强度分值；原始得分是一个从 -3 到 3 的离散刻度。</p>
+              <h3>Identify sentiment in three stages</h3>
+              <p>The paper uses a multi-stage LLM pipeline that first screens whether a text is about war, armed conflict, or military security, then classifies sentiment direction, and finally assigns an intensity score on a discrete scale from -3 to 3.</p>
             </article>
             <article class="method-card">
               <span class="method-index">03</span>
-              <h3>做共识校验与人工审校</h3>
-              <p>为降低误判，论文在每一步都会进行多次独立判断；只有结果一致才直接通过，出现分歧则进入复核。同时还用人工标注样本做审校和模型比较，确保识别结果尽量贴近研究者判断。</p>
+              <h3>Run consensus checks and manual audits</h3>
+              <p>To reduce misclassification, the paper repeats each judgement multiple times. Only matching results pass directly; disagreements are reviewed before moving on. The pipeline is also audited against manually labelled samples to keep the classifications close to researcher judgement.</p>
             </article>
             <article class="method-card">
               <span class="method-index">04</span>
-              <h3>构造日度指数序列</h3>
-              <p>论文先在发布日形成原始分值；同一天若有多段战争相关文本，会在会议或声明层面综合后得到单日得分，而不是简单平均。随后对缺失日做前值填充，再计算 7 日滚动平均，得到基准 WDSI。</p>
+              <h3>Construct the daily index series</h3>
+              <p>The paper first forms a raw score on each publication day. When multiple war-related passages appear on the same day, they are combined into one conference- or statement-level score rather than simply averaged. Missing days are then forward-filled and smoothed with a 7-day rolling average to form the baseline WDSI.</p>
             </article>
           </div>
         </section>
@@ -223,28 +223,28 @@
         <section class="research" id="research">
           <div class="section-heading">
             <p class="eyebrow">Why It Matters</p>
-            <h2>关于这个指数我们已经发现的</h2>
+            <h2>What We Have Already Found in This Index</h2>
             <p>
-              我们的论文表明，WDSI 不只是对外交语气的描述，它还是一个能连接地缘政治预期、跨境资金流向和市场反应的高频信号。
+              Our paper shows that WDSI is not just a description of diplomatic tone. It is a high-frequency signal that links geopolitical expectations, cross-border capital flows, and market responses.
             </p>
           </div>
 
           <div class="research-grid">
             <article class="research-card">
-              <h3>它比传统风险指标更早动</h3>
-              <p>我们的论文发现，战争相关外交措辞往往先于常见地缘政治风险指标变化，能更早捕捉市场对冲突升级或缓和的预期调整。</p>
+              <h3>It moves before conventional risk measures</h3>
+              <p>Our paper finds that war-related diplomatic wording often shifts before standard geopolitical risk indicators do, making it useful for detecting changes in market expectations around escalation or de-escalation earlier.</p>
             </article>
             <article class="research-card">
-              <h3>它会改变跨境资金方向</h3>
-              <p>在中国样本里，更负面的外交情绪对应更强的资金外流压力；我们的论文估计显示，中国 WDSI 每下降 1 个单位，日度净流向会向流出方向移动约 3560 万美元。</p>
+              <h3>It changes the direction of cross-border flows</h3>
+              <p>In the China sample, more negative diplomatic sentiment is associated with stronger capital outflow pressure. Our estimates show that a one-unit decline in China's WDSI corresponds to roughly a 35.6 million USD shift in daily net flows toward outflows.</p>
             </article>
             <article class="research-card">
-              <h3>它同时具有避险与溢出效应</h3>
-              <p>我们的论文还发现，负面的美国外交情绪与美国股市的避险需求上升相关；英国、日本、韩国等国的负面外交情绪也会外溢到中国市场，并伴随更显著的收益率与交易活跃度反应。</p>
+              <h3>It carries both safe-haven and spillover effects</h3>
+              <p>Our paper also finds that more negative U.S. diplomatic sentiment is associated with stronger safe-haven demand for U.S. equities. Negative sentiment from the United Kingdom, Japan, and South Korea also spills over into the Chinese market, with clearer effects on returns and trading activity.</p>
             </article>
             <article class="research-card research-card-teaser">
-              <h3>更多价值等待你发现</h3>
-              <p>页面同时开放原始值、7 日平滑和 30 日平滑序列，方便继续做事件研究、跨国比较、资产定价和资本流动检验。</p>
+              <h3>More value is still waiting to be found</h3>
+              <p>The site exposes the raw series as well as the 7-day and 30-day smoothed versions, making it easier to extend the dataset into event studies, cross-country comparisons, asset-pricing work, and capital-flow tests.</p>
             </article>
           </div>
         </section>
@@ -252,9 +252,9 @@
         <section class="download" id="download">
           <div class="section-heading">
             <p class="eyebrow">Download</p>
-            <h2>CSV 数据下载</h2>
+            <h2>CSV Downloads</h2>
             <p>
-              这里保留最直接的数据下载入口，方便查看包含发布日原始值、7 日平滑值和 30 日平滑值的全量文件与分国 CSV。
+              This section keeps the most direct download links for the full dataset and country-level CSV files, including raw publication-day values together with the 7-day and 30-day smoothed series.
             </p>
           </div>
 
@@ -265,8 +265,8 @@
       </main>
 
       <footer class="site-footer">
-        <p>WDSI 外交情绪观测台</p>
-        <p id="footer-build-note">数据摘要加载中…</p>
+        <p>WDSI Diplomatic Sentiment Observatory</p>
+        <p id="footer-build-note">Loading summary data...</p>
       </footer>
     </div>
   </body>

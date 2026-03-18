@@ -11,7 +11,7 @@ const eventsPath = "data/events.json";
 
 function formatDate(dateText) {
   const date = new Date(`${dateText}T00:00:00`);
-  return date.toLocaleDateString("zh-CN", {
+  return date.toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -20,7 +20,7 @@ function formatDate(dateText) {
 
 function formatBuildTime(dateText) {
   const date = new Date(dateText);
-  return date.toLocaleString("zh-CN", {
+  return date.toLocaleString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -39,33 +39,35 @@ function formatScore(value, digits = 3) {
 
 function toneMeta(score) {
   if (score <= -1.5) {
-    return { label: "明显偏紧张", className: "tone-negative" };
+    return { label: "markedly tense", className: "tone-negative" };
   }
   if (score <= -0.5) {
-    return { label: "偏紧张", className: "tone-negative" };
+    return { label: "somewhat tense", className: "tone-negative" };
   }
   if (score < 0.5) {
-    return { label: "中性附近", className: "tone-neutral" };
+    return { label: "near neutral", className: "tone-neutral" };
   }
   if (score < 1.5) {
-    return { label: "偏缓和", className: "tone-positive" };
+    return { label: "somewhat conciliatory", className: "tone-positive" };
   }
-  return { label: "明显偏缓和", className: "tone-positive" };
+  return { label: "markedly conciliatory", className: "tone-positive" };
 }
 
-function scoreSentence(labelZh, score, windowLabel) {
+function scoreSentence(label, score, windowLabel) {
   const tone = toneMeta(score);
-  return `${labelZh} 当前 ${windowLabel}平滑值为 ${formatScore(score)}，属于${tone.label}区间。`;
+  return `${label} currently has a ${windowLabel} smoothed value of ${formatScore(score)}, placing it in the ${tone.label} range.`;
 }
 
 function scoreDeltaSentence(delta, dayCount = 30) {
   if (delta === null || delta === undefined || Number.isNaN(delta)) {
-    return "样本长度不足，暂不计算。";
+    return "Not enough observations yet.";
   }
   if (Math.abs(delta) < 0.05) {
-    return `近 ${dayCount} 天整体变化很小。`;
+    return `Little net change over the past ${dayCount} days.`;
   }
-  return delta < 0 ? `近 ${dayCount} 天更偏向紧张。` : `近 ${dayCount} 天更偏向缓和。`;
+  return delta < 0
+    ? `More tense over the past ${dayCount} days.`
+    : `More conciliatory over the past ${dayCount} days.`;
 }
 
 function getCountryByCode(code) {
@@ -92,9 +94,9 @@ function renderGlobalMeta() {
   document.getElementById("country-count").textContent = overall.country_count;
   document.getElementById("overall-start").textContent = formatDate(overall.first_date);
   document.getElementById("overall-end").textContent = formatDate(overall.last_date);
-  document.getElementById("generated-at").textContent = `最新构建：${formatBuildTime(generatedAt)}`;
+  document.getElementById("generated-at").textContent = `Latest build: ${formatBuildTime(generatedAt)}`;
   document.getElementById("footer-build-note").textContent =
-    `全站覆盖 ${overall.country_count} 个国家 / 地区，最早观测 ${formatDate(overall.first_date)}，最新观测 ${formatDate(overall.last_date)}。`;
+    `Covering ${overall.country_count} countries / regions, from ${formatDate(overall.first_date)} to ${formatDate(overall.last_date)}.`;
 }
 
 function renderCountryBoard() {
@@ -109,10 +111,10 @@ function renderCountryBoard() {
     button.style.setProperty("--country-color", country.color);
     button.style.animationDelay = `${120 + index * 40}ms`;
     button.innerHTML = `
-      <h3>${country.label_zh}</h3>
+      <h3>${country.label}</h3>
       <div class="country-meta">
-        <span>${country.label}</span>
-        <span>最新发文 ${formatDate(country.latest_publication_date)}</span>
+        <span>${country.code}</span>
+        <span>Latest publication ${formatDate(country.latest_publication_date)}</span>
       </div>
       <div class="country-score ${tone.className}">${formatScore(country.latest_7d)}</div>
       <div class="country-tone">${tone.label}</div>
@@ -130,7 +132,7 @@ function renderCountryTabs() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = `tab-button ${country.code === state.selectedCode ? "is-active" : ""}`;
-    button.textContent = `${country.label_zh} · ${country.code}`;
+    button.textContent = `${country.label} - ${country.code}`;
     button.addEventListener("click", () => setSelectedCountry(country.code));
     tabs.appendChild(button);
   });
@@ -142,22 +144,22 @@ function renderSelectedMetrics(country) {
   const deltaTone =
     latestDelta < -0.05 ? "tone-negative" : latestDelta > 0.05 ? "tone-positive" : "tone-neutral";
 
-  document.getElementById("selected-country-name").textContent = `${country.label_zh} · ${country.label}`;
+  document.getElementById("selected-country-name").textContent = country.label;
   document.getElementById("selected-latest-score").textContent = formatScore(country.latest_7d);
   document.getElementById("selected-latest-score").className = `metric-value ${tone.className}`;
   document.getElementById("selected-score-caption").textContent = scoreSentence(
-    country.label_zh,
+    country.label,
     country.latest_7d,
-    "7 日",
+    "7-day",
   );
 
   const rolling7El = document.getElementById("selected-rolling7-score");
   rolling7El.textContent = formatScore(country.latest_7d);
   rolling7El.className = `metric-value ${tone.className}`;
   document.getElementById("selected-rolling7-caption").textContent = scoreSentence(
-    country.label_zh,
+    country.label,
     country.latest_7d,
-    "7 日",
+    "7-day",
   );
 
   const deltaEl = document.getElementById("selected-change-score");
@@ -165,11 +167,11 @@ function renderSelectedMetrics(country) {
   deltaEl.className = `metric-value ${deltaTone}`;
   document.getElementById("selected-publication-date").textContent = formatDate(country.latest_publication_date);
   document.getElementById("selected-publication-score").textContent =
-    `最近发布日原始均值：${formatScore(country.latest_raw)} · ${scoreDeltaSentence(latestDelta, 7)}`;
+    `Latest publication-day raw mean: ${formatScore(country.latest_raw)} - ${scoreDeltaSentence(latestDelta, 7)}`;
   document.getElementById("selected-coverage").textContent =
-    `${formatDate(country.start_date)} — ${formatDate(country.latest_date)}`;
+    `${formatDate(country.start_date)} to ${formatDate(country.latest_date)}`;
   document.getElementById("selected-publication-days").textContent =
-    `发布日 ${country.publication_days} 天 · 日历序列 ${country.calendar_days} 天`;
+    `${country.publication_days} publication days - ${country.calendar_days} calendar days`;
 }
 
 function renderLegacyDownloadList() {
@@ -178,31 +180,31 @@ function renderLegacyDownloadList() {
 
   const masterDownloads = [
     {
-      title: "全量日度数据（CSV）",
-      meta: "包含全部国家的日历日序列、原始发布日均值、7 日平滑值与 30 日平滑值",
+      title: "Full daily dataset (CSV)",
+      meta: "Calendar-day series for all countries, including raw publication-day means plus 7-day and 30-day smoothed values",
       href: "data/wdsi_all_countries.csv",
     },
     {
-      title: "站点摘要（JSON）",
-      meta: "国家列表、最新值、覆盖区间与下载入口索引",
+      title: "Site summary (JSON)",
+      meta: "Country list, latest values, coverage windows, and download paths",
       href: summaryPath,
     },
     {
-      title: "事件标注（JSON）",
-      meta: "供图表添加关键时间点参考的公共事件列表",
+      title: "Event markers (JSON)",
+      meta: "Public event list for annotating charts with key dates",
       href: eventsPath,
     },
   ];
 
   const countryDownloads = state.summary.countries.flatMap((country) => [
     {
-      title: `${country.label_zh} 数据（CSV）`,
-      meta: `${country.label} · 发布日 ${country.publication_days} 天`,
+      title: `${country.label} data (CSV)`,
+      meta: `${country.code} - ${country.publication_days} publication days`,
       href: country.file_csv,
     },
     {
-      title: `${country.label_zh} 数据（JSON）`,
-      meta: "适合网页或脚本直接读取",
+      title: `${country.label} data (JSON)`,
+      meta: "Useful for direct use in web apps or scripts",
       href: country.file_json,
     },
   ]);
@@ -215,7 +217,7 @@ function renderLegacyDownloadList() {
         <strong>${item.title}</strong>
         <div class="download-meta">${item.meta}</div>
       </div>
-      <a class="download-link" href="${item.href}" target="_blank" rel="noreferrer">打开文件</a>
+      <a class="download-link" href="${item.href}" target="_blank" rel="noreferrer">Open file</a>
     `;
     list.appendChild(row);
   });
@@ -227,15 +229,15 @@ function renderCsvOnlyDownloadList() {
 
   const masterDownloads = [
     {
-      title: "全量日度数据（CSV）",
-      meta: "包含全部国家的日历日序列、发布日原始均值、7 日平滑值与 30 日平滑值",
+      title: "Full daily dataset (CSV)",
+      meta: "Calendar-day series for all countries, including raw publication-day means plus 7-day and 30-day smoothed values",
       href: "data/wdsi_all_countries.csv",
     },
   ];
 
   const countryDownloads = state.summary.countries.map((country) => ({
-    title: `${country.label_zh} 数据（CSV）`,
-    meta: `${country.label} · 发布日 ${country.publication_days} 天`,
+    title: `${country.label} data (CSV)`,
+    meta: `${country.code} - ${country.publication_days} publication days`,
     href: country.file_csv,
   }));
 
@@ -247,7 +249,7 @@ function renderCsvOnlyDownloadList() {
         <strong>${item.title}</strong>
         <div class="download-meta">${item.meta}</div>
       </div>
-      <a class="download-link" href="${item.href}" target="_blank" rel="noreferrer">打开 CSV</a>
+      <a class="download-link" href="${item.href}" target="_blank" rel="noreferrer">Open CSV</a>
     `;
     list.appendChild(row);
   });
@@ -264,7 +266,7 @@ function updateEventChips(countryData) {
   visibleEvents.forEach((event) => {
     const chip = document.createElement("span");
     chip.className = "event-chip";
-    chip.textContent = `${event.date} · ${event.title_zh}`;
+    chip.textContent = `${event.date} - ${event.title_en}`;
     chips.appendChild(chip);
   });
 }
@@ -338,41 +340,41 @@ function renderChart(country, countryData) {
       y: rolling7Values,
       type: "scatter",
       mode: "lines",
-      name: "7 日平滑指数",
+      name: "7-day smoothed WDSI",
       line: {
         color: country.color,
         width: showRolling7 ? 3.2 : 1.8,
         dash: "solid",
       },
       opacity: showRolling7 ? 1 : showRaw ? 0.42 : 0.3,
-      hovertemplate: "%{x}<br>7 日平滑值：%{y:.3f}<extra></extra>",
+      hovertemplate: "%{x}<br>7-day smoothed value: %{y:.3f}<extra></extra>",
     },
     {
       x: rollingDates,
       y: rolling30Values,
       type: "scatter",
       mode: "lines",
-      name: "30 日平滑指数",
+      name: "30-day smoothed WDSI",
       line: {
         color: country.color,
         width: showRolling30 ? 3.2 : 2,
         dash: "longdash",
       },
       opacity: showRolling30 ? 0.95 : showRaw ? 0.38 : 0.32,
-      hovertemplate: "%{x}<br>30 日平滑值：%{y:.3f}<extra></extra>",
+      hovertemplate: "%{x}<br>30-day smoothed value: %{y:.3f}<extra></extra>",
     },
     {
       x: rawDates,
       y: rawValues,
       type: "scatter",
       mode: "markers",
-      name: "发布日原始均值",
+      name: "Raw publication-day mean",
       marker: {
         color: "#b85f35",
         size: showRaw ? 8 : 6,
         opacity: showRaw ? 0.88 : 0.22,
       },
-      hovertemplate: "%{x}<br>原始发布日均值：%{y:.3f}<extra></extra>",
+      hovertemplate: "%{x}<br>Raw publication-day mean: %{y:.3f}<extra></extra>",
     },
   ];
 
@@ -384,9 +386,9 @@ function renderChart(country, countryData) {
   });
 
   document.getElementById("chart-caption").textContent =
-    `${country.label_zh} 的 WDSI 提供发布日原始均值、7 日平滑值和 30 日平滑值三种口径。当前视图重点展示：${
-      showRolling7 ? "7 日平滑趋势" : showRolling30 ? "30 日平滑趋势" : "发布日上的离散变化"
-    }。`;
+    `${country.label} is available as a raw publication-day mean together with 7-day and 30-day smoothed series. Current view: ${
+      showRolling7 ? "7-day smoothed trend" : showRolling30 ? "30-day smoothed trend" : "discrete publication-day moves"
+    }.`;
 
   updateEventChips(countryData);
 }
@@ -442,7 +444,7 @@ async function init() {
     }
   } catch (error) {
     document.getElementById("chart-caption").textContent =
-      "页面数据加载失败。请确认数据文件可访问后重试。";
+      "Failed to load page data. Please make sure the data files are accessible and try again.";
     console.error(error);
   }
 }
