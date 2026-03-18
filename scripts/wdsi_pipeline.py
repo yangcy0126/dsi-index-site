@@ -5,6 +5,7 @@ import html
 import json
 import os
 import re
+import subprocess
 import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -230,9 +231,46 @@ def request_html(session: requests.Session, url: str) -> str:
             return response.text
         except requests.RequestException as exc:
             last_error = exc
+            if "mofa.go.jp" in url:
+                try:
+                    return request_html_with_curl(url)
+                except Exception as curl_exc:  # pragma: no cover - external fallback
+                    last_error = curl_exc
             time.sleep(1.5)
     assert last_error is not None
     raise last_error
+
+
+def request_html_with_curl(url: str) -> str:
+    command = [
+        "curl",
+        "-fsSL",
+        "--compressed",
+        "--http1.1",
+        "-A",
+        BROWSER_HEADERS["User-Agent"],
+        "-H",
+        f"Accept: {BROWSER_HEADERS['Accept']}",
+        "-H",
+        f"Accept-Language: {BROWSER_HEADERS['Accept-Language']}",
+        "-H",
+        "Cache-Control: max-age=0",
+        "-H",
+        "Upgrade-Insecure-Requests: 1",
+        url,
+    ]
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    if result.returncode != 0:
+        message = clean_text(result.stderr or result.stdout or f"curl failed for {url}")
+        raise RuntimeError(message)
+    return result.stdout
 
 
 def extract_json_object(text: str) -> dict[str, object]:
@@ -744,7 +782,6 @@ class UkFcdoNewsSource:
             ".govuk-related-navigation",
             ".gem-c-contextual-footer",
             ".gem-c-contextual-sidebar",
-            ".govuk-!-display-none-print",
             "script",
             "style",
         ]:
