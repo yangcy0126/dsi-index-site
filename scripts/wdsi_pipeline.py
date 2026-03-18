@@ -172,11 +172,23 @@ def parse_us_date(value: str) -> str:
         raise ValueError(f"Unsupported date format: {value}") from exc
 
 
-def request_json(session: requests.Session, url: str) -> object:
+def request_json(
+    session: requests.Session,
+    url: str,
+    *,
+    headers: dict[str, str] | None = None,
+) -> object:
+    merged_headers = {
+        **BROWSER_HEADERS,
+        "Accept": "application/json,text/plain,*/*",
+    }
+    if headers:
+        merged_headers.update(headers)
+
     last_error: Exception | None = None
     for timeout_seconds in (30, 45, 60):
         try:
-            response = session.get(url, headers=STATE_HEADERS, timeout=timeout_seconds)
+            response = session.get(url, headers=merged_headers, timeout=timeout_seconds)
             response.raise_for_status()
             content_type = (response.headers.get("content-type") or "").lower()
             if "json" not in content_type:
@@ -186,6 +198,11 @@ def request_json(session: requests.Session, url: str) -> object:
         except (requests.RequestException, ValueError, RuntimeError) as exc:
             last_error = exc
             time.sleep(1.5)
+    if _supports_curl_fallback(url):
+        try:
+            return request_json_with_curl(url, headers=merged_headers)
+        except Exception as curl_exc:  # pragma: no cover - external fallback
+            last_error = curl_exc
     assert last_error is not None
     raise last_error
 
@@ -277,6 +294,42 @@ def request_html_with_curl(url: str) -> str:
         message = clean_text(result.stderr or result.stdout or f"curl failed for {url}")
         raise RuntimeError(message)
     return result.stdout
+
+
+def request_json_with_curl(url: str, *, headers: dict[str, str] | None = None) -> object:
+    merged_headers = {
+        **BROWSER_HEADERS,
+        "Accept": "application/json,text/plain,*/*",
+    }
+    if headers:
+        merged_headers.update(headers)
+
+    command = [
+        "curl",
+        "-fsSL",
+        "--compressed",
+        "--http1.1",
+        "-A",
+        merged_headers["User-Agent"],
+    ]
+    for name, value in merged_headers.items():
+        if name == "User-Agent":
+            continue
+        command.extend(["-H", f"{name}: {value}"])
+    command.append(url)
+
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    if result.returncode != 0:
+        message = clean_text(result.stderr or result.stdout or f"curl failed for {url}")
+        raise RuntimeError(message)
+    return json.loads(result.stdout)
 
 
 def _supports_curl_fallback(url: str) -> bool:
@@ -553,7 +606,7 @@ class UsStateDepartmentSource:
     def _fetch_press_briefings(self, start_date: str, end_date: str, max_pages: int = 8) -> list[ScrapedRecord]:
         records: list[ScrapedRecord] = []
         for page in range(1, max_pages + 1):
-            payload = request_json(self.session, self.briefing_endpoint.format(page=page))
+            payload = request_json(self.session, self.briefing_endpoint.format(page=page), headers=STATE_HEADERS)
             if not isinstance(payload, list):
                 return records
 
@@ -689,7 +742,16 @@ class UsStateDepartmentSource:
 
 class UkFcdoNewsSource:
     country_code = "UK"
-    search_url = "https://www.gov.uk/search/news-and-communications"
+    site_root = "https://www.gov.uk"
+    search_api_url = "https://www.gov.uk/api/search.json"
+    search_fields = (
+        "title",
+        "description",
+        "link",
+        "public_timestamp",
+        "content_store_document_type",
+        "format",
+    )
 
     def __init__(self, session: requests.Session) -> None:
         self.session = session
@@ -701,39 +763,35 @@ class UkFcdoNewsSource:
 
     def fetch_between(self, start_date: str, end_date: str, max_pages: int = 20) -> list[ScrapedRecord]:
         candidates: list[tuple[str, str, str, str]] = []
-        for page in range(1, max_pages + 1):
-            page_url = f"{self.search_url}?{urlencode(self._search_params(page), doseq=True)}"
-            soup = BeautifulSoup(request_html(self.session, page_url), "html.parser")
-            items = soup.select("li.gem-c-document-list__item")
-            if not items:
-                items = soup.select("li.govuk-document-list__item")
-            if not items:
+        page_size = 150
+        for page_index in range(max_pages):
+            page_url = f"{self.search_api_url}?{urlencode(self._search_params(start_date, end_date, page_size, page_index * page_size), doseq=True)}"
+            payload = request_json(self.session, page_url)
+            if not isinstance(payload, dict):
+                break
+            items = payload.get("results", [])
+            if not isinstance(items, list) or not items:
                 break
 
-            oldest_on_page: str | None = None
             for item in items:
-                link_node = item.select_one("a[href]")
-                if link_node is None:
+                if not isinstance(item, dict):
                     continue
-                href = str(link_node.get("href", "")).strip()
+                href = clean_text(str(item.get("link", "")))
                 if not href.startswith("/government/"):
                     continue
 
-                title = clean_text(link_node.get_text(" ", strip=True))
-                published_at = self._extract_result_date(item)
+                title = clean_text(str(item.get("title", "")))
+                public_timestamp = clean_text(str(item.get("public_timestamp", "")))
+                if not title or not public_timestamp:
+                    continue
+                published_at = parse_us_date(public_timestamp)
                 if not published_at:
                     continue
 
-                if oldest_on_page is None or published_at < oldest_on_page:
-                    oldest_on_page = published_at
-
-                if not (start_date <= published_at <= end_date):
-                    continue
-
                 source_kind = self._extract_result_format(item)
-                candidates.append((urljoin(self.search_url, href), title, published_at, source_kind))
+                candidates.append((urljoin(self.site_root, href), title, published_at, source_kind))
 
-            if oldest_on_page is not None and oldest_on_page < start_date:
+            if len(items) < page_size:
                 break
 
         if not candidates:
@@ -757,45 +815,38 @@ class UkFcdoNewsSource:
         return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
 
     @staticmethod
-    def _search_params(page: int) -> list[tuple[str, str]]:
-        return [
-            ("organisations[]", "foreign-commonwealth-development-office"),
-            ("parent", "foreign-commonwealth-development-office"),
-            ("order", "updated-newest"),
-            ("page", str(page)),
+    def _search_params(start_date: str, end_date: str, page_size: int, start: int) -> list[tuple[str, str]]:
+        params = [
+            ("filter_organisations", "foreign-commonwealth-development-office"),
+            ("filter_content_purpose_supergroup", "news_and_communications"),
+            ("filter_public_timestamp", f"from:{start_date},to:{end_date}"),
+            ("order", "-public_timestamp"),
+            ("count", str(page_size)),
+            ("start", str(start)),
         ]
+        params.extend(("fields", field) for field in UkFcdoNewsSource.search_fields)
+        return params
 
     @staticmethod
-    def _extract_result_date(item: BeautifulSoup) -> str:
-        texts = [clean_text(node.get_text(" ", strip=True)) for node in item.select("time, li, p, span")]
-        for text in texts:
-            if re.fullmatch(r"\d{1,2} [A-Za-z]+ \d{4}", text):
-                return parse_us_date(text)
-            if re.fullmatch(r"[A-Za-z]+ \d{1,2}, \d{4}", text):
-                return parse_us_date(text)
-        whole = clean_text(item.get_text(" ", strip=True))
-        match = re.search(r"([A-Za-z]+ \d{1,2}, \d{4})", whole)
-        if match:
-            return parse_us_date(match.group(1))
-        match = re.search(r"(\d{1,2} [A-Za-z]+ \d{4})", whole)
-        if match:
-            return parse_us_date(match.group(1))
-        return ""
-
-    @staticmethod
-    def _extract_result_format(item: BeautifulSoup) -> str:
-        whole = clean_text(item.get_text(" ", strip=True)).lower()
-        for kind in [
-            "press release",
-            "news story",
-            "speech",
-            "oral statement to parliament",
-            "written statement to parliament",
-            "world news story",
-            "authored article",
-        ]:
-            if kind in whole:
-                return f"fcdo_{kind.replace(' ', '_')}"
+    def _extract_result_format(item: dict[str, object]) -> str:
+        document_type = clean_text(str(item.get("content_store_document_type", ""))).lower()
+        known_types = {
+            "press_release": "fcdo_press_release",
+            "speech": "fcdo_speech",
+            "oral_statement": "fcdo_oral_statement_to_parliament",
+            "written_statement": "fcdo_written_statement_to_parliament",
+            "news_article": "fcdo_news_story",
+            "world_news_story": "fcdo_world_news_story",
+            "world_location_news_article": "fcdo_world_news_story",
+            "authored_article": "fcdo_authored_article",
+        }
+        if document_type in known_types:
+            return known_types[document_type]
+        if document_type:
+            return f"fcdo_{document_type}"
+        format_name = clean_text(str(item.get("format", ""))).lower()
+        if format_name:
+            return f"fcdo_{format_name.replace(' ', '_')}"
         return "fcdo_news_communication"
 
     def _parse_article_threadsafe(
