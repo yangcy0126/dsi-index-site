@@ -2,7 +2,7 @@
   "code": "JP",
   "label": "Japan",
   "label_zh": "日本",
-  "generated_at": "2026-03-17T23:27:25.550013+00:00",
+  "generated_at": "2026-03-18T02:56:46.911437+00:00",
   "records": [
     {
       "date": "2013-03-01",
@@ -28590,6 +28590,12 @@
     },
     {
       "date": "2026-03-17",
+      "raw": null,
+      "rolling7": 0.0,
+      "publication": false
+    },
+    {
+      "date": "2026-03-18",
       "raw": null,
       "rolling7": 0.0,
       "publication": false
