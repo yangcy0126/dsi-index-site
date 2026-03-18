@@ -55,6 +55,9 @@ COUNTRIES = [
     },
 ]
 
+COUNTRY_ORDER = ["US", "CN", "UK", "JP", "KR"]
+COUNTRIES = sorted(COUNTRIES, key=lambda meta: COUNTRY_ORDER.index(meta["code"]))
+
 EVENTS = [
     {"date": "2014-03-18", "title_zh": "克里米亚危机升级", "title_en": "Crimea crisis escalates"},
     {"date": "2016-07-12", "title_zh": "南海仲裁结果公布", "title_en": "South China Sea arbitration"},

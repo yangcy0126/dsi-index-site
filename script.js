@@ -1,7 +1,7 @@
 const state = {
   summary: null,
   events: [],
-  selectedCode: "CN",
+  selectedCode: null,
   seriesMode: "rolling",
   cache: new Map(),
 };
@@ -364,6 +364,10 @@ async function init() {
     const [summary, events] = await Promise.all([fetchJson(summaryPath), fetchJson(eventsPath)]);
     state.summary = summary;
     state.events = events.events || [];
+    state.selectedCode =
+      state.selectedCode && getCountryByCode(state.selectedCode)
+        ? state.selectedCode
+        : state.summary.countries[0]?.code ?? null;
 
     renderGlobalMeta();
     renderCountryBoard();
@@ -371,7 +375,9 @@ async function init() {
     renderDownloadList();
     bindSeriesToggle();
 
-    await setSelectedCountry(state.selectedCode);
+    if (state.selectedCode) {
+      await setSelectedCountry(state.selectedCode);
+    }
   } catch (error) {
     document.getElementById("chart-caption").textContent =
       "站点数据加载失败。请确认你正在通过本地服务器或 GitHub Pages 访问，而不是直接双击 HTML 文件。";
