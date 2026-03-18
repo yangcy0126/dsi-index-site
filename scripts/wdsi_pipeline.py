@@ -47,6 +47,14 @@ ISO_LIKE_DATE_RE = re.compile(r"(\d{4}[./-]\d{2}[./-]\d{2})")
 MONTH_DAY_RE = re.compile(
     r"^(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})$"
 )
+MONTH_NAME_PATTERN = r"(January|February|March|April|May|June|July|August|September|October|November|December)"
+MARKDOWN_LINK_RE = re.compile(r"\[(?P<label>[^\]]+)\]\((?P<url>https?://[^)\s]+)\)")
+JP_LINE_DATE_RE = re.compile(rf"^{MONTH_NAME_PATTERN}\s+\d{{1,2}}(?:,\s+\d{{4}})?$")
+JP_TITLE_DATE_RE = re.compile(rf"\((?P<date>{MONTH_NAME_PATTERN}\s+\d{{1,2}},\s+\d{{4}})(?:,[^)]+)?\)")
+JP_CONFERENCE_HEADER_RE = re.compile(
+    rf"^###\s+(?:[A-Za-z]+,\s+)?(?P<date>{MONTH_NAME_PATTERN}\s+\d{{1,2}},\s+\d{{4}})(?:,[^.]+)?"
+)
+JINA_CACHE: dict[str, str] = {}
 
 RELEVANCE_VARIANTS = (
     "Apply a literal reading and do not infer military relevance unless the text itself supports it.",
@@ -374,6 +382,39 @@ def request_html_with_playwright(url: str) -> str:
         finally:
             context.close()
             browser.close()
+
+
+def request_markdown_via_jina(url: str) -> str:
+    cached = JINA_CACHE.get(url)
+    if cached is not None:
+        return cached
+
+    gateway_url = f"https://r.jina.ai/http://{url}"
+    last_error: Exception | None = None
+    for attempt, timeout_seconds in enumerate((30, 45, 60, 60, 60), start=1):
+        try:
+            response = requests.get(gateway_url, headers=BROWSER_HEADERS, timeout=timeout_seconds)
+            if response.status_code == 429:
+                retry_after = response.headers.get("Retry-After")
+                sleep_seconds = float(retry_after) if retry_after else min(20, 4 * attempt)
+                last_error = RuntimeError(f"Jina rate limited {url}")
+                time.sleep(sleep_seconds)
+                continue
+            response.raise_for_status()
+            if response.encoding == "ISO-8859-1" and response.apparent_encoding:
+                response.encoding = response.apparent_encoding
+            JINA_CACHE[url] = response.text
+            time.sleep(0.25)
+            return response.text
+        except requests.RequestException as exc:
+            last_error = exc
+            time.sleep(1.5)
+    assert last_error is not None
+    raise last_error
+
+
+def markdown_links(line: str) -> list[tuple[str, str]]:
+    return [(clean_text(match.group("label")), clean_text(match.group("url"))) for match in MARKDOWN_LINK_RE.finditer(line)]
 
 
 def extract_json_object(text: str) -> dict[str, object]:
@@ -923,8 +964,16 @@ class UkFcdoNewsSource:
 
 class JapanMofaPressReleaseSource:
     country_code = "JP"
-    current_index_url = "https://www.mofa.go.jp/press/release/index.html"
-    monthly_index_template = "https://www.mofa.go.jp/press/release/{year:04d}{month:02d}_index.html"
+    current_release_url = "https://www.mofa.go.jp/press/release/"
+    monthly_release_template = "https://www.mofa.go.jp/press/release/{year:04d}{month:02d}_index.html"
+    current_conference_url = "https://www.mofa.go.jp/press/kaiken/"
+    monthly_conference_template = "https://www.mofa.go.jp/press/kaiken/pc_{year:04d}{month:02d}_index.html"
+    statement_pages = (
+        "https://www.mofa.go.jp/press/statement/fm.html",
+        "https://www.mofa.go.jp/press/statement/fm_archives.html",
+        "https://www.mofa.go.jp/press/statement/ps.html",
+        "https://www.mofa.go.jp/press/statement/ps_bn.html",
+    )
 
     def __init__(self, session: requests.Session) -> None:
         self.session = session
@@ -937,130 +986,200 @@ class JapanMofaPressReleaseSource:
 
     def fetch_between(self, start_date: str, end_date: str, max_pages: int = 0) -> list[ScrapedRecord]:
         del max_pages
-        candidates: list[tuple[str, str, str]] = []
+        candidates: list[tuple[str, str, str, str]] = []
+        today = datetime.now(timezone.utc).date()
         for year, month in iter_months(start_date, end_date):
-            index_url = (
-                self.current_index_url
-                if (year, month) == (datetime.now(timezone.utc).year, datetime.now(timezone.utc).month)
-                else self.monthly_index_template.format(year=year, month=month)
+            release_index_url = (
+                self.current_release_url
+                if (year, month) == (today.year, today.month)
+                else self.monthly_release_template.format(year=year, month=month)
             )
-            soup = BeautifulSoup(request_html(self.session, index_url), "html.parser")
-            candidates.extend(self._extract_index_candidates(soup, year, month, start_date, end_date))
+            release_markdown = request_markdown_via_jina(release_index_url)
+            candidates.extend(self._extract_release_candidates(release_markdown, year, month, start_date, end_date))
 
-        if not candidates:
+            conference_index_url = (
+                self.current_conference_url
+                if (year, month) == (today.year, today.month)
+                else self.monthly_conference_template.format(year=year, month=month)
+            )
+            conference_markdown = request_markdown_via_jina(conference_index_url)
+            candidates.extend(self._extract_conference_candidates(conference_markdown, start_date, end_date))
+
+        for statement_page in self.statement_pages:
+            statement_markdown = request_markdown_via_jina(statement_page)
+            candidates.extend(self._extract_statement_candidates(statement_markdown, start_date, end_date))
+
+        deduped_candidates: dict[str, tuple[str, str, str, str]] = {}
+        for url, title, published_at, source_kind in candidates:
+            deduped_candidates[url] = (url, title, published_at, source_kind)
+
+        if not deduped_candidates:
             return []
 
         records: list[ScrapedRecord] = []
-        with ThreadPoolExecutor(max_workers=8) as executor:
+        with ThreadPoolExecutor(max_workers=1) as executor:
             futures = {
-                executor.submit(self._parse_article_threadsafe, url, title, published_at): (
+                executor.submit(self._parse_article_threadsafe, url, title, published_at, source_kind): (
                     url,
                     title,
                     published_at,
+                    source_kind,
                 )
-                for url, title, published_at in candidates
+                for url, title, published_at, source_kind in deduped_candidates.values()
             }
             for future in as_completed(futures):
-                records.append(future.result())
+                try:
+                    records.append(future.result())
+                except Exception:
+                    continue
 
         deduped = {record.url: record for record in records}
         return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
 
-    def _extract_index_candidates(
+    def _extract_release_candidates(
         self,
-        soup: BeautifulSoup,
+        markdown: str,
         year: int,
         month: int,
         start_date: str,
         end_date: str,
-    ) -> list[tuple[str, str, str]]:
-        main = soup.select_one("main") or soup.body
-        if main is None:
-            return []
-
-        candidates: list[tuple[str, str, str]] = []
+    ) -> list[tuple[str, str, str, str]]:
+        candidates: list[tuple[str, str, str, str]] = []
         current_date: str | None = None
-        started = False
         seen_urls: set[str] = set()
 
-        for element in main.find_all(["h1", "h2", "h3", "h4", "dt", "a"]):
-            text = clean_text(element.get_text(" ", strip=True))
-            if not text:
+        for raw_line in markdown.splitlines():
+            line = clean_text(raw_line)
+            if not line:
+                continue
+            if line.startswith("### Archives") or line.startswith("Archives List|"):
+                break
+            if line.startswith("[Page Top]") or line.startswith("[Back to Press Releases]"):
+                break
+            parsed_date = month_day_with_year_to_iso(line, year)
+            if parsed_date:
+                current_date = parsed_date
+                continue
+            if current_date is None or not (start_date <= current_date <= end_date):
+                continue
+            if not raw_line.lstrip().startswith("*"):
                 continue
 
-            if element.name in {"h1", "h2", "h3", "h4", "dt"}:
-                if text.startswith("Press Releases"):
-                    started = True
+            for title, url in markdown_links(raw_line):
+                if not self._is_valid_document_url(url):
                     continue
-                if started and text == "Archives":
-                    break
-                if started:
-                    parsed_date = month_day_with_year_to_iso(text, year)
-                    if parsed_date:
-                        current_date = parsed_date
-                continue
-
-            if not started or current_date is None:
-                continue
-
-            href = str(element.get("href", "")).strip()
-            if not href:
-                continue
-            if href.endswith("index.html") or href.endswith("_index.html"):
-                continue
-            if href.startswith("#") or href.startswith("mailto:"):
-                continue
-            if not href.endswith(".html"):
-                continue
-
-            url = normalize_generic_url(urljoin(self.current_index_url, href))
-            if url in seen_urls:
-                continue
-            seen_urls.add(url)
-
-            if not (start_date <= current_date <= end_date):
-                continue
-
-            title = clean_text(element.get_text(" ", strip=True))
-            if title:
-                candidates.append((url, title, current_date))
+                normalized = normalize_generic_url(url)
+                if normalized in seen_urls:
+                    continue
+                seen_urls.add(normalized)
+                candidates.append((normalized, title, current_date, "jp_mofa_written_statement"))
 
         return candidates
 
-    def _parse_article_threadsafe(self, url: str, title: str, published_at: str) -> ScrapedRecord:
-        with requests.Session() as session:
-            html_text = request_html(session, url)
-        return self._make_record_from_html(html_text, url, title, published_at)
+    def _extract_conference_candidates(
+        self,
+        markdown: str,
+        start_date: str,
+        end_date: str,
+    ) -> list[tuple[str, str, str, str]]:
+        candidates: list[tuple[str, str, str, str]] = []
+        seen_urls: set[str] = set()
 
-    def _make_record_from_html(self, html_text: str, url: str, title: str, published_at: str) -> ScrapedRecord:
-        soup = BeautifulSoup(html_text, "html.parser")
-        main = soup.select_one("main") or soup.body
-        if main is None:
-            raise ValueError(f"Missing main article body for {url}")
+        for raw_line in markdown.splitlines():
+            for title, url in markdown_links(raw_line):
+                if "/press/kaiken/" not in url or "_index.html" in url or "#topic" in url:
+                    continue
+                if "Press Conference" not in title:
+                    continue
+                match = JP_TITLE_DATE_RE.search(title)
+                if not match:
+                    continue
+                published_at = parse_us_date(match.group("date"))
+                if not (start_date <= published_at <= end_date):
+                    continue
+                normalized = normalize_generic_url(url)
+                if normalized in seen_urls:
+                    continue
+                seen_urls.add(normalized)
+                candidates.append((normalized, title, published_at, "jp_mofa_press_conference"))
 
-        title_node = main.find(["h2", "h1"])
-        if title_node is not None:
-            title = clean_text(title_node.get_text(" ", strip=True)) or title
-            subtitle_node = title_node.find_next_sibling()
-            if subtitle_node is not None:
-                subtitle = clean_text(subtitle_node.get_text(" ", strip=True))
-                if subtitle.startswith("(") and subtitle.endswith(")"):
-                    title = f"{title} {subtitle}"
+        return candidates
 
-        section_stop_texts = {"Related Links", "Share this page", "Updates to this page", "Explore the topic"}
+    def _extract_statement_candidates(
+        self,
+        markdown: str,
+        start_date: str,
+        end_date: str,
+    ) -> list[tuple[str, str, str, str]]:
+        candidates: list[tuple[str, str, str, str]] = []
+        seen_urls: set[str] = set()
+
+        for raw_line in markdown.splitlines():
+            if not raw_line.lstrip().startswith("*"):
+                continue
+            for title, url in markdown_links(raw_line):
+                if not self._is_valid_document_url(url):
+                    continue
+                match = JP_TITLE_DATE_RE.search(title)
+                if not match:
+                    continue
+                published_at = parse_us_date(match.group("date"))
+                if not (start_date <= published_at <= end_date):
+                    continue
+                normalized = normalize_generic_url(url)
+                if normalized in seen_urls:
+                    continue
+                seen_urls.add(normalized)
+                candidates.append((normalized, title, published_at, "jp_mofa_written_statement"))
+
+        return candidates
+
+    def _parse_article_threadsafe(self, url: str, title: str, published_at: str, source_kind: str) -> ScrapedRecord:
+        markdown = request_markdown_via_jina(url)
+        return self._make_record_from_markdown(markdown, url, title, published_at, source_kind)
+
+    def _make_record_from_markdown(
+        self,
+        markdown: str,
+        url: str,
+        title: str,
+        published_at: str,
+        source_kind: str,
+    ) -> ScrapedRecord:
+        lines = [line.rstrip() for line in markdown.splitlines()]
         content_parts: list[str] = []
-        for element in main.find_all(["h2", "h3", "p", "li"]):
-            text = clean_text(element.get_text(" ", strip=True))
+        started = False
+        stop_headings = {"Related Links", "Page Top"}
+
+        for raw_line in lines:
+            line = raw_line.strip()
+            text = clean_text(line)
             if not text:
                 continue
-            if element.name in {"h2", "h3"} and text in section_stop_texts:
+            if text == "The text will be coming soon.":
+                raise ValueError(f"Text not yet available for {url}")
+
+            if not started:
+                header_match = JP_CONFERENCE_HEADER_RE.match(text)
+                if header_match:
+                    published_at = parse_us_date(header_match.group("date"))
+                    started = True
+                    continue
+                if JP_LINE_DATE_RE.fullmatch(text) and "," in text:
+                    published_at = parse_us_date(text)
+                    started = True
+                    continue
+                continue
+
+            if text in stop_headings or text.startswith("Copyright "):
                 break
-            if element.name not in {"p", "li"}:
+            if text.startswith("Back to ") or text.startswith("About Us") or text.startswith("News"):
+                break
+            if line.startswith("[") or line.startswith("![") or line.startswith("*   ["):
+                continue
+            if text.startswith("This is a provisional translation"):
                 continue
             if text == "Japanese" or text == title:
-                continue
-            if re.fullmatch(r"[A-Za-z]+ \d{1,2}, \d{4}", text):
-                published_at = parse_us_date(text)
                 continue
             content_parts.append(text)
 
@@ -1068,16 +1187,37 @@ class JapanMofaPressReleaseSource:
         if not content:
             raise ValueError(f"Missing parsed content for {url}")
 
+        speaker = ""
+        if "Foreign Minister" in title:
+            speaker = "Foreign Minister"
+        elif "Press Secretary" in title:
+            speaker = "Press Secretary"
+        elif "Foreign Press Secretary" in title:
+            speaker = "Foreign Press Secretary"
+
         return ScrapedRecord(
             country_code=self.country_code,
             published_at=published_at,
             url=normalize_generic_url(url),
             title=title,
             content=content,
-            source_kind="jp_mofa_official_text",
+            source_kind=source_kind,
             language="en",
-            speaker="",
+            speaker=speaker,
         )
+
+    @staticmethod
+    def _is_valid_document_url(url: str) -> bool:
+        normalized = clean_text(url)
+        if not normalized.startswith("https://www.mofa.go.jp/"):
+            return False
+        if "/mofaj/" in normalized:
+            return False
+        if normalized.endswith("index.html") or normalized.endswith("_index.html"):
+            return False
+        if "#" in normalized or normalized.startswith("mailto:"):
+            return False
+        return normalized.endswith(".html")
 
 
 class KoreaMofaPressReleaseSource:
