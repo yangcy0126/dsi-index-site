@@ -8,7 +8,7 @@ const state = {
 
 const summaryPath = "data/summary.json";
 const eventsPath = "data/events.json";
-const assetVersion = "20260318-en-3";
+const assetVersion = "20260318-en-5";
 
 function versionedPath(path) {
   const separator = path.includes("?") ? "&" : "?";
@@ -350,7 +350,7 @@ function renderChart(country, countryData) {
       name: "7-day smoothed WDSI",
       line: {
         color: country.color,
-        width: showRolling7 ? 3.2 : 1.8,
+        width: showRolling7 ? 2.6 : 1.4,
         dash: "solid",
       },
       opacity: showRolling7 ? 1 : showRaw ? 0.42 : 0.3,
@@ -364,7 +364,7 @@ function renderChart(country, countryData) {
       name: "30-day smoothed WDSI",
       line: {
         color: country.color,
-        width: showRolling30 ? 3.2 : 2,
+        width: showRolling30 ? 2.6 : 1.5,
         dash: "longdash",
       },
       opacity: showRolling30 ? 0.95 : showRaw ? 0.38 : 0.32,
