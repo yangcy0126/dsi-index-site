@@ -8,7 +8,7 @@ const state = {
 
 const summaryPath = "data/summary.json";
 const eventsPath = "data/events.json";
-const assetVersion = "20260318-en-2";
+const assetVersion = "20260318-en-3";
 
 function versionedPath(path) {
   const separator = path.includes("?") ? "&" : "?";
@@ -146,7 +146,8 @@ function renderCountryTabs() {
 
 function renderSelectedMetrics(country) {
   const tone = toneMeta(country.latest_7d);
-  const latestDelta = country.change_7d ?? 0;
+  const rolling30Tone = toneMeta(country.latest_30d);
+  const latestDelta = country.change_30d ?? 0;
   const deltaTone =
     latestDelta < -0.05 ? "tone-negative" : latestDelta > 0.05 ? "tone-positive" : "tone-neutral";
 
@@ -159,13 +160,13 @@ function renderSelectedMetrics(country) {
     "7-day",
   );
 
-  const rolling7El = document.getElementById("selected-rolling7-score");
-  rolling7El.textContent = formatScore(country.latest_7d);
-  rolling7El.className = `metric-value ${tone.className}`;
-  document.getElementById("selected-rolling7-caption").textContent = scoreSentence(
+  const rolling30El = document.getElementById("selected-rolling30-score");
+  rolling30El.textContent = formatScore(country.latest_30d);
+  rolling30El.className = `metric-value ${rolling30Tone.className}`;
+  document.getElementById("selected-rolling30-caption").textContent = scoreSentence(
     country.label,
-    country.latest_7d,
-    "7-day",
+    country.latest_30d,
+    "30-day",
   );
 
   const deltaEl = document.getElementById("selected-change-score");
@@ -173,7 +174,7 @@ function renderSelectedMetrics(country) {
   deltaEl.className = `metric-value ${deltaTone}`;
   document.getElementById("selected-publication-date").textContent = formatDate(country.latest_publication_date);
   document.getElementById("selected-publication-score").textContent =
-    `Latest publication-day raw mean: ${formatScore(country.latest_raw)} - ${scoreDeltaSentence(latestDelta, 7)}`;
+    `Latest publication-day raw mean: ${formatScore(country.latest_raw)} - ${scoreDeltaSentence(latestDelta, 30)}`;
   document.getElementById("selected-coverage").textContent =
     `${formatDate(country.start_date)} to ${formatDate(country.latest_date)}`;
   document.getElementById("selected-publication-days").textContent =
