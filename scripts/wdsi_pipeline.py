@@ -72,6 +72,8 @@ RU_LIST_TIMESTAMP_RE = re.compile(
     rf"(?P<date>\d{{1,2}}\s+{MONTH_NAME_PATTERN}\s+\d{{4}}\s+\d{{2}}:\d{{2}})"
 )
 RU_ARTICLE_ID_RE = re.compile(r"^\d{2,4}-\d{2}-\d{2}-\d{4}$")
+DE_DOTTED_DATE_RE = re.compile(r"(?P<day>\d{1,2})\.(?P<month>\d{1,2})\.(?P<year>\d{4})")
+INDIA_PAGE_UPDATED_RE = re.compile(r"Page last updated on:\s*(?P<day>\d{1,2})/(?P<month>\d{1,2})/(?P<year>\d{4})")
 JINA_CACHE: dict[str, str] = {}
 
 FR_MONTHS = {
@@ -237,6 +239,22 @@ def parse_fr_date(value: str) -> str:
         return date(year, int(match.group("month")), int(match.group("day"))).isoformat()
 
     raise ValueError(f"Unsupported French date format: {value}")
+
+
+def parse_de_date(value: str) -> str:
+    text = clean_text(value)
+    match = DE_DOTTED_DATE_RE.search(text)
+    if not match:
+        raise ValueError(f"Unsupported German date format: {value}")
+    return date(int(match.group("year")), int(match.group("month")), int(match.group("day"))).isoformat()
+
+
+def parse_india_page_updated(value: str) -> str:
+    text = clean_text(value)
+    match = INDIA_PAGE_UPDATED_RE.search(text)
+    if not match:
+        raise ValueError(f"Could not determine India MEA publication date from: {value[:160]}")
+    return date(int(match.group("year")), int(match.group("month")), int(match.group("day"))).isoformat()
 
 
 def request_json(
@@ -1437,6 +1455,346 @@ class KoreaMofaPressReleaseSource:
             language="en",
             speaker="",
         )
+
+
+class GermanyForeignOfficeSource:
+    country_code = "DE"
+    site_root = "https://www.auswaertiges-amt.de"
+    archive_url = "https://www.auswaertiges-amt.de/ajax/json-filterlist/en/newsroom/news/609204-609204"
+    page_size = 20
+    source_kind_by_name = {
+        "press release": "de_aa_press_release",
+        "speech": "de_aa_speech",
+        "interview": "de_aa_interview",
+        "article": "de_aa_article",
+    }
+
+    def __init__(self, session: requests.Session) -> None:
+        self.session = session
+
+    def fetch_recent(self, max_pages: int = 6) -> list[ScrapedRecord]:
+        end_date = datetime.now(timezone.utc).date()
+        start_date = end_date - timedelta(days=max(max_pages * 30, 150))
+        return self.fetch_between(start_date.isoformat(), end_date.isoformat(), max_pages=max_pages)
+
+    def fetch_between(self, start_date: str, end_date: str, max_pages: int = 90) -> list[ScrapedRecord]:
+        candidates: list[tuple[str, str, str, str]] = []
+        for page_index in range(max_pages):
+            offset = page_index * self.page_size
+            page_url = self.archive_url if offset == 0 else f"{self.archive_url}?offset={offset}"
+            payload = request_json(self.session, page_url)
+            if not isinstance(payload, dict):
+                break
+
+            items = payload.get("items", [])
+            if not isinstance(items, list) or not items:
+                break
+
+            oldest_on_page: str | None = None
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+
+                published_at = parse_de_date(str(item.get("date", "")))
+                headline = clean_text(str(item.get("headline", "")))
+                href = clean_text(str(item.get("link", "")))
+                result_name = clean_text(str(item.get("name", ""))).lower()
+                source_kind = self.source_kind_by_name.get(result_name, "")
+                if not headline or not href or not source_kind:
+                    continue
+
+                if oldest_on_page is None or published_at < oldest_on_page:
+                    oldest_on_page = published_at
+
+                if not (start_date <= published_at <= end_date):
+                    continue
+
+                candidates.append((urljoin(self.site_root, href), headline, published_at, source_kind))
+
+            if oldest_on_page is not None and oldest_on_page < start_date:
+                break
+
+        if not candidates:
+            return []
+
+        records: list[ScrapedRecord] = []
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {
+                executor.submit(self._parse_article_threadsafe, url, title, published_at, source_kind): (
+                    url,
+                    title,
+                    published_at,
+                    source_kind,
+                )
+                for url, title, published_at, source_kind in candidates
+            }
+            for future in as_completed(futures):
+                records.append(future.result())
+
+        deduped = {record.url: record for record in records}
+        return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
+
+    def _parse_article_threadsafe(
+        self,
+        url: str,
+        title: str,
+        published_at: str,
+        source_kind: str,
+    ) -> ScrapedRecord:
+        with requests.Session() as session:
+            html_text = request_html(session, url)
+        return self._make_record_from_html(html_text, url, title, published_at, source_kind)
+
+    def _make_record_from_html(
+        self,
+        html_text: str,
+        url: str,
+        title: str,
+        published_at: str,
+        source_kind: str,
+    ) -> ScrapedRecord:
+        soup = BeautifulSoup(html_text, "html.parser")
+        main = soup.select_one("main") or soup.body
+        if main is None:
+            raise ValueError(f"Missing German Foreign Office article body for {url}")
+
+        for selector in [
+            "nav",
+            "header",
+            "footer",
+            "aside",
+            "form",
+            "script",
+            "style",
+            ".search__helper-text-wrapper",
+            ".modul-sidebar",
+            ".modul-list",
+            ".share",
+            ".socialmedia",
+        ]:
+            for node in main.select(selector):
+                node.decompose()
+
+        content_parts: list[str] = []
+        for node in main.select("p, li, h2, h3, blockquote"):
+            text = clean_text(node.get_text(" ", strip=True))
+            if not text:
+                continue
+            if text == title or text in {"Print page", "Share page", "Top of page", "Keywords"}:
+                continue
+            if text.startswith("Overview ") or text.startswith("Overview “") or text.startswith("Overview \""):
+                break
+            content_parts.append(text)
+
+        content = clean_text("\n".join(dict.fromkeys(content_parts)))
+        if not content:
+            content = clean_text(main.get_text("\n"))
+            for marker in ("Overview \"Newsroom\"", "Overview “Newsroom”", "Keywords", "Print page", "Share page"):
+                if marker in content:
+                    content = content.split(marker, 1)[0].strip()
+                    break
+
+        if not content:
+            raise ValueError(f"Missing parsed German Foreign Office content for {url}")
+
+        return ScrapedRecord(
+            country_code=self.country_code,
+            published_at=published_at,
+            url=normalize_generic_url(url),
+            title=title,
+            content=content,
+            source_kind=source_kind,
+            language="en",
+            speaker=self._speaker(title),
+        )
+
+    @staticmethod
+    def _speaker(title: str) -> str:
+        cleaned = clean_text(title)
+        match = re.search(r"(?:Speech|Statement|Interview)\s+(?:by|with)\s+(.+?)(?:\s+at\s+|:|$)", cleaned, re.I)
+        if match:
+            return clean_text(match.group(1))
+        if "Johann Wadephul" in cleaned:
+            return "Johann Wadephul"
+        if "Annalena Baerbock" in cleaned:
+            return "Annalena Baerbock"
+        return "Federal Foreign Office"
+
+
+class IndiaMeaOfficialSource:
+    country_code = "IN"
+    recent_index_urls = (
+        "https://www.mea.gov.in/press-releases.htm?51%2FPress_Releases=",
+        "https://www.mea.gov.in/media-briefings.htm?49%2FMedia_Briefings=",
+    )
+    detail_url_template = "https://www.mea.gov.in/press-releases.htm?dtl/{dtl_id}/"
+
+    def __init__(self, session: requests.Session) -> None:
+        self.session = session
+
+    def fetch_recent(self, max_pages: int = 6) -> list[ScrapedRecord]:
+        end_date = datetime.now(timezone.utc).date()
+        start_date = end_date - timedelta(days=max(max_pages * 30, 180))
+        return self.fetch_between(start_date.isoformat(), end_date.isoformat(), max_pages=max_pages)
+
+    def fetch_between(self, start_date: str, end_date: str, max_pages: int = 90) -> list[ScrapedRecord]:
+        latest_id = self._latest_detail_id()
+        # The ASP.NET archive does not expose stable pagination controls in this environment,
+        # so we walk recent detail ids backwards and stop once we are safely before the window.
+        scan_limit = max(240, min(max_pages * 8, 720))
+        lower_bound = max(1, latest_id - scan_limit)
+
+        records: list[ScrapedRecord] = []
+        seen_urls: set[str] = set()
+        stale_hits = 0
+
+        dtl_ids = list(range(latest_id, lower_bound - 1, -1))
+        with ThreadPoolExecutor(max_workers=6) as executor:
+            for batch_start in range(0, len(dtl_ids), 12):
+                batch_ids = dtl_ids[batch_start : batch_start + 12]
+                futures = {executor.submit(self._fetch_detail_record, dtl_id): dtl_id for dtl_id in batch_ids}
+                batch_results: dict[int, ScrapedRecord] = {}
+
+                for future in as_completed(futures):
+                    dtl_id = futures[future]
+                    try:
+                        batch_results[dtl_id] = future.result()
+                    except Exception:
+                        continue
+
+                for dtl_id in batch_ids:
+                    record = batch_results.get(dtl_id)
+                    if record is None:
+                        continue
+                    if record.url in seen_urls:
+                        continue
+                    seen_urls.add(record.url)
+
+                    if record.published_at < start_date:
+                        stale_hits += 1
+                        if stale_hits >= 30:
+                            break
+                        continue
+
+                    stale_hits = 0
+                    if record.published_at > end_date:
+                        continue
+                    records.append(record)
+
+                if stale_hits >= 30:
+                    break
+
+        deduped = {record.url: record for record in records}
+        return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
+
+    def _latest_detail_id(self) -> int:
+        latest_id = 0
+        for index_url in self.recent_index_urls:
+            markdown = request_markdown_via_jina(index_url)
+            ids = [int(match) for match in re.findall(r"\?dtl/(\d+)\b", markdown)]
+            if ids:
+                latest_id = max(latest_id, max(ids))
+        if latest_id <= 0:
+            raise ValueError("Could not determine the latest India MEA detail id.")
+        return latest_id
+
+    def _fetch_detail_record(self, dtl_id: int) -> ScrapedRecord:
+        url = self.detail_url_template.format(dtl_id=dtl_id)
+        markdown = request_markdown_via_jina(url)
+        if markdown.startswith("Title: Sorry for the inconvenience."):
+            raise ValueError(f"Missing India MEA detail page for {dtl_id}")
+
+        title = self._extract_title(markdown)
+        published_at = parse_india_page_updated(markdown)
+        content = self._extract_content(markdown, title)
+        source_kind = self._source_kind(title, content)
+
+        return ScrapedRecord(
+            country_code=self.country_code,
+            published_at=published_at,
+            url=normalize_generic_url(url),
+            title=title,
+            content=content,
+            source_kind=source_kind,
+            language="en",
+            speaker=self._speaker(title, content),
+        )
+
+    @staticmethod
+    def _extract_title(markdown: str) -> str:
+        match = re.search(r"^Title:\s*(.+)$", markdown, re.M)
+        if not match:
+            raise ValueError("Missing India MEA title.")
+        return clean_text(match.group(1))
+
+    @staticmethod
+    def _extract_content(markdown: str, title: str) -> str:
+        lines = [clean_text(line) for line in markdown.splitlines()]
+        start = 0
+        for index, line in enumerate(lines):
+            if line == "Markdown Content:":
+                start = index + 1
+                break
+
+        body_lines = lines[start:]
+        heading_candidates = {f"# {title}", f"## {title}"}
+        heading_index = next((idx for idx, line in enumerate(body_lines) if line in heading_candidates), None)
+        if heading_index is not None:
+            body_lines = body_lines[heading_index + 1 :]
+
+        content_lines: list[str] = []
+        for line in body_lines:
+            if not line:
+                continue
+            if line.startswith("[Write a Comment]") or line in {"Comments", "Post A Comment"}:
+                break
+            if line.startswith("[Click here for ") and " version" in line:
+                break
+            if line.startswith("[![Image") or (line.startswith("![") and "sharing button" in line.lower()):
+                continue
+            if line.startswith("*   Name *(required)") or line.startswith("*   Write Your Comment"):
+                break
+            if line.startswith("Visitors:"):
+                break
+            if line.startswith("Ministry of External Affairs") and not content_lines:
+                continue
+            if line in heading_candidates:
+                continue
+            content_lines.append(line)
+
+        content = clean_text("\n".join(content_lines))
+        if not content:
+            raise ValueError(f"Missing parsed India MEA content for {title}")
+        return content
+
+    @staticmethod
+    def _source_kind(title: str, content: str) -> str:
+        lowered_title = clean_text(title).lower()
+        lowered_content = clean_text(content[:800]).lower()
+        if lowered_title.startswith("question no") or "lok sabha" in lowered_content or "rajya sabha" in lowered_content:
+            return "in_mea_parliament_answer"
+        if "official spokesperson" in lowered_title:
+            return "in_mea_statement"
+        if "briefing" in lowered_title or lowered_title.startswith("transcript"):
+            return "in_mea_media_briefing"
+        if "interview" in lowered_title:
+            return "in_mea_interview"
+        if lowered_title.startswith("speech") or lowered_title.startswith("statement"):
+            return "in_mea_statement"
+        return "in_mea_press_release"
+
+    @staticmethod
+    def _speaker(title: str, content: str) -> str:
+        lowered_title = clean_text(title).lower()
+        if "official spokesperson" in lowered_title:
+            return "Official Spokesperson"
+        first_line = clean_text(content.splitlines()[0]) if content else ""
+        match = re.match(r"(?P<speaker>(?:Shri|Dr\.?|Mr\.?|Ms\.?|Mrs\.?|Ambassador)[^:]{1,120}):", first_line)
+        if match:
+            return clean_text(match.group("speaker"))
+        if "minister of external affairs" in lowered_title:
+            return "Ministry of External Affairs"
+        return ""
 
 
 class FranceMfaSpokespersonSource:

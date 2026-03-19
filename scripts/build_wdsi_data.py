@@ -54,6 +54,22 @@ COUNTRIES = [
         "color": "#9a6b2f",
     },
     {
+        "code": "DE",
+        "label": "Germany",
+        "label_zh": "Germany",
+        "series_zh": "Federal Foreign Office newsroom",
+        "legacy_filename": "",
+        "color": "#1f3f5b",
+    },
+    {
+        "code": "IN",
+        "label": "India",
+        "label_zh": "India",
+        "series_zh": "India MEA official texts",
+        "legacy_filename": "",
+        "color": "#d36a24",
+    },
+    {
         "code": "FR",
         "label": "France",
         "label_zh": "France",
@@ -71,7 +87,7 @@ COUNTRIES = [
     },
 ]
 
-COUNTRY_ORDER = ["US", "CN", "UK", "JP", "KR", "FR", "RU"]
+COUNTRY_ORDER = ["US", "CN", "DE", "JP", "IN", "UK", "FR", "RU", "KR"]
 COUNTRIES = sorted(COUNTRIES, key=lambda meta: COUNTRY_ORDER.index(meta["code"]))
 
 EVENTS = [
