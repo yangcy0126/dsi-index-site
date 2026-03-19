@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-03-19T06:51:46.602874+00:00",
+  "generated_at": "2026-03-19T09:04:59.458032+00:00",
   "overall": {
-    "country_count": 7,
+    "country_count": 9,
     "first_date": "2001-01-03",
     "last_date": "2026-03-19"
   },
@@ -55,6 +55,30 @@
       "file_csv": "data/CN.csv"
     },
     {
+      "code": "DE",
+      "label": "Germany",
+      "label_zh": "Germany",
+      "series_zh": "Federal Foreign Office newsroom",
+      "color": "#1f3f5b",
+      "start_date": "2025-06-20",
+      "latest_date": "2026-03-19",
+      "latest_publication_date": "2026-03-17",
+      "publication_days": 120,
+      "calendar_days": 273,
+      "latest_raw": -2.0,
+      "latest_7d": -1.286,
+      "latest_30d": -1.25,
+      "change_7d": -0.857,
+      "change_30d": 0.429,
+      "current_year": 2026,
+      "current_year_mean": -0.81,
+      "latest_title": "Speech by Foreign Minister Johann Wadephul at the Europe 2026 Conference “Europe at a Turning Point: A Franco-German View of Europe’s Sovereignty”",
+      "latest_url": "https://www.auswaertiges-amt.de/en/newsroom/news/2760294-2760294",
+      "data_source": "records",
+      "file_json": "data/DE.json",
+      "file_csv": "data/DE.csv"
+    },
+    {
       "code": "JP",
       "label": "Japan",
       "label_zh": "日本",
@@ -77,6 +101,30 @@
       "data_source": "records",
       "file_json": "data/JP.json",
       "file_csv": "data/JP.csv"
+    },
+    {
+      "code": "IN",
+      "label": "India",
+      "label_zh": "India",
+      "series_zh": "India MEA official texts",
+      "color": "#d36a24",
+      "start_date": "2026-02-18",
+      "latest_date": "2026-03-19",
+      "latest_publication_date": "2026-03-19",
+      "publication_days": 20,
+      "calendar_days": 30,
+      "latest_raw": 0.0,
+      "latest_7d": 0.262,
+      "latest_30d": -0.141,
+      "change_7d": 1.69,
+      "change_30d": null,
+      "current_year": 2026,
+      "current_year_mean": -0.169,
+      "latest_title": "Shri Vikram K. Doraiswami appointed as the next Ambassador of India to the People's Republic of China",
+      "latest_url": "https://www.mea.gov.in/press-releases.htm?dtl/40920/Shri+Vikram+K+Doraiswami+appointed+as+the+next+Ambassador+of+India+to+the+Peoples+Republic+of+China",
+      "data_source": "records",
+      "file_json": "data/IN.json",
+      "file_csv": "data/IN.csv"
     },
     {
       "code": "UK",
