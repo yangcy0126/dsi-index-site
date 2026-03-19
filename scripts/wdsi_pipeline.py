@@ -81,6 +81,20 @@ ITALY_SITE_TITLE_SUFFIX_RE = re.compile(
     r"\s*(?:-|–|—|每)\s*Ministero degli Affari Esteri e della Cooperazione Internazionale.*$",
     re.I,
 )
+AU_LISTING_ENTRY_RE = re.compile(
+    r"^\*\s+\[(?P<title>.+?)\]\((?P<url>https://www\.foreignminister\.gov\.au/[^\s)]+)\)\s+(?P<date>\d{1,2}\s+[A-Za-z]+\s+\d{4})$"
+)
+MX_LISTING_DATE_RE = re.compile(rf"^(?P<date>{MONTH_NAME_PATTERN}\s+\d{{1,2}},\s+\d{{4}})\s+Fecha de publicación")
+MX_DETAIL_DATE_RE = re.compile(rf"\|\s*(?P<date>{MONTH_NAME_PATTERN}\s+\d{{1,2}},\s+\d{{4}})\s*\|")
+ES_LISTING_ENTRY_RE = re.compile(
+    r"^\*\s+(?P<date>\d{1,2}\s+[A-Za-z]{3}\s+\d{2})\s+##\s+\[(?P<title>.+?)\]\((?P<url>https://www\.exteriores\.gob\.es/en/Comunicacion/Comunicados/Paginas/[^\s)]+)\)"
+)
+BR_LISTING_TITLE_RE = re.compile(
+    r'^##\s+\[(?P<title>.+?)\]\((?P<url>https://www\.gov\.br/mre/en/contact-us/press-area/press-releases/[^\s)]+)'
+)
+BR_LISTING_DATE_RE = re.compile(
+    r"^published\s+(?P<date>[A-Z][a-z]{2}\s+\d{2},\s+\d{4})\s+\d{2}:\d{2}\s+[AP]M\s+News$"
+)
 JINA_CACHE: dict[str, str] = {}
 
 FR_MONTHS = {
@@ -160,6 +174,12 @@ def clean_text(value: str) -> str:
     return "\n".join(line for line in lines if line)
 
 
+def normalize_compare_text(value: str) -> str:
+    text = clean_text(value)
+    text = text.replace("’", "'").replace("–", "-").replace("—", "-")
+    return text.casefold()
+
+
 def strip_html(value: str) -> str:
     soup = BeautifulSoup(value, "html.parser")
     return clean_text(soup.get_text("\n"))
@@ -217,6 +237,8 @@ def parse_us_date(value: str) -> str:
     for fmt in (
         "%B %d, %Y %H:%M",
         "%B %d, %Y",
+        "%b %d, %Y %H:%M",
+        "%b %d, %Y",
         "%B %d %Y",
         "%d %B %Y %H:%M",
         "%d %B %Y",
@@ -231,6 +253,14 @@ def parse_us_date(value: str) -> str:
         return datetime.fromisoformat(text.replace("Z", "+00:00")).date().isoformat()
     except ValueError as exc:
         raise ValueError(f"Unsupported date format: {value}") from exc
+
+
+def parse_en_short_date(value: str) -> str:
+    text = clean_text(value)
+    try:
+        return datetime.strptime(text, "%d %b %y").date().isoformat()
+    except ValueError as exc:
+        raise ValueError(f"Unsupported short English date format: {value}") from exc
 
 
 def parse_fr_date(value: str) -> str:
@@ -527,6 +557,14 @@ def request_markdown_via_jina(url: str) -> str:
             time.sleep(1.5)
     assert last_error is not None
     raise last_error
+
+
+def extract_jina_markdown_body(markdown: str) -> str:
+    lines = markdown.splitlines()
+    for index, line in enumerate(lines):
+        if clean_text(line) == "Markdown Content:":
+            return "\n".join(lines[index + 1 :]).strip()
+    return markdown.strip()
 
 
 def markdown_links(line: str) -> list[tuple[str, str]]:
@@ -2053,6 +2091,853 @@ class ItalyMfaPressReleaseSource:
         if cleaned.startswith("Deputy Minister "):
             return "Deputy Minister"
         return "MAECI"
+
+
+class AustraliaForeignMinisterMediaReleaseSource:
+    country_code = "AU"
+    history_start_date = "2022-05-23"
+    resume_missing_history = True
+    archive_url = "https://www.foreignminister.gov.au/minister/penny-wong/media-releases"
+
+    def __init__(self, session: requests.Session) -> None:
+        self.session = session
+
+    def fetch_recent(self, max_pages: int = 6) -> list[ScrapedRecord]:
+        end_date = datetime.now(timezone.utc).date()
+        start_date = end_date - timedelta(days=max(max_pages * 30, 180))
+        return self.fetch_between(start_date.isoformat(), end_date.isoformat(), max_pages=max_pages)
+
+    def fetch_between(self, start_date: str, end_date: str, max_pages: int = 24) -> list[ScrapedRecord]:
+        candidates: list[tuple[str, str, str]] = []
+        seen_urls: set[str] = set()
+
+        for page_index in range(max_pages):
+            page_markdown = request_markdown_via_jina(self._page_url(page_index))
+            page_candidates, has_next = self._extract_listing_candidates(page_markdown)
+            if not page_candidates:
+                break
+
+            oldest_on_page: str | None = None
+            for url, title, published_at in page_candidates:
+                if oldest_on_page is None or published_at < oldest_on_page:
+                    oldest_on_page = published_at
+                if not (start_date <= published_at <= end_date):
+                    continue
+                if url in seen_urls:
+                    continue
+                seen_urls.add(url)
+                candidates.append((url, title, published_at))
+
+            if not has_next or (oldest_on_page is not None and oldest_on_page < start_date):
+                break
+
+        records: list[ScrapedRecord] = []
+        for url, title, published_at in candidates:
+            try:
+                records.append(self._fetch_detail_record(url, title, published_at))
+            except Exception as exc:
+                print(f"AU: skipping {url} after fetch/parse error: {exc}")
+
+        deduped = {record.url: record for record in records}
+        return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
+
+    def _page_url(self, page_index: int) -> str:
+        if page_index <= 0:
+            return self.archive_url
+        return f"{self.archive_url}?page={page_index}"
+
+    def _extract_listing_candidates(self, markdown: str) -> tuple[list[tuple[str, str, str]], bool]:
+        candidates: list[tuple[str, str, str]] = []
+        for raw_line in extract_jina_markdown_body(markdown).splitlines():
+            line = clean_text(raw_line)
+            if not line:
+                continue
+            match = AU_LISTING_ENTRY_RE.match(line)
+            if not match:
+                continue
+            candidates.append(
+                (
+                    normalize_generic_url(match.group("url")),
+                    clean_text(match.group("title")),
+                    parse_us_date(match.group("date")),
+                )
+            )
+        return candidates, "[Next page" in markdown
+
+    def _fetch_detail_record(self, url: str, fallback_title: str, fallback_published_at: str) -> ScrapedRecord:
+        markdown = request_markdown_via_jina(url)
+        title = self._extract_title(markdown) or fallback_title
+        body = extract_jina_markdown_body(markdown)
+        content = self._extract_content(body, title)
+        return ScrapedRecord(
+            country_code=self.country_code,
+            published_at=fallback_published_at,
+            url=normalize_generic_url(url),
+            title=title,
+            content=content,
+            source_kind=self._source_kind(title),
+            language="en",
+            speaker=self._speaker(title),
+        )
+
+    @staticmethod
+    def _extract_title(markdown: str) -> str:
+        for line in markdown.splitlines():
+            cleaned = clean_text(line)
+            if cleaned.startswith("Title: "):
+                return cleaned.removeprefix("Title: ").strip()
+        return ""
+
+    @staticmethod
+    def _extract_content(body: str, title: str) -> str:
+        lowered_body = body.lower()
+        if "page not found" in lowered_body or "requested page could not be found" in lowered_body:
+            raise ValueError("Australia FM detail page not found")
+
+        content_lines: list[str] = []
+        for raw_line in body.splitlines():
+            line = clean_text(raw_line)
+            if not line or normalize_compare_text(line) == normalize_compare_text(title):
+                continue
+            if line.startswith("[Back to top]") or line == "Back to top":
+                break
+            content_lines.append(line)
+
+        content = clean_text("\n".join(content_lines))
+        if not content:
+            raise ValueError(f"Missing Australian FM content for {title}")
+        return content
+
+    @staticmethod
+    def _source_kind(title: str) -> str:
+        lowered = normalize_compare_text(title)
+        if "joint statement" in lowered or lowered.startswith("statement"):
+            return "au_fm_statement"
+        return "au_fm_media_release"
+
+    @staticmethod
+    def _speaker(title: str) -> str:
+        cleaned = clean_text(title)
+        if "Deputy" in cleaned:
+            return "Deputy Foreign Minister"
+        return "Penny Wong"
+
+
+class CanadaGlobalAffairsNewsSource:
+    country_code = "CA"
+    history_start_date = "2017-03-31"
+    resume_missing_history = True
+    api_url = "https://api.io.canada.ca/io-server/gc/news/en/v2"
+    department = "departmentofforeignaffairstradeanddevelopment"
+
+    def __init__(self, session: requests.Session) -> None:
+        self.session = session
+
+    def fetch_recent(self, max_pages: int = 2) -> list[ScrapedRecord]:
+        end_date = datetime.now(timezone.utc).date()
+        start_date = end_date - timedelta(days=max(max_pages * 90, 180))
+        return self.fetch_between(start_date.isoformat(), end_date.isoformat(), max_pages=max_pages)
+
+    def fetch_between(self, start_date: str, end_date: str, max_pages: int = 8) -> list[ScrapedRecord]:
+        candidates: list[tuple[str, str, str, str]] = []
+        seen_urls: set[str] = set()
+        cursor = f"{start_date}T00:00:00-05:00"
+
+        for _ in range(max_pages):
+            entries = self._fetch_batch(cursor)
+            if not entries:
+                break
+
+            newest_timestamp: datetime | None = None
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    continue
+
+                url = normalize_generic_url(str(entry.get("link", "")).strip())
+                title = clean_text(str(entry.get("title", "")).strip())
+                teaser = clean_text(str(entry.get("teaser", "")).strip())
+                published_timestamp = clean_text(str(entry.get("publishedDate", "")).strip())
+                if not url or not title or not published_timestamp:
+                    continue
+
+                published_at = parse_us_date(published_timestamp)
+                try:
+                    published_dt = datetime.fromisoformat(published_timestamp.replace("Z", "+00:00"))
+                except ValueError:
+                    published_dt = datetime.combine(iso_to_date(published_at), datetime.min.time())
+
+                if newest_timestamp is None or published_dt > newest_timestamp:
+                    newest_timestamp = published_dt
+
+                if not (start_date <= published_at <= end_date):
+                    continue
+                if url in seen_urls:
+                    continue
+                seen_urls.add(url)
+                candidates.append((url, title, published_at, teaser))
+
+            if newest_timestamp is None:
+                break
+
+            if len(entries) < 1000 or newest_timestamp.date().isoformat() >= end_date:
+                break
+
+            cursor = (newest_timestamp + timedelta(seconds=1)).isoformat()
+
+        records: list[ScrapedRecord] = []
+        for url, title, published_at, teaser in candidates:
+            try:
+                records.append(self._fetch_detail_record(url, title, published_at, teaser))
+            except Exception as exc:
+                print(f"CA: skipping {url} after fetch/parse error: {exc}")
+
+        deduped = {record.url: record for record in records}
+        return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
+
+    def _fetch_batch(self, cursor: str) -> list[dict[str, object]]:
+        query = (
+            f"dept={self.department}"
+            f"&sort=publishedDate"
+            f"&orderBy=asc"
+            f"&pick=1000"
+            f"&publishedDate>={cursor}"
+        )
+        payload = request_json(self.session, f"{self.api_url}?{query}")
+        if not isinstance(payload, dict):
+            raise RuntimeError("Canada news API returned a non-dict payload")
+        feed = payload.get("feed")
+        if not isinstance(feed, dict):
+            return []
+        entries = feed.get("entry", [])
+        if isinstance(entries, dict):
+            return [entries]
+        if not isinstance(entries, list):
+            return []
+        return [entry for entry in entries if isinstance(entry, dict)]
+
+    def _fetch_detail_record(self, url: str, fallback_title: str, fallback_published_at: str, teaser: str) -> ScrapedRecord:
+        content = ""
+        title = fallback_title
+        published_at = fallback_published_at
+        source_kind = "ca_gac_news"
+
+        try:
+            markdown = request_markdown_via_jina(url)
+            title = self._extract_title(markdown) or fallback_title
+            published_at = self._extract_published_at(markdown) or fallback_published_at
+            body = extract_jina_markdown_body(markdown)
+            content = self._extract_content(body, title)
+            source_kind = self._source_kind(body, title)
+        except Exception:
+            content = ""
+
+        if not content:
+            content = teaser or title
+
+        return ScrapedRecord(
+            country_code=self.country_code,
+            published_at=published_at,
+            url=normalize_generic_url(url),
+            title=title,
+            content=content,
+            source_kind=source_kind,
+            language="en",
+            speaker="Global Affairs Canada",
+        )
+
+    @staticmethod
+    def _extract_title(markdown: str) -> str:
+        for line in markdown.splitlines():
+            cleaned = clean_text(line)
+            if cleaned.startswith("Title: "):
+                return cleaned.removeprefix("Title: ").strip()
+        return ""
+
+    @staticmethod
+    def _extract_published_at(markdown: str) -> str | None:
+        for line in markdown.splitlines():
+            cleaned = clean_text(line)
+            if cleaned.startswith("Published Time: "):
+                return parse_us_date(cleaned.removeprefix("Published Time: ").strip())
+        return None
+
+    @staticmethod
+    def _extract_content(body: str, title: str) -> str:
+        lines = [clean_text(line) for line in body.splitlines()]
+        normalized_title = normalize_compare_text(title)
+        start_index = 0
+
+        for index, line in enumerate(lines):
+            if line.startswith("From: "):
+                start_index = index + 1
+                break
+
+        if start_index == 0:
+            for index, line in enumerate(lines):
+                if normalize_compare_text(line) == normalized_title:
+                    start_index = index + 1
+                    break
+
+        content_lines: list[str] = []
+        stop_headings = {
+            "Associated links",
+            "Contacts",
+            "Page details",
+            "Related products",
+            "Related links",
+            "Features",
+            "About this site",
+            "On this page",
+            "Services and information",
+        }
+        type_headings = {
+            "News release",
+            "Statement",
+            "Readout",
+            "Media advisory",
+            "Speech",
+            "Backgrounder",
+        }
+
+        for line in lines[start_index:]:
+            if not line or normalize_compare_text(line) == normalized_title:
+                continue
+            if line == "Report a problem on this page":
+                break
+            if line.startswith("## "):
+                heading = clean_text(line.removeprefix("## ").strip())
+                if heading in stop_headings:
+                    break
+                if heading in type_headings:
+                    continue
+            if line.startswith("From: "):
+                continue
+            if line.startswith("*   ["):
+                continue
+            if line.endswith("- Canada.ca"):
+                continue
+            content_lines.append(line.removeprefix("# ").strip() if line.startswith("# ") else line)
+
+        return clean_text("\n".join(content_lines))
+
+    @staticmethod
+    def _source_kind(body: str, title: str) -> str:
+        merged = normalize_compare_text(f"{title}\n{body[:240]}")
+        if "backgrounder" in merged:
+            return "ca_gac_backgrounder"
+        if "media advisory" in merged:
+            return "ca_gac_media_advisory"
+        if "speech" in merged or "remarks" in merged:
+            return "ca_gac_speech"
+        if "statement" in merged:
+            return "ca_gac_statement"
+        if "readout" in merged:
+            return "ca_gac_readout"
+        return "ca_gac_news_release"
+
+
+class MexicoSrePressArchiveSource:
+    country_code = "MX"
+    history_start_date = "2025-01-01"
+    resume_missing_history = True
+    archive_url = "https://www.gob.mx/sre/es/archivo/prensa?idiom=en"
+
+    def __init__(self, session: requests.Session) -> None:
+        self.session = session
+
+    def fetch_recent(self, max_pages: int = 6) -> list[ScrapedRecord]:
+        end_date = datetime.now(timezone.utc).date()
+        start_date = end_date - timedelta(days=max(max_pages * 20, 180))
+        return self.fetch_between(start_date.isoformat(), end_date.isoformat(), max_pages=max_pages)
+
+    def fetch_between(self, start_date: str, end_date: str, max_pages: int = 90) -> list[ScrapedRecord]:
+        candidates: list[tuple[str, str, str]] = []
+        seen_urls: set[str] = set()
+
+        for page_number in range(1, max_pages + 1):
+            page_markdown = request_markdown_via_jina(self._page_url(page_number))
+            page_candidates = self._extract_listing_candidates(page_markdown)
+            if not page_candidates:
+                break
+
+            oldest_on_page: str | None = None
+            for url, title, published_at in page_candidates:
+                if oldest_on_page is None or published_at < oldest_on_page:
+                    oldest_on_page = published_at
+                if not (start_date <= published_at <= end_date):
+                    continue
+                if url in seen_urls:
+                    continue
+                seen_urls.add(url)
+                candidates.append((url, title, published_at))
+
+            if oldest_on_page is not None and oldest_on_page < start_date:
+                break
+
+        records: list[ScrapedRecord] = []
+        for url, title, published_at in candidates:
+            try:
+                records.append(self._fetch_detail_record(url, title, published_at))
+            except Exception as exc:
+                print(f"MX: skipping {url} after fetch/parse error: {exc}")
+
+        deduped = {record.url: record for record in records}
+        return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
+
+    def _page_url(self, page_number: int) -> str:
+        if page_number <= 1:
+            return self.archive_url
+        return f"{self.archive_url}&page={page_number}"
+
+    def _extract_listing_candidates(self, markdown: str) -> list[tuple[str, str, str]]:
+        lines = [clean_text(line) for line in extract_jina_markdown_body(markdown).splitlines()]
+        candidates: list[tuple[str, str, str]] = []
+        current_date: str | None = None
+        pending_title: str | None = None
+
+        for line in lines:
+            if not line:
+                continue
+            date_match = MX_LISTING_DATE_RE.match(line)
+            if date_match:
+                current_date = parse_us_date(date_match.group("date"))
+                pending_title = None
+                continue
+
+            if line.startswith("## ") and current_date:
+                pending_title = clean_text(line.removeprefix("## ").strip())
+                continue
+
+            if line.startswith("[continue reading](") and current_date and pending_title:
+                links = markdown_links(line)
+                if not links:
+                    continue
+                _, url = links[0]
+                candidates.append((normalize_generic_url(url), pending_title, current_date))
+                pending_title = None
+
+        return candidates
+
+    def _fetch_detail_record(self, url: str, fallback_title: str, fallback_published_at: str) -> ScrapedRecord:
+        markdown = request_markdown_via_jina(url)
+        body = extract_jina_markdown_body(markdown)
+        title = self._extract_title(markdown) or fallback_title
+        published_at = self._extract_published_at(body) or fallback_published_at
+        content = self._extract_content(body, title)
+        return ScrapedRecord(
+            country_code=self.country_code,
+            published_at=published_at,
+            url=normalize_generic_url(url),
+            title=title,
+            content=content,
+            source_kind=self._source_kind(title, content),
+            language="es",
+            speaker=self._speaker(title, content),
+        )
+
+    @staticmethod
+    def _extract_title(markdown: str) -> str:
+        for line in markdown.splitlines():
+            cleaned = clean_text(line)
+            if cleaned.startswith("Title: "):
+                return cleaned.removeprefix("Title: ").strip()
+        return ""
+
+    @staticmethod
+    def _extract_published_at(body: str) -> str | None:
+        for raw_line in body.splitlines():
+            line = clean_text(raw_line)
+            match = MX_DETAIL_DATE_RE.search(line)
+            if match:
+                return parse_us_date(match.group("date"))
+        return None
+
+    @staticmethod
+    def _extract_content(body: str, title: str) -> str:
+        lines = [clean_text(line) for line in body.splitlines()]
+        normalized_title = normalize_compare_text(title)
+        title_hits = 0
+        start_index = 0
+
+        for index, line in enumerate(lines):
+            if not line.startswith("# "):
+                continue
+            heading = clean_text(line.removeprefix("# ").split(" | ", 1)[0])
+            if normalize_compare_text(heading) != normalized_title:
+                continue
+            title_hits += 1
+            if title_hits >= 2:
+                start_index = index + 1
+                break
+
+        if start_index == 0:
+            for index, line in enumerate(lines):
+                if normalize_compare_text(line) == normalized_title:
+                    start_index = index + 1
+                    break
+
+        content_lines: list[str] = []
+        for line in lines[start_index:]:
+            if not line or normalize_compare_text(line) == normalized_title:
+                continue
+            if line == "* * *" or line.startswith("[Imprime la página completa]") or line.startswith("#### Links"):
+                break
+            if line.startswith("La legalidad, veracidad"):
+                break
+            if line.startswith("Secretaría de Relaciones Exteriores | "):
+                continue
+            if line.startswith("![Image") or line == "Aa+Aa-":
+                continue
+            content_lines.append(line.removeprefix("## ").strip() if line.startswith("## ") else line)
+
+        content = clean_text("\n".join(content_lines))
+        if not content:
+            raise ValueError(f"Missing Mexico SRE content for {title}")
+        return content
+
+    @staticmethod
+    def _source_kind(title: str, content: str) -> str:
+        lowered = normalize_compare_text(f"{title}\n{content[:200]}")
+        if "comunicado conjunto" in lowered or "joint statement" in lowered:
+            return "mx_sre_joint_statement"
+        return "mx_sre_press_release"
+
+    @staticmethod
+    def _speaker(title: str, content: str) -> str:
+        merged = clean_text(f"{title}\n{content[:240]}")
+        if "Juan Ramón de la Fuente" in merged or "De la Fuente" in merged:
+            return "Juan Ramon de la Fuente"
+        return "Secretaria de Relaciones Exteriores"
+
+
+class SpainMfaComunicadosSource:
+    country_code = "ES"
+    history_start_date = "2025-01-01"
+    resume_missing_history = True
+    archive_url = "https://www.exteriores.gob.es/en/Comunicacion/Comunicados/Paginas/index.aspx"
+
+    def __init__(self, session: requests.Session) -> None:
+        self.session = session
+
+    def fetch_recent(self, max_pages: int = 6) -> list[ScrapedRecord]:
+        end_date = datetime.now(timezone.utc).date()
+        start_date = end_date - timedelta(days=max(max_pages * 20, 180))
+        return self.fetch_between(start_date.isoformat(), end_date.isoformat(), max_pages=max_pages)
+
+    def fetch_between(self, start_date: str, end_date: str, max_pages: int = 90) -> list[ScrapedRecord]:
+        candidates: list[tuple[str, str, str]] = []
+        seen_urls: set[str] = set()
+
+        for page_number in range(1, max_pages + 1):
+            page_markdown = request_markdown_via_jina(self._page_url(page_number))
+            page_candidates, has_next = self._extract_listing_candidates(page_markdown)
+            if not page_candidates:
+                break
+
+            oldest_on_page: str | None = None
+            for url, title, published_at in page_candidates:
+                if oldest_on_page is None or published_at < oldest_on_page:
+                    oldest_on_page = published_at
+                if not (start_date <= published_at <= end_date):
+                    continue
+                if url in seen_urls:
+                    continue
+                seen_urls.add(url)
+                candidates.append((url, title, published_at))
+
+            if not has_next or (oldest_on_page is not None and oldest_on_page < start_date):
+                break
+
+        records: list[ScrapedRecord] = []
+        for url, title, published_at in candidates:
+            try:
+                records.append(self._fetch_detail_record(url, title, published_at))
+            except Exception as exc:
+                print(f"ES: skipping {url} after fetch/parse error: {exc}")
+
+        deduped = {record.url: record for record in records}
+        return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
+
+    def _page_url(self, page_number: int) -> str:
+        if page_number <= 1:
+            return self.archive_url
+        return f"{self.archive_url}?p={page_number}"
+
+    def _extract_listing_candidates(self, markdown: str) -> tuple[list[tuple[str, str, str]], bool]:
+        candidates: list[tuple[str, str, str]] = []
+        for raw_line in extract_jina_markdown_body(markdown).splitlines():
+            line = clean_text(raw_line)
+            if not line:
+                continue
+            match = ES_LISTING_ENTRY_RE.match(line)
+            if not match:
+                continue
+            candidates.append(
+                (
+                    normalize_generic_url(match.group("url")),
+                    clean_text(match.group("title")),
+                    parse_en_short_date(match.group("date")),
+                )
+            )
+        return candidates, "Go to the next page" in markdown
+
+    def _fetch_detail_record(self, url: str, fallback_title: str, fallback_published_at: str) -> ScrapedRecord:
+        markdown = request_markdown_via_jina(url)
+        title = self._extract_title(markdown) or fallback_title
+        body = extract_jina_markdown_body(markdown)
+        content = self._extract_content(body, title)
+        return ScrapedRecord(
+            country_code=self.country_code,
+            published_at=fallback_published_at,
+            url=normalize_generic_url(url),
+            title=title,
+            content=content,
+            source_kind=self._source_kind(title),
+            language="en",
+            speaker=self._speaker(title),
+        )
+
+    @staticmethod
+    def _extract_title(markdown: str) -> str:
+        for line in markdown.splitlines():
+            cleaned = clean_text(line)
+            if cleaned.startswith("Title: "):
+                return cleaned.removeprefix("Title: ").strip()
+        return ""
+
+    @staticmethod
+    def _extract_content(body: str, title: str) -> str:
+        lines = [clean_text(line) for line in body.splitlines()]
+        normalized_title = normalize_compare_text(title)
+        title_hits = 0
+        start_index = 0
+
+        for index, line in enumerate(lines):
+            if not line.startswith("# "):
+                continue
+            if normalize_compare_text(line.removeprefix("# ").strip()) != normalized_title:
+                continue
+            title_hits += 1
+            if title_hits >= 2:
+                start_index = index + 1
+                break
+
+        if start_index == 0:
+            raise ValueError(f"Could not locate Spain MFA body for {title}")
+
+        content_lines: list[str] = []
+        for line in lines[start_index:]:
+            if not line or line == "Today" or normalize_compare_text(line) == normalized_title:
+                continue
+            if line == "_-NON OFFICIAL TRANSLATION-_" or line.startswith("## More information") or line == "Banners":
+                break
+            content_lines.append(line.removeprefix("# ").strip() if line.startswith("# ") else line)
+
+        content = clean_text("\n".join(content_lines))
+        if not content:
+            raise ValueError(f"Missing Spain MFA content for {title}")
+        return content
+
+    @staticmethod
+    def _source_kind(title: str) -> str:
+        lowered = normalize_compare_text(title)
+        if "joint statement" in lowered or "statement" in lowered or "communiqué" in lowered:
+            return "es_mfa_statement"
+        return "es_mfa_comunicado"
+
+    @staticmethod
+    def _speaker(title: str) -> str:
+        cleaned = clean_text(title)
+        if cleaned.startswith("Spanish Government"):
+            return "Spanish Government"
+        return "Spanish Ministry of Foreign Affairs"
+
+
+class BrazilItamaratyPressReleaseSource:
+    country_code = "BR"
+    history_start_date = "2025-01-01"
+    resume_missing_history = True
+    archive_url = "https://www.gov.br/mre/en/en/contact-us/press-area/press-releases/press-releases"
+
+    def __init__(self, session: requests.Session) -> None:
+        self.session = session
+
+    def fetch_recent(self, max_pages: int = 6) -> list[ScrapedRecord]:
+        end_date = datetime.now(timezone.utc).date()
+        start_date = end_date - timedelta(days=max(max_pages * 30, 180))
+        return self.fetch_between(start_date.isoformat(), end_date.isoformat(), max_pages=max_pages)
+
+    def fetch_between(self, start_date: str, end_date: str, max_pages: int = 30) -> list[ScrapedRecord]:
+        candidates: list[tuple[str, str, str, str]] = []
+        seen_urls: set[str] = set()
+
+        for page_index in range(max_pages):
+            page_markdown = request_markdown_via_jina(self._page_url(page_index))
+            page_candidates, has_next = self._extract_listing_candidates(page_markdown)
+            if not page_candidates:
+                break
+
+            oldest_on_page: str | None = None
+            for url, title, published_at, excerpt in page_candidates:
+                if oldest_on_page is None or published_at < oldest_on_page:
+                    oldest_on_page = published_at
+                if not (start_date <= published_at <= end_date):
+                    continue
+                if url in seen_urls:
+                    continue
+                seen_urls.add(url)
+                candidates.append((url, title, published_at, excerpt))
+
+            if not has_next or (oldest_on_page is not None and oldest_on_page < start_date):
+                break
+
+        records: list[ScrapedRecord] = []
+        for url, title, published_at, excerpt in candidates:
+            try:
+                records.append(self._fetch_detail_record(url, title, published_at, excerpt))
+            except Exception as exc:
+                print(f"BR: skipping {url} after fetch/parse error: {exc}")
+
+        deduped = {record.url: record for record in records}
+        return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
+
+    def _page_url(self, page_index: int) -> str:
+        if page_index <= 0:
+            return self.archive_url
+        return f"{self.archive_url}?b_start:int={page_index * 30}"
+
+    def _extract_listing_candidates(self, markdown: str) -> tuple[list[tuple[str, str, str, str]], bool]:
+        lines = [clean_text(line) for line in extract_jina_markdown_body(markdown).splitlines()]
+        candidates: list[tuple[str, str, str, str]] = []
+        pending_title = ""
+        pending_url = ""
+        pending_excerpt: list[str] = []
+
+        for line in lines:
+            if not line:
+                continue
+
+            title_match = BR_LISTING_TITLE_RE.match(line)
+            if title_match:
+                pending_title = clean_text(title_match.group("title"))
+                pending_url = normalize_generic_url(title_match.group("url"))
+                pending_excerpt = []
+                continue
+
+            if not pending_title:
+                continue
+
+            date_match = BR_LISTING_DATE_RE.match(line)
+            if date_match:
+                candidates.append(
+                    (
+                        pending_url,
+                        pending_title,
+                        parse_us_date(date_match.group("date")),
+                        clean_text(" ".join(pending_excerpt)),
+                    )
+                )
+                pending_title = ""
+                pending_url = ""
+                pending_excerpt = []
+                continue
+
+            if line.startswith("PRESS RELEASE") or line.startswith("# ") or line == "Info":
+                continue
+            if line.startswith("Published in ") or line.startswith("published "):
+                continue
+            pending_excerpt.append(line)
+
+        return candidates, "Next »" in markdown
+
+    def _fetch_detail_record(self, url: str, fallback_title: str, fallback_published_at: str, excerpt: str) -> ScrapedRecord:
+        title = fallback_title
+        published_at = fallback_published_at
+        content = ""
+        fetch_url = self._detail_fetch_url(url)
+
+        try:
+            markdown = request_markdown_via_jina(fetch_url)
+            title = self._extract_title(markdown) or fallback_title
+            published_at = self._extract_published_at(markdown) or fallback_published_at
+            content = self._extract_content(extract_jina_markdown_body(markdown), title)
+        except Exception:
+            content = ""
+
+        if not content:
+            content = excerpt or title
+
+        return ScrapedRecord(
+            country_code=self.country_code,
+            published_at=published_at,
+            url=normalize_generic_url(url),
+            title=title,
+            content=content,
+            source_kind=self._source_kind(title, content),
+            language="en",
+            speaker="Brazilian Ministry of Foreign Affairs",
+        )
+
+    @staticmethod
+    def _detail_fetch_url(url: str) -> str:
+        return url.replace("/mre/en/contact-us/", "/mre/en/en/contact-us/")
+
+    @staticmethod
+    def _extract_title(markdown: str) -> str:
+        for line in markdown.splitlines():
+            cleaned = clean_text(line)
+            if cleaned.startswith("Title: "):
+                return cleaned.removeprefix("Title: ").strip()
+        return ""
+
+    @staticmethod
+    def _extract_published_at(markdown: str) -> str | None:
+        for line in markdown.splitlines():
+            cleaned = clean_text(line)
+            if cleaned.startswith("Published Time: "):
+                return parse_us_date(cleaned.removeprefix("Published Time: ").strip())
+            if cleaned.startswith("Published in "):
+                return parse_us_date(cleaned.removeprefix("Published in ").split(" Updated in ", 1)[0].strip())
+        return None
+
+    @staticmethod
+    def _extract_content(body: str, title: str) -> str:
+        if "Advanced cookie settings" in body and "Strictly necessary cookies" in body:
+            return ""
+
+        lines = [clean_text(line) for line in body.splitlines()]
+        normalized_title = normalize_compare_text(title)
+        start_index = 0
+
+        for index, line in enumerate(lines):
+            if line.startswith("Published in "):
+                start_index = index + 1
+                break
+
+        content_lines: list[str] = []
+        for line in lines[start_index:]:
+            if not line or normalize_compare_text(line) == normalized_title:
+                continue
+            if line in {"Category", "Editor", "Location", "Subjects"}:
+                break
+            if line.startswith("Cookies") or line.startswith("Due date"):
+                break
+            if line.startswith("Published in "):
+                continue
+            if line.startswith("# ") or line.startswith("## "):
+                continue
+            content_lines.append(line)
+
+        return clean_text("\n".join(content_lines))
+
+    @staticmethod
+    def _source_kind(title: str, content: str) -> str:
+        lowered = normalize_compare_text(f"{title}\n{content[:200]}")
+        if "joint statement" in lowered or "joint communiqu" in lowered or "joint press release" in lowered:
+            return "br_mre_joint_statement"
+        if "statement" in lowered:
+            return "br_mre_statement"
+        return "br_mre_press_release"
 
 
 class IndiaMeaOfficialSource:

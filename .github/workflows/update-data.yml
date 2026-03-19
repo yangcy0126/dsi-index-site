@@ -24,11 +24,11 @@ permissions:
 jobs:
   update-country:
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ matrix.country == 'RU' && 45 || matrix.country == 'IN' && 90 || 70 }}
+    timeout-minutes: ${{ matrix.country == 'RU' && 45 || matrix.country == 'IN' && 90 || matrix.country == 'CA' && 90 || matrix.country == 'BR' && 90 || matrix.country == 'MX' && 90 || matrix.country == 'ES' && 90 || 70 }}
     strategy:
       fail-fast: false
       matrix:
-        country: [CN, US, UK, JP, KR, DE, IN, IT, FR, RU]
+        country: [CN, US, UK, JP, KR, DE, IN, IT, CA, BR, FR, RU, AU, MX, ES]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -189,6 +189,41 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: records-RU
+          path: records
+
+      - name: Download AU record
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: records-AU
+          path: records
+
+      - name: Download MX record
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: records-MX
+          path: records
+
+      - name: Download ES record
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: records-ES
+          path: records
+
+      - name: Download CA record
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: records-CA
+          path: records
+
+      - name: Download BR record
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: records-BR
           path: records
 
       - name: Rebuild site data

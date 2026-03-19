@@ -10,6 +10,9 @@ import requests
 
 from build_wdsi_data import main as build_site_data
 from wdsi_pipeline import (
+    AustraliaForeignMinisterMediaReleaseSource,
+    BrazilItamaratyPressReleaseSource,
+    CanadaGlobalAffairsNewsSource,
     ChinaMfaRegularPressSource,
     FranceMfaSpokespersonSource,
     GermanyForeignOfficeSource,
@@ -17,8 +20,10 @@ from wdsi_pipeline import (
     ItalyMfaPressReleaseSource,
     JapanMofaPressReleaseSource,
     KoreaMofaPressReleaseSource,
+    MexicoSrePressArchiveSource,
     OpenAIWDSIScorer,
     RussiaMfaNewsSource,
+    SpainMfaComunicadosSource,
     UkFcdoNewsSource,
     UsStateDepartmentSource,
 )
@@ -27,7 +32,7 @@ from wdsi_pipeline import (
 ROOT = Path(__file__).resolve().parents[1]
 RECORDS_DIR = ROOT / "records"
 
-SUPPORTED_COUNTRIES = {"CN", "US", "UK", "JP", "KR", "FR", "RU", "DE", "IN", "IT"}
+SUPPORTED_COUNTRIES = {"CN", "US", "UK", "JP", "KR", "FR", "RU", "DE", "IN", "IT", "CA", "BR", "AU", "MX", "ES"}
 
 
 def load_records(path: Path) -> pd.DataFrame:
@@ -156,6 +161,16 @@ def make_sources(session: requests.Session, countries: list[str]) -> dict[str, o
         sources["IN"] = IndiaMeaOfficialSource(session)
     if "IT" in countries:
         sources["IT"] = ItalyMfaPressReleaseSource(session)
+    if "CA" in countries:
+        sources["CA"] = CanadaGlobalAffairsNewsSource(session)
+    if "BR" in countries:
+        sources["BR"] = BrazilItamaratyPressReleaseSource(session)
+    if "AU" in countries:
+        sources["AU"] = AustraliaForeignMinisterMediaReleaseSource(session)
+    if "MX" in countries:
+        sources["MX"] = MexicoSrePressArchiveSource(session)
+    if "ES" in countries:
+        sources["ES"] = SpainMfaComunicadosSource(session)
     if "FR" in countries:
         sources["FR"] = FranceMfaSpokespersonSource(session)
     if "RU" in countries:
@@ -231,7 +246,7 @@ def main() -> None:
 
         if code == "CN":
             fetched_records = source.fetch_between(start_date, end_date)
-        elif code in {"US", "UK", "KR", "DE", "IN", "IT", "FR", "RU"}:
+        elif code in {"US", "UK", "KR", "DE", "IN", "IT", "CA", "BR", "AU", "MX", "ES", "FR", "RU"}:
             fetched_records = source.fetch_between(start_date, end_date, max_pages=effective_max_pages)
         else:
             fetched_records = source.fetch_between(start_date, end_date)
@@ -287,7 +302,7 @@ def main() -> None:
                         "scored_at": result["scored_at"],
                     }
                 )
-        elif code in {"US", "UK", "JP", "KR", "DE", "IN", "IT", "FR", "RU"}:
+        elif code in {"US", "UK", "JP", "KR", "DE", "IN", "IT", "CA", "BR", "AU", "MX", "ES", "FR", "RU"}:
             batched_inputs = [SimpleNamespace(**item) for item in additions]
             batched_results = scorer.score_flat_records(batched_inputs)  # type: ignore[union-attr]
             for item, result in zip(additions, batched_results, strict=False):
