@@ -203,6 +203,20 @@ def main() -> None:
         source = sources[code]
         destination = RECORDS_DIR / f"{code}.csv"
         existing = load_records(destination)
+        if code == "RU":
+            source.known_urls = {
+                str(url)
+                for url in existing.get("url", pd.Series(dtype=str)).tolist()
+                if str(url).strip()
+            }
+            source.known_title_keys = {
+                (
+                    str(row.get("published_at", "")),
+                    source._normalize_compare_text(str(row.get("title", ""))),
+                )
+                for row in existing.to_dict(orient="records")
+                if str(row.get("published_at", "")).strip() and str(row.get("title", "")).strip()
+            }
         effective_max_pages = args.max_pages
         if args.start_date or args.end_date:
             today = datetime.now(timezone.utc).date().isoformat()

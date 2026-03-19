@@ -2143,6 +2143,14 @@ class RussiaMfaNewsSource:
             "speaker": "MFA spokesperson",
             "max_pages": 30,
         },
+        {
+            "list_url": "https://mid.ru/en/foreign_policy/news/",
+            "item_url_fragment": "/en/foreign_policy/news/",
+            "source_kind": "ru_mfa_press_release",
+            "speaker": "",
+            "max_pages": 15,
+            "section_start_date": "2026-01-01",
+        },
     )
 
     def __init__(self, session: requests.Session) -> None:
@@ -2160,7 +2168,16 @@ class RussiaMfaNewsSource:
             raise RuntimeError("Playwright is required to fetch Russian MFA records.") from exc
 
         start_bound = iso_to_date(start_date)
-        seen_urls: set[str] = set()
+        seen_urls = {
+            normalize_generic_url(str(url))
+            for url in getattr(self, "known_urls", set())
+            if str(url).strip()
+        }
+        seen_titles = {
+            (str(published_at), str(normalized_title))
+            for published_at, normalized_title in getattr(self, "known_title_keys", set())
+            if str(published_at).strip() and str(normalized_title).strip()
+        }
 
         with sync_playwright() as playwright:
             headless = os.getenv("WDSI_PLAYWRIGHT_HEADLESS", "1").strip().lower() not in {"0", "false", "no"}
@@ -2168,58 +2185,58 @@ class RussiaMfaNewsSource:
                 headless=headless,
                 args=["--disable-blink-features=AutomationControlled"],
             )
-            context = browser.new_context(
-                user_agent=BROWSER_HEADERS["User-Agent"],
-                locale="en-US",
-                extra_http_headers={
-                    "Accept": BROWSER_HEADERS["Accept"],
-                    "Accept-Language": BROWSER_HEADERS["Accept-Language"],
-                },
-            )
-            list_page = context.new_page()
-            article_page = context.new_page()
             records: list[ScrapedRecord] = []
 
             for section in self.sections:
-                section_candidates = self._collect_candidates(
-                    list_page,
-                    section,
-                    start_date,
-                    end_date,
-                    start_bound,
-                    max_pages,
-                )
-                for candidate in section_candidates:
-                    url = candidate["url"]
-                    if url in seen_urls:
-                        continue
-                    seen_urls.add(url)
-                    try:
-                        body_text = self._fetch_article_text(
-                            article_page,
-                            url,
-                            str(candidate["section_url"]),
+                context = self._new_browser_context(browser)
+                list_page = context.new_page()
+                article_page = context.new_page()
+                try:
+                    section_candidates = self._collect_candidates(
+                        list_page,
+                        section,
+                        start_date,
+                        end_date,
+                        start_bound,
+                        max_pages,
+                    )
+                    for candidate in section_candidates:
+                        url = candidate["url"]
+                        title_key = (
+                            str(candidate["published_at"]),
+                            self._normalize_compare_text(str(candidate["title"])),
                         )
-                        content = self._extract_article_content(body_text, candidate["title"])
-                        records.append(
-                            ScrapedRecord(
-                                country_code=self.country_code,
-                                published_at=candidate["published_at"],
-                                url=normalize_generic_url(url),
-                                title=candidate["title"],
-                                content=content,
-                                source_kind=str(candidate["source_kind"]),
-                                language="en",
-                                speaker=self._speaker(candidate["title"], str(candidate["speaker"])),
+                        if url in seen_urls:
+                            continue
+                        if title_key in seen_titles:
+                            continue
+                        seen_urls.add(url)
+                        seen_titles.add(title_key)
+                        try:
+                            body_text = self._fetch_article_text(
+                                article_page,
+                                url,
+                                str(candidate["section_url"]),
                             )
-                        )
-                    except Exception:
-                        continue
-
-            article_page.close()
-            list_page.close()
-
-            context.close()
+                            content = self._extract_article_content(body_text, candidate["title"])
+                            records.append(
+                                ScrapedRecord(
+                                    country_code=self.country_code,
+                                    published_at=candidate["published_at"],
+                                    url=normalize_generic_url(url),
+                                    title=candidate["title"],
+                                    content=content,
+                                    source_kind=str(candidate["source_kind"]),
+                                    language="en",
+                                    speaker=self._speaker(candidate["title"], str(candidate["speaker"])),
+                                )
+                            )
+                        except Exception:
+                            continue
+                finally:
+                    article_page.close()
+                    list_page.close()
+                    context.close()
             browser.close()
 
         deduped = {record.url: record for record in records}
@@ -2237,6 +2254,11 @@ class RussiaMfaNewsSource:
         section_url = str(section["list_url"])
         collected: list[dict[str, str]] = []
         section_max_pages = min(max_pages, int(section.get("max_pages", max_pages)))
+        section_start_date = str(section.get("section_start_date", "") or "")
+        if section_start_date and end_date < section_start_date:
+            return []
+        effective_start_date = max(start_date, section_start_date) if section_start_date else start_date
+        effective_start_bound = max(start_bound, iso_to_date(section_start_date)) if section_start_date else start_bound
 
         for page_number in range(1, section_max_pages + 1):
             page_url = section_url if page_number == 1 else f"{section_url}?PAGEN_1={page_number}"
@@ -2251,14 +2273,14 @@ class RussiaMfaNewsSource:
 
             oldest_on_page = min(iso_to_date(candidate["published_at"]) for candidate in page_candidates)
             for candidate in page_candidates:
-                if not (start_date <= candidate["published_at"] <= end_date):
+                if not (effective_start_date <= candidate["published_at"] <= end_date):
                     continue
                 candidate["section_url"] = section_url
                 candidate["source_kind"] = str(section["source_kind"])
                 candidate["speaker"] = str(section["speaker"])
                 collected.append(candidate)
 
-            if oldest_on_page < start_bound:
+            if oldest_on_page < effective_start_bound:
                 break
 
         return collected
@@ -2318,6 +2340,17 @@ class RussiaMfaNewsSource:
             except Exception:
                 pass
         raise RuntimeError(f"Russian MFA list page did not load candidates for {page_url}")
+
+    @staticmethod
+    def _new_browser_context(browser: object) -> object:
+        return browser.new_context(
+            user_agent=BROWSER_HEADERS["User-Agent"],
+            locale="en-US",
+            extra_http_headers={
+                "Accept": BROWSER_HEADERS["Accept"],
+                "Accept-Language": BROWSER_HEADERS["Accept-Language"],
+            },
+        )
 
     def _navigate_mid_page(
         self,
