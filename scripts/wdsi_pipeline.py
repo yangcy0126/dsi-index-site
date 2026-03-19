@@ -1687,7 +1687,7 @@ class ItalyMfaPressReleaseSource:
         return self.fetch_between(start_date.isoformat(), end_date.isoformat(), max_pages=max_pages)
 
     def fetch_between(self, start_date: str, end_date: str, max_pages: int = 20) -> list[ScrapedRecord]:
-        candidates: list[tuple[str, str, str]] = []
+        candidates: list[tuple[str, str, str, str]] = []
         seen_urls: set[str] = set()
 
         for year, month in reversed(iter_months(start_date, end_date)):
@@ -1698,7 +1698,7 @@ class ItalyMfaPressReleaseSource:
                     break
 
                 oldest_on_page: str | None = None
-                for url, title, published_at in page_candidates:
+                for url, title, published_at, excerpt in page_candidates:
                     if oldest_on_page is None or published_at < oldest_on_page:
                         oldest_on_page = published_at
                     if not (start_date <= published_at <= end_date):
@@ -1706,7 +1706,7 @@ class ItalyMfaPressReleaseSource:
                     if url in seen_urls:
                         continue
                     seen_urls.add(url)
-                    candidates.append((url, title, published_at))
+                    candidates.append((url, title, published_at, excerpt))
 
                 if not has_next or (oldest_on_page is not None and oldest_on_page < start_date):
                     break
@@ -1715,13 +1715,18 @@ class ItalyMfaPressReleaseSource:
             return []
 
         records: list[ScrapedRecord] = []
-        with ThreadPoolExecutor(max_workers=6) as executor:
+        with ThreadPoolExecutor(max_workers=3) as executor:
             futures = {
-                executor.submit(self._fetch_detail_record, url, title, published_at): (url, title, published_at)
-                for url, title, published_at in candidates
+                executor.submit(self._fetch_detail_record, url, title, published_at, excerpt): (
+                    url,
+                    title,
+                    published_at,
+                    excerpt,
+                )
+                for url, title, published_at, excerpt in candidates
             }
             for future in as_completed(futures):
-                url, title, published_at = futures[future]
+                url, title, published_at, excerpt = futures[future]
                 try:
                     records.append(future.result())
                 except Exception as exc:
@@ -1740,39 +1745,85 @@ class ItalyMfaPressReleaseSource:
             params["pag"] = str(page_number)
         return f"{self.archive_url}?{urlencode(params)}"
 
-    def _extract_listing_candidates(self, markdown: str) -> tuple[list[tuple[str, str, str]], bool]:
+    def _extract_listing_candidates(self, markdown: str) -> tuple[list[tuple[str, str, str, str]], bool]:
         lines = [clean_text(line) for line in markdown.splitlines()]
-        candidates: list[tuple[str, str, str]] = []
+        candidates: list[tuple[str, str, str, str]] = []
         current_date: str | None = None
+        pending: dict[str, str | list[str]] | None = None
+
+        def flush_pending() -> None:
+            nonlocal pending
+            if pending is None:
+                return
+            url = str(pending["url"])
+            title = str(pending["title"])
+            published_at = str(pending["published_at"])
+            excerpt_lines = pending.get("excerpt_lines") or []
+            excerpt = clean_text(" ".join(str(line) for line in excerpt_lines))
+            excerpt = excerpt.removesuffix("[...]").removesuffix("[…]").strip()
+            candidates.append((url, title, published_at, excerpt))
+            pending = None
 
         for line in lines:
             if not line:
                 continue
             date_match = ITALY_LISTING_DATE_RE.fullmatch(line)
             if date_match:
+                flush_pending()
                 current_date = parse_us_date(date_match.group("date"))
                 continue
 
             title_match = ITALY_HEADING_LINK_RE.match(line)
-            if not title_match or current_date is None:
+            if title_match and current_date is not None:
+                flush_pending()
+                title = self._normalize_title(title_match.group("title"))
+                url = normalize_generic_url(title_match.group("url"))
+                if not title or "/en/sala_stampa/archivionotizie/comunicati/" not in url:
+                    pending = None
+                    continue
+                pending = {
+                    "url": url,
+                    "title": title,
+                    "published_at": current_date,
+                    "excerpt_lines": [],
+                }
                 continue
 
-            title = self._normalize_title(title_match.group("title"))
-            url = normalize_generic_url(title_match.group("url"))
-            if not title or "/en/sala_stampa/archivionotizie/comunicati/" not in url:
+            if pending is None:
                 continue
-            candidates.append((url, title, current_date))
+            if line.startswith("[Read more]("):
+                flush_pending()
+                continue
+            if line.startswith("## Pagination") or line.startswith("#### Browse section"):
+                flush_pending()
+                break
+            excerpt_lines = pending["excerpt_lines"]
+            assert isinstance(excerpt_lines, list)
+            excerpt_lines.append(line)
+
+        flush_pending()
 
         return candidates, "[Next page](" in markdown
 
-    def _fetch_detail_record(self, url: str, fallback_title: str, fallback_published_at: str) -> ScrapedRecord:
-        markdown = request_markdown_via_jina(url)
+    def _fetch_detail_record(
+        self,
+        url: str,
+        fallback_title: str,
+        fallback_published_at: str,
+        fallback_excerpt: str,
+    ) -> ScrapedRecord:
+        try:
+            markdown = request_markdown_via_jina(url)
+        except Exception:
+            return self._fetch_detail_record_from_html(url, fallback_title, fallback_published_at, fallback_excerpt)
         if self._is_blocked_markdown(markdown):
-            return self._fetch_detail_record_from_html(url, fallback_title, fallback_published_at)
+            return self._fetch_detail_record_from_html(url, fallback_title, fallback_published_at, fallback_excerpt)
         title = self._extract_title(markdown) or fallback_title
         title = self._normalize_title(title) or fallback_title
         published_at = self._extract_published_at(markdown) or fallback_published_at
         content = self._extract_content(markdown, title)
+        if self._is_blocked_title_or_content(title, content):
+            return self._fetch_detail_record_from_html(url, fallback_title, fallback_published_at, fallback_excerpt)
 
         return ScrapedRecord(
             country_code=self.country_code,
@@ -1790,51 +1841,83 @@ class ItalyMfaPressReleaseSource:
         url: str,
         fallback_title: str,
         fallback_published_at: str,
+        fallback_excerpt: str,
     ) -> ScrapedRecord:
-        html_text = request_html_with_playwright(url)
-        soup = BeautifulSoup(html_text, "html.parser")
-        article = soup.select_one("article") or soup.select_one("main") or soup.body
-        if article is None:
-            raise ValueError(f"Missing Italy MAECI article body for {url}")
-
-        title_node = article.select_one("h1")
-        title = self._normalize_title(title_node.get_text(" ", strip=True)) if title_node else fallback_title
-        if not title:
-            title = fallback_title
-
-        for selector in [
-            "nav",
-            "header",
-            "footer",
-            "aside",
-            "script",
-            "style",
-            "form",
-            ".share",
-            ".social",
-            ".related-posts",
-            ".related-news",
-        ]:
-            for node in article.select(selector):
-                node.decompose()
-
-        article_text = clean_text(article.get_text("\n"))
-        published_match = re.search(r"Publication date:\s*(?P<date>[A-Za-z]+\s+\d{1,2}\s+\d{4})", article_text)
-        published_at = parse_us_date(published_match.group("date")) if published_match else fallback_published_at
-
-        content_root = article.select_one(".entry-content") or article
-        content_parts = [clean_text(node.get_text(" ", strip=True)) for node in content_root.select("p, li, h2, h3")]
-        content = clean_text("\n".join(text for text in content_parts if text))
-        if not content:
-            content = article_text
-            for marker in ("Browse section", "You might also be interested in.."):
-                if marker in content:
-                    content = content.split(marker, 1)[0].strip()
+        last_error: Exception | None = None
+        html_text = ""
+        for attempt in range(3):
+            try:
+                html_text = request_html_with_playwright(url)
+                if not self._is_blocked_markdown(html_text):
                     break
-            for marker in ("Publication date:", "Tipology:", title):
-                content = content.replace(marker, "").strip()
-        if not content:
-            raise ValueError(f"Missing parsed Italy MAECI content for {url}")
+            except Exception as exc:
+                last_error = exc
+                time.sleep(1.5 * (attempt + 1))
+        if not html_text:
+            if fallback_excerpt:
+                return self._build_listing_fallback_record(
+                    url,
+                    fallback_title,
+                    fallback_published_at,
+                    fallback_excerpt,
+                )
+            assert last_error is not None
+            raise last_error
+        try:
+            soup = BeautifulSoup(html_text, "html.parser")
+            article = soup.select_one("article") or soup.select_one("main") or soup.body
+            if article is None:
+                raise ValueError(f"Missing Italy MAECI article body for {url}")
+
+            title_node = article.select_one("h1")
+            title = self._normalize_title(title_node.get_text(" ", strip=True)) if title_node else fallback_title
+            if not title:
+                title = fallback_title
+
+            for selector in [
+                "nav",
+                "header",
+                "footer",
+                "aside",
+                "script",
+                "style",
+                "form",
+                ".share",
+                ".social",
+                ".related-posts",
+                ".related-news",
+            ]:
+                for node in article.select(selector):
+                    node.decompose()
+
+            article_text = clean_text(article.get_text("\n"))
+            published_match = re.search(r"Publication date:\s*(?P<date>[A-Za-z]+\s+\d{1,2}\s+\d{4})", article_text)
+            published_at = parse_us_date(published_match.group("date")) if published_match else fallback_published_at
+
+            content_root = article.select_one(".entry-content") or article
+            content_parts = [clean_text(node.get_text(" ", strip=True)) for node in content_root.select("p, li, h2, h3")]
+            content = clean_text("\n".join(text for text in content_parts if text))
+            if not content:
+                content = article_text
+                for marker in ("Browse section", "You might also be interested in.."):
+                    if marker in content:
+                        content = content.split(marker, 1)[0].strip()
+                        break
+                for marker in ("Publication date:", "Tipology:", title):
+                    content = content.replace(marker, "").strip()
+            if not content:
+                raise ValueError(f"Missing parsed Italy MAECI content for {url}")
+            if self._is_blocked_title_or_content(title, content):
+                raise ValueError(f"Italy MAECI returned a blocked page for {url}")
+        except Exception as exc:
+            if fallback_excerpt:
+                return self._build_listing_fallback_record(
+                    url,
+                    fallback_title,
+                    fallback_published_at,
+                    fallback_excerpt,
+                )
+            raise exc
 
         return ScrapedRecord(
             country_code=self.country_code,
@@ -1845,6 +1928,29 @@ class ItalyMfaPressReleaseSource:
             source_kind=self._source_kind(title),
             language="en",
             speaker=self._speaker(title),
+        )
+
+    def _build_listing_fallback_record(
+        self,
+        url: str,
+        fallback_title: str,
+        fallback_published_at: str,
+        fallback_excerpt: str,
+    ) -> ScrapedRecord:
+        content = clean_text(fallback_excerpt).removesuffix("[...]").removesuffix("[…]").strip()
+        if not content:
+            raise ValueError(f"Missing Italy MAECI listing excerpt for {url}")
+        if self._is_blocked_title_or_content(fallback_title, content):
+            raise ValueError(f"Italy MAECI listing excerpt looks blocked for {url}")
+        return ScrapedRecord(
+            country_code=self.country_code,
+            published_at=fallback_published_at,
+            url=normalize_generic_url(url),
+            title=fallback_title,
+            content=content,
+            source_kind=self._source_kind(fallback_title),
+            language="en",
+            speaker=self._speaker(fallback_title),
         )
 
     @staticmethod
@@ -1906,6 +2012,17 @@ class ItalyMfaPressReleaseSource:
             "radware bot manager captcha" in lowered
             or "completa il captcha" in lowered
             or "validate.perfdrive.com" in lowered
+            or "accesso temporaneamente limitato" in lowered
+            or "temporarily limited access" in lowered
+        )
+
+    @staticmethod
+    def _is_blocked_title_or_content(title: str, content: str) -> bool:
+        lowered = clean_text(f"{title}\n{content[:400]}").lower()
+        return (
+            "radware bot manager captcha" in lowered
+            or "accesso temporaneamente limitato" in lowered
+            or "temporarily limited access" in lowered
         )
 
     @staticmethod
