@@ -150,6 +150,157 @@ def maybe_expand_history_start(existing: pd.DataFrame, source: object, start_dat
     return start_date
 
 
+def configure_source_state(code: str, source: object, existing: pd.DataFrame) -> None:
+    if code != "RU":
+        return
+
+    source.known_urls = {
+        str(url)
+        for url in existing.get("url", pd.Series(dtype=str)).tolist()
+        if str(url).strip()
+    }
+    source.known_title_keys = {
+        (
+            str(row.get("published_at", "")),
+            source._normalize_compare_text(str(row.get("title", ""))),
+        )
+        for row in existing.to_dict(orient="records")
+        if str(row.get("published_at", "")).strip() and str(row.get("title", "")).strip()
+    }
+
+
+def build_fetch_plan(
+    existing: pd.DataFrame,
+    source: object,
+    lookback_days: int,
+    history_backfill_rounds: int,
+    start_date_override: str | None,
+    end_date_override: str | None,
+) -> list[tuple[str, str, str]]:
+    if start_date_override or end_date_override:
+        today = datetime.now(timezone.utc).date().isoformat()
+        recent_start, _ = determine_fetch_range(existing, lookback_days)
+        return [("requested", start_date_override or recent_start, end_date_override or today)]
+
+    recent_start, recent_end = determine_fetch_range(existing, lookback_days)
+    published_dates = pd.to_datetime(existing.get("published_at"), errors="coerce").dropna()
+    if published_dates.empty:
+        bootstrap_start = maybe_expand_history_start(existing, source, recent_start)
+        return [("bootstrap", bootstrap_start, recent_end)]
+
+    plan: list[tuple[str, str, str]] = [("recent", recent_start, recent_end)]
+    history_start_date = str(getattr(source, "history_start_date", "") or "")
+    if history_backfill_rounds <= 0 or not history_start_date:
+        return plan
+    if not bool(getattr(source, "resume_missing_history", False)):
+        return plan
+
+    history_floor = datetime.fromisoformat(history_start_date).date()
+    backfill_end = published_dates.min().date() - timedelta(days=1)
+    if backfill_end < history_floor:
+        return plan
+
+    chunk_days = int(getattr(source, "history_backfill_chunk_days", 0) or 0)
+    for round_index in range(history_backfill_rounds):
+        if backfill_end < history_floor:
+            break
+        if chunk_days > 0:
+            backfill_start = max(history_floor, backfill_end - timedelta(days=chunk_days))
+        else:
+            backfill_start = history_floor
+        plan.append((f"history-{round_index + 1}", backfill_start.isoformat(), backfill_end.isoformat()))
+        if backfill_start <= history_floor:
+            break
+        backfill_end = backfill_start - timedelta(days=1)
+
+    return plan
+
+
+def fetch_records_for_window(
+    code: str,
+    source: object,
+    start_date: str,
+    end_date: str,
+    max_pages: int,
+) -> list[object]:
+    if code == "CN":
+        return source.fetch_between(start_date, end_date)
+    if code in {"US", "UK", "KR", "DE", "IN", "IT", "CA", "BR", "AU", "MX", "ES", "FR", "RU"}:
+        return source.fetch_between(start_date, end_date, max_pages=max_pages)
+    return source.fetch_between(start_date, end_date)
+
+
+def score_pending_rows(
+    code: str,
+    additions: list[dict[str, object]],
+    scorer: OpenAIWDSIScorer,
+) -> list[dict[str, object]]:
+    scored_rows: list[dict[str, object]] = []
+    if code == "CN":
+        batched_inputs = [SimpleNamespace(**item) for item in additions]
+        batched_results = scorer.score_conference_records(batched_inputs)
+        for item, result in zip(additions, batched_results, strict=False):
+            scored_rows.append(
+                {
+                    **item,
+                    "score": result["score"],
+                    "score_reasoning": result["score_reasoning"],
+                    "war_related": result["war_related"],
+                    "confidence": result["confidence"],
+                    "model": result["model"],
+                    "pipeline_version": result["pipeline_version"],
+                    "response_id": result["response_id"],
+                    "scored_at": result["scored_at"],
+                }
+            )
+        return scored_rows
+
+    if code in {"US", "UK", "JP", "KR", "DE", "IN", "IT", "CA", "BR", "AU", "MX", "ES", "FR", "RU"}:
+        batched_inputs = [SimpleNamespace(**item) for item in additions]
+        batched_results = scorer.score_flat_records(batched_inputs)
+        for item, result in zip(additions, batched_results, strict=False):
+            scored_rows.append(
+                {
+                    **item,
+                    "score": result["score"],
+                    "score_reasoning": result["score_reasoning"],
+                    "war_related": result["war_related"],
+                    "confidence": result["confidence"],
+                    "model": result["model"],
+                    "pipeline_version": result["pipeline_version"],
+                    "response_id": result["response_id"],
+                    "scored_at": result["scored_at"],
+                }
+            )
+        return scored_rows
+
+    for item in additions:
+        result = scorer.score_record(SimpleNamespace(**item))
+        scored_rows.append(
+            {
+                **item,
+                "score": result["score"],
+                "score_reasoning": result["score_reasoning"],
+                "war_related": result["war_related"],
+                "confidence": result["confidence"],
+                "model": result["model"],
+                "pipeline_version": result["pipeline_version"],
+                "response_id": result["response_id"],
+                "scored_at": result["scored_at"],
+            }
+        )
+    return scored_rows
+
+
+def max_pages_for_window(source: object, default_max_pages: int, window_label: str) -> int:
+    if not window_label.startswith("history"):
+        return default_max_pages
+    history_max_pages = int(getattr(source, "history_max_pages", 0) or 0)
+    if history_max_pages <= 0:
+        return default_max_pages
+    return max(default_max_pages, history_max_pages)
+
+
 def make_sources(session: requests.Session, countries: list[str]) -> dict[str, object]:
     sources: dict[str, object] = {}
     if "CN" in countries:
@@ -204,6 +355,12 @@ def main() -> None:
     parser.add_argument("--start-date", help="Override fetch start date in YYYY-MM-DD format.")
     parser.add_argument("--end-date", help="Override fetch end date in YYYY-MM-DD format.")
     parser.add_argument(
+        "--history-backfill-rounds",
+        type=int,
+        default=1,
+        help="How many additional historical chunks to backfill beyond the recent refresh window.",
+    )
+    parser.add_argument(
         "--skip-build",
         action="store_true",
         help="Update records without rebuilding site data.",
@@ -228,135 +385,68 @@ def main() -> None:
         source = sources[code]
         destination = RECORDS_DIR / f"{code}.csv"
         existing = load_records(destination)
-        if code == "RU":
-            source.known_urls = {
-                str(url)
-                for url in existing.get("url", pd.Series(dtype=str)).tolist()
-                if str(url).strip()
-            }
-            source.known_title_keys = {
-                (
-                    str(row.get("published_at", "")),
-                    source._normalize_compare_text(str(row.get("title", ""))),
-                )
-                for row in existing.to_dict(orient="records")
-                if str(row.get("published_at", "")).strip() and str(row.get("title", "")).strip()
-            }
-        effective_max_pages = args.max_pages
-        if args.start_date or args.end_date:
-            today = datetime.now(timezone.utc).date().isoformat()
-            start_date = args.start_date or determine_fetch_range(existing, args.lookback_days)[0]
-            end_date = args.end_date or today
-        else:
-            start_date, end_date = determine_fetch_range(existing, args.lookback_days)
-            start_date = maybe_expand_history_start(existing, source, start_date)
-
-        if code == "CN":
-            fetched_records = source.fetch_between(start_date, end_date)
-        elif code in {"US", "UK", "KR", "DE", "IN", "IT", "CA", "BR", "AU", "MX", "ES", "FR", "RU"}:
-            fetched_records = source.fetch_between(start_date, end_date, max_pages=effective_max_pages)
-        else:
-            fetched_records = source.fetch_between(start_date, end_date)
-
-        fetched_rows = [
-            {
-                "record_id": record.record_id,
-                "country_code": record.country_code,
-                "published_at": record.published_at,
-                "url": record.url,
-                "title": record.title,
-                "speaker": record.speaker,
-                "content": record.content,
-                "content_chars": len(record.content),
-                "source_kind": record.source_kind,
-                "language": record.language,
-                "content_hash": record.content_hash,
-                "is_legacy": False,
-            }
-            for record in fetched_records
-        ]
-
-        additions, replaced_urls = pending_records(existing, fetched_rows, pipeline_version)
-        print(
-            f"{code}: fetched {len(fetched_rows)} records for {start_date} to {end_date}, "
-            f"{len(additions)} new or updated records, {len(replaced_urls)} replacements."
+        fetch_plan = build_fetch_plan(
+            existing,
+            source,
+            args.lookback_days,
+            args.history_backfill_rounds,
+            args.start_date,
+            args.end_date,
         )
 
-        if args.dry_run:
-            for item in additions[:10]:
-                preview = f"  - {item['published_at']} | {item['title']}"
-                print(preview.encode("ascii", "replace").decode())
-            continue
+        for window_label, start_date, end_date in fetch_plan:
+            configure_source_state(code, source, existing)
+            effective_max_pages = max_pages_for_window(source, args.max_pages, window_label)
+            fetched_records = fetch_records_for_window(code, source, start_date, end_date, effective_max_pages)
+            fetched_rows = [
+                {
+                    "record_id": record.record_id,
+                    "country_code": record.country_code,
+                    "published_at": record.published_at,
+                    "url": record.url,
+                    "title": record.title,
+                    "speaker": record.speaker,
+                    "content": record.content,
+                    "content_chars": len(record.content),
+                    "source_kind": record.source_kind,
+                    "language": record.language,
+                    "content_hash": record.content_hash,
+                    "is_legacy": False,
+                }
+                for record in fetched_records
+            ]
 
-        if not additions:
-            continue
+            additions, replaced_urls = pending_records(existing, fetched_rows, pipeline_version)
+            print(
+                f"{code} [{window_label}]: fetched {len(fetched_rows)} records for {start_date} to {end_date}, "
+                f"{len(additions)} new or updated records, {len(replaced_urls)} replacements."
+            )
 
-        scored_rows: list[dict[str, object]] = []
-        if code == "CN":
-            batched_inputs = [SimpleNamespace(**item) for item in additions]
-            batched_results = scorer.score_conference_records(batched_inputs)  # type: ignore[union-attr]
-            for item, result in zip(additions, batched_results, strict=False):
-                scored_rows.append(
-                    {
-                        **item,
-                        "score": result["score"],
-                        "score_reasoning": result["score_reasoning"],
-                        "war_related": result["war_related"],
-                        "confidence": result["confidence"],
-                        "model": result["model"],
-                        "pipeline_version": result["pipeline_version"],
-                        "response_id": result["response_id"],
-                        "scored_at": result["scored_at"],
-                    }
-                )
-        elif code in {"US", "UK", "JP", "KR", "DE", "IN", "IT", "CA", "BR", "AU", "MX", "ES", "FR", "RU"}:
-            batched_inputs = [SimpleNamespace(**item) for item in additions]
-            batched_results = scorer.score_flat_records(batched_inputs)  # type: ignore[union-attr]
-            for item, result in zip(additions, batched_results, strict=False):
-                scored_rows.append(
-                    {
-                        **item,
-                        "score": result["score"],
-                        "score_reasoning": result["score_reasoning"],
-                        "war_related": result["war_related"],
-                        "confidence": result["confidence"],
-                        "model": result["model"],
-                        "pipeline_version": result["pipeline_version"],
-                        "response_id": result["response_id"],
-                        "scored_at": result["scored_at"],
-                    }
-                )
-        else:
-            for item in additions:
-                result = scorer.score_record(SimpleNamespace(**item))  # type: ignore[union-attr]
-                scored_rows.append(
-                    {
-                        **item,
-                        "score": result["score"],
-                        "score_reasoning": result["score_reasoning"],
-                        "war_related": result["war_related"],
-                        "confidence": result["confidence"],
-                        "model": result["model"],
-                        "pipeline_version": result["pipeline_version"],
-                        "response_id": result["response_id"],
-                        "scored_at": result["scored_at"],
-                    }
-                )
+            if args.dry_run:
+                for item in additions[:10]:
+                    preview = f"  - {item['published_at']} | {item['title']}"
+                    print(preview.encode("ascii", "replace").decode())
+                continue
 
-        for row in scored_rows:
-            row.pop("content", None)
+            if not additions:
+                continue
 
-        updated = existing
-        if replaced_urls:
-            updated = updated.loc[~updated["url"].isin(replaced_urls)].copy()
+            scored_rows = score_pending_rows(code, additions, scorer)  # type: ignore[arg-type]
+            for row in scored_rows:
+                row.pop("content", None)
 
-        updated = pd.concat([updated, pd.DataFrame(scored_rows)], ignore_index=True)
-        updated = updated.drop_duplicates(subset=["record_id"], keep="last")
-        updated["score"] = pd.to_numeric(updated["score"], errors="coerce")
-        updated = updated.sort_values(["published_at", "record_id"]).reset_index(drop=True)
-        updated.to_csv(destination, index=False, encoding="utf-8")
-        print(f"{code}: wrote {len(updated)} rows to {destination.name}")
-        changed = True
+            updated = existing
+            if replaced_urls:
+                updated = updated.loc[~updated["url"].isin(replaced_urls)].copy()
+
+            updated = pd.concat([updated, pd.DataFrame(scored_rows)], ignore_index=True)
+            updated = updated.drop_duplicates(subset=["record_id"], keep="last")
+            updated["score"] = pd.to_numeric(updated["score"], errors="coerce")
+            updated = updated.sort_values(["published_at", "record_id"]).reset_index(drop=True)
+            updated.to_csv(destination, index=False, encoding="utf-8")
+            print(f"{code} [{window_label}]: wrote {len(updated)} rows to {destination.name}")
+            existing = updated
+            changed = True
 
     if args.dry_run:
         return

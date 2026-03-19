@@ -1540,6 +1540,8 @@ class GermanyForeignOfficeSource:
     country_code = "DE"
     history_start_date = "2023-01-01"
     resume_missing_history = True
+    history_backfill_chunk_days = 365
+    history_max_pages = 180
     site_root = "https://www.auswaertiges-amt.de"
     archive_url = "https://www.auswaertiges-amt.de/ajax/json-filterlist/en/newsroom/news/609204-609204"
     page_size = 20
@@ -2523,8 +2525,10 @@ class CanadaGlobalAffairsNewsSource:
 
 class MexicoSrePressArchiveSource:
     country_code = "MX"
-    history_start_date = "2025-01-01"
+    history_start_date = "2022-01-01"
     resume_missing_history = True
+    history_backfill_chunk_days = 240
+    history_max_pages = 150
     archive_url = "https://www.gob.mx/sre/es/archivo/prensa?idiom=en"
 
     def __init__(self, session: requests.Session) -> None:
@@ -2697,8 +2701,10 @@ class MexicoSrePressArchiveSource:
 
 class SpainMfaComunicadosSource:
     country_code = "ES"
-    history_start_date = "2025-01-01"
+    history_start_date = "2022-01-01"
     resume_missing_history = True
+    history_backfill_chunk_days = 240
+    history_max_pages = 150
     archive_url = "https://www.exteriores.gob.es/en/Comunicacion/Comunicados/Paginas/index.aspx"
 
     def __init__(self, session: requests.Session) -> None:
@@ -2840,8 +2846,10 @@ class SpainMfaComunicadosSource:
 
 class BrazilItamaratyPressReleaseSource:
     country_code = "BR"
-    history_start_date = "2025-01-01"
+    history_start_date = "2022-01-01"
     resume_missing_history = True
+    history_backfill_chunk_days = 240
+    history_max_pages = 120
     archive_url = "https://www.gov.br/mre/en/en/contact-us/press-area/press-releases/press-releases"
 
     def __init__(self, session: requests.Session) -> None:
@@ -3495,6 +3503,8 @@ class FranceMfaSpokespersonSource:
 class RussiaMfaNewsSource:
     country_code = "RU"
     history_start_date = "2010-01-01"
+    resume_missing_history = True
+    history_backfill_chunk_days = 365
     sections = (
         {
             "list_url": "https://mid.ru/en/press_service/spokesman/official_statement/",
