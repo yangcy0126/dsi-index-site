@@ -2,7 +2,9 @@
   "code": "FR",
   "label": "France",
   "label_zh": "France",
-  "generated_at": "2026-03-19T10:42:45.259860+00:00",
+  "generated_at": "2026-03-19T11:28:34.044598+00:00",
+  "is_placeholder": false,
+  "placeholder_note": "",
   "records": [
     {
       "date": "2022-07-30",

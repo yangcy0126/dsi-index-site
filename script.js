@@ -8,7 +8,7 @@ const state = {
 
 const summaryPath = "data/summary.json";
 const eventsPath = "data/events.json";
-const assetVersion = "20260318-en-5";
+const assetVersion = "20260319-top15-1";
 
 function versionedPath(path) {
   const separator = path.includes("?") ? "&" : "?";
@@ -16,12 +16,23 @@ function versionedPath(path) {
 }
 
 function formatDate(dateText) {
+  if (!dateText) {
+    return "--";
+  }
   const date = new Date(`${dateText}T00:00:00`);
   return date.toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
+}
+
+function hasNumericValue(value) {
+  return value !== null && value !== undefined && !Number.isNaN(Number(value));
+}
+
+function isPlaceholderCountry(country) {
+  return Boolean(country?.is_placeholder);
 }
 
 function formatBuildTime(dateText) {
@@ -44,6 +55,9 @@ function formatScore(value, digits = 3) {
 }
 
 function toneMeta(score) {
+  if (!hasNumericValue(score)) {
+    return { label: "placeholder", className: "tone-muted" };
+  }
   if (score <= -1.5) {
     return { label: "markedly tense", className: "tone-negative" };
   }
@@ -60,6 +74,9 @@ function toneMeta(score) {
 }
 
 function scoreSentence(label, score, windowLabel) {
+  if (!hasNumericValue(score)) {
+    return `${label} is currently reserved as a top-15 GDP placeholder while source onboarding is in progress.`;
+  }
   const tone = toneMeta(score);
   return `${label} currently has a ${windowLabel} smoothed value of ${formatScore(score)}, placing it in the ${tone.label} range.`;
 }
@@ -97,12 +114,16 @@ async function loadCountryData(code) {
 
 function renderGlobalMeta() {
   const { overall, generated_at: generatedAt } = state.summary;
-  document.getElementById("country-count").textContent = overall.country_count;
+  const liveCount = overall.live_country_count ?? overall.country_count;
+  const placeholderCount = overall.placeholder_count ?? 0;
+  document.getElementById("country-count").textContent =
+    placeholderCount > 0 ? `${overall.country_count} total` : overall.country_count;
   document.getElementById("overall-start").textContent = formatDate(overall.first_date);
   document.getElementById("overall-end").textContent = formatDate(overall.last_date);
   document.getElementById("generated-at").textContent = `Latest build: ${formatBuildTime(generatedAt)}`;
-  document.getElementById("footer-build-note").textContent =
-    `Covering ${overall.country_count} countries / regions, from ${formatDate(overall.first_date)} to ${formatDate(overall.last_date)}.`;
+  document.getElementById("footer-build-note").textContent = placeholderCount > 0
+    ? `Covering ${overall.country_count} countries / regions, with ${liveCount} live series and ${placeholderCount} placeholders, from ${formatDate(overall.first_date)} to ${formatDate(overall.last_date)}.`
+    : `Covering ${overall.country_count} countries / regions, from ${formatDate(overall.first_date)} to ${formatDate(overall.last_date)}.`;
 }
 
 function renderCountryBoard() {
@@ -110,13 +131,22 @@ function renderCountryBoard() {
   board.innerHTML = "";
 
   state.summary.countries.forEach((country, index) => {
+    const isPlaceholder = isPlaceholderCountry(country);
     const tone = toneMeta(country.latest_7d);
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `country-card ${country.code === state.selectedCode ? "is-active" : ""}`;
+    button.className = `country-card ${country.code === state.selectedCode ? "is-active" : ""} ${isPlaceholder ? "is-placeholder" : ""}`;
     button.style.setProperty("--country-color", country.color);
     button.style.animationDelay = `${120 + index * 40}ms`;
-    button.innerHTML = `
+    button.innerHTML = isPlaceholder ? `
+      <h3>${country.label}</h3>
+      <div class="country-meta">
+        <span>${country.code}</span>
+        <span>GDP top-15 placeholder</span>
+      </div>
+      <div class="country-score tone-muted">Placeholder</div>
+      <div class="country-tone">Source onboarding pending</div>
+    ` : `
       <h3>${country.label}</h3>
       <div class="country-meta">
         <span>${country.code}</span>
@@ -135,16 +165,39 @@ function renderCountryTabs() {
   tabs.innerHTML = "";
 
   state.summary.countries.forEach((country) => {
+    const isPlaceholder = isPlaceholderCountry(country);
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `tab-button ${country.code === state.selectedCode ? "is-active" : ""}`;
-    button.textContent = `${country.label} - ${country.code}`;
+    button.className = `tab-button ${country.code === state.selectedCode ? "is-active" : ""} ${isPlaceholder ? "is-placeholder" : ""}`;
+    button.textContent = isPlaceholder
+      ? `${country.label} - ${country.code} placeholder`
+      : `${country.label} - ${country.code}`;
     button.addEventListener("click", () => setSelectedCountry(country.code));
     tabs.appendChild(button);
   });
 }
 
 function renderSelectedMetrics(country) {
+  if (isPlaceholderCountry(country)) {
+    document.getElementById("selected-country-name").textContent = country.label;
+    document.getElementById("selected-latest-score").textContent = "--";
+    document.getElementById("selected-latest-score").className = "metric-value tone-muted";
+    document.getElementById("selected-score-caption").textContent =
+      `${country.label} is currently reserved as a GDP top-15 placeholder.`;
+    document.getElementById("selected-rolling30-score").textContent = "--";
+    document.getElementById("selected-rolling30-score").className = "metric-value tone-muted";
+    document.getElementById("selected-rolling30-caption").textContent =
+      "The 30-day smoothed series will appear here after source onboarding and validation.";
+    document.getElementById("selected-change-score").textContent = "--";
+    document.getElementById("selected-change-score").className = "metric-value tone-muted";
+    document.getElementById("selected-publication-date").textContent = "Pending";
+    document.getElementById("selected-publication-score").textContent =
+      country.placeholder_note || "No WDSI series has been published yet for this slot.";
+    document.getElementById("selected-coverage").textContent = "Reserved slot";
+    document.getElementById("selected-publication-days").textContent = "Official-source pipeline pending";
+    return;
+  }
+
   const tone = toneMeta(country.latest_7d);
   const rolling30Tone = toneMeta(country.latest_30d);
   const latestDelta = country.change_30d ?? 0;
@@ -206,13 +259,17 @@ function renderLegacyDownloadList() {
   const countryDownloads = state.summary.countries.flatMap((country) => [
     {
       title: `${country.label} data (CSV)`,
-      meta: `${country.code} - ${country.publication_days} publication days`,
-      href: country.file_csv,
+      meta: isPlaceholderCountry(country)
+        ? `${country.code} - placeholder slot, CSV pending`
+        : `${country.code} - ${country.publication_days} publication days`,
+      href: isPlaceholderCountry(country) ? null : country.file_csv,
     },
     {
       title: `${country.label} data (JSON)`,
-      meta: "Useful for direct use in web apps or scripts",
-      href: country.file_json,
+      meta: isPlaceholderCountry(country)
+        ? "Placeholder metadata only; time series will appear after onboarding"
+        : "Useful for direct use in web apps or scripts",
+      href: isPlaceholderCountry(country) ? null : country.file_json,
     },
   ]);
 
@@ -224,7 +281,9 @@ function renderLegacyDownloadList() {
         <strong>${item.title}</strong>
         <div class="download-meta">${item.meta}</div>
       </div>
-      <a class="download-link" href="${item.href}" target="_blank" rel="noreferrer">Open file</a>
+      ${item.href
+        ? `<a class="download-link" href="${item.href}" target="_blank" rel="noreferrer">Open file</a>`
+        : '<span class="download-link is-disabled">Pending</span>'}
     `;
     list.appendChild(row);
   });
@@ -244,8 +303,10 @@ function renderCsvOnlyDownloadList() {
 
   const countryDownloads = state.summary.countries.map((country) => ({
     title: `${country.label} data (CSV)`,
-    meta: `${country.code} - ${country.publication_days} publication days`,
-    href: country.file_csv,
+    meta: isPlaceholderCountry(country)
+      ? `${country.code} - placeholder slot, CSV pending`
+      : `${country.code} - ${country.publication_days} publication days`,
+    href: isPlaceholderCountry(country) ? null : country.file_csv,
   }));
 
   [...masterDownloads, ...countryDownloads].forEach((item) => {
@@ -256,7 +317,9 @@ function renderCsvOnlyDownloadList() {
         <strong>${item.title}</strong>
         <div class="download-meta">${item.meta}</div>
       </div>
-      <a class="download-link" href="${item.href}" target="_blank" rel="noreferrer">Open CSV</a>
+      ${item.href
+        ? `<a class="download-link" href="${item.href}" target="_blank" rel="noreferrer">Open CSV</a>`
+        : '<span class="download-link is-disabled">Pending</span>'}
     `;
     list.appendChild(row);
   });
@@ -265,6 +328,9 @@ function renderCsvOnlyDownloadList() {
 function updateEventChips(countryData) {
   const chips = document.getElementById("event-chips");
   chips.innerHTML = "";
+  if (!countryData.records || !countryData.records.length) {
+    return;
+  }
 
   const minDate = countryData.records[0].date;
   const maxDate = countryData.records[countryData.records.length - 1].date;
@@ -329,8 +395,54 @@ function buildChartLayout(country, countryData) {
   };
 }
 
+function buildPlaceholderChartLayout(country) {
+  return {
+    margin: { l: 24, r: 24, t: 24, b: 24 },
+    paper_bgcolor: "rgba(0,0,0,0)",
+    plot_bgcolor: "rgba(255,255,255,0)",
+    font: {
+      family: '"Space Grotesk", sans-serif',
+      color: "#213132",
+    },
+    xaxis: { visible: false },
+    yaxis: { visible: false },
+    annotations: [
+      {
+        x: 0.5,
+        y: 0.58,
+        xref: "paper",
+        yref: "paper",
+        showarrow: false,
+        text: `${country.label} is reserved as a top-15 GDP placeholder`,
+        font: { size: 18, color: "#213132" },
+      },
+      {
+        x: 0.5,
+        y: 0.42,
+        xref: "paper",
+        yref: "paper",
+        showarrow: false,
+        text: country.placeholder_note || "The time series will appear after official-source onboarding and validation.",
+        font: { size: 13, color: "#5b6968" },
+        align: "center",
+      },
+    ],
+  };
+}
+
 function renderChart(country, countryData) {
   const records = countryData.records;
+  if (!records.length) {
+    Plotly.react("wdsi-chart", [], buildPlaceholderChartLayout(country), {
+      displayModeBar: false,
+      responsive: true,
+      displaylogo: false,
+    });
+    document.getElementById("chart-caption").textContent =
+      `${country.label} is currently shown as a GDP top-15 placeholder. The chart will populate once WDSI collection and validation are complete.`;
+    updateEventChips(countryData);
+    return;
+  }
   const rollingDates = records.map((record) => record.date);
   const rolling7Values = records.map((record) => record.rolling7);
   const rolling30Values = records.map((record) => record.rolling30);

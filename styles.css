@@ -333,6 +333,31 @@ h3 {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(227, 244, 244, 0.88));
 }
 
+.country-card.is-placeholder {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(238, 236, 228, 0.88)),
+    rgba(255, 255, 255, 0.74);
+  border-style: dashed;
+}
+
+.country-card.is-placeholder::before {
+  background:
+    repeating-linear-gradient(
+      180deg,
+      var(--country-color, var(--accent)) 0 7px,
+      rgba(20, 38, 40, 0.12) 7px 12px
+    );
+}
+
+.country-card.is-placeholder .country-score {
+  font-size: 1.4rem;
+}
+
+.country-card.is-placeholder .country-tone {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 .country-meta {
   display: flex;
   justify-content: space-between;
@@ -391,6 +416,10 @@ h3 {
   border-color: rgba(15, 108, 116, 0.24);
   background: rgba(15, 108, 116, 0.1);
   color: var(--ink);
+}
+
+.tab-button.is-placeholder {
+  border-style: dashed;
 }
 
 .chart-frame {
@@ -541,6 +570,12 @@ h3 {
   font-weight: 700;
 }
 
+.download-link.is-disabled {
+  background: rgba(20, 38, 40, 0.06);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
 .site-footer {
   display: flex;
   justify-content: space-between;
@@ -600,6 +635,10 @@ h3 {
 
 .tone-neutral {
   color: #6a664d;
+}
+
+.tone-muted {
+  color: var(--muted);
 }
 
 @keyframes slide-up {

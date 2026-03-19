@@ -1,7 +1,9 @@
 {
-  "generated_at": "2026-03-19T10:42:45.633270+00:00",
+  "generated_at": "2026-03-19T11:28:34.228996+00:00",
   "overall": {
-    "country_count": 9,
+    "country_count": 15,
+    "live_country_count": 9,
+    "placeholder_count": 6,
     "first_date": "2001-01-03",
     "last_date": "2026-03-19"
   },
@@ -28,7 +30,9 @@
       "latest_url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/03/u-s-special-envoy-gors-travel-to-sri-lanka-and-maldives/",
       "data_source": "records",
       "file_json": "data/US.json",
-      "file_csv": "data/US.csv"
+      "file_csv": "data/US.csv",
+      "is_placeholder": false,
+      "placeholder_note": ""
     },
     {
       "code": "CN",
@@ -52,7 +56,9 @@
       "latest_url": "https://www.mfa.gov.cn/eng/xw/fyrbt/lxjzh/202603/t20260318_11876954.html",
       "data_source": "records",
       "file_json": "data/CN.json",
-      "file_csv": "data/CN.csv"
+      "file_csv": "data/CN.csv",
+      "is_placeholder": false,
+      "placeholder_note": ""
     },
     {
       "code": "DE",
@@ -76,7 +82,9 @@
       "latest_url": "https://www.auswaertiges-amt.de/en/newsroom/news/2760294-2760294",
       "data_source": "records",
       "file_json": "data/DE.json",
-      "file_csv": "data/DE.csv"
+      "file_csv": "data/DE.csv",
+      "is_placeholder": false,
+      "placeholder_note": ""
     },
     {
       "code": "JP",
@@ -100,7 +108,9 @@
       "latest_url": "https://www.mofa.go.jp/press/release/pressite_000001_02198.html",
       "data_source": "records",
       "file_json": "data/JP.json",
-      "file_csv": "data/JP.csv"
+      "file_csv": "data/JP.csv",
+      "is_placeholder": false,
+      "placeholder_note": ""
     },
     {
       "code": "IN",
@@ -124,7 +134,9 @@
       "latest_url": "https://www.mea.gov.in/press-releases.htm?dtl/40920/Shri+Vikram+K+Doraiswami+appointed+as+the+next+Ambassador+of+India+to+the+Peoples+Republic+of+China",
       "data_source": "records",
       "file_json": "data/IN.json",
-      "file_csv": "data/IN.csv"
+      "file_csv": "data/IN.csv",
+      "is_placeholder": false,
+      "placeholder_note": ""
     },
     {
       "code": "UK",
@@ -148,7 +160,9 @@
       "latest_url": "https://www.gov.uk/government/speeches/uk-reaffirms-support-for-ukraines-legal-right-to-self-defence-uk-statement-to-the-osce",
       "data_source": "records",
       "file_json": "data/UK.json",
-      "file_csv": "data/UK.csv"
+      "file_csv": "data/UK.csv",
+      "is_placeholder": false,
+      "placeholder_note": ""
     },
     {
       "code": "FR",
@@ -172,7 +186,87 @@
       "latest_url": "https://www.diplomatie.gouv.fr/fr/dossiers-pays/allemagne/evenements/article/allemagne-deplacement-du-ministre-a-berlin-18-03-26",
       "data_source": "records",
       "file_json": "data/FR.json",
-      "file_csv": "data/FR.csv"
+      "file_csv": "data/FR.csv",
+      "is_placeholder": false,
+      "placeholder_note": ""
+    },
+    {
+      "code": "IT",
+      "label": "Italy",
+      "label_zh": "Italy",
+      "series_zh": "Placeholder for planned Italian diplomatic-text coverage",
+      "color": "#3f7562",
+      "start_date": null,
+      "latest_date": null,
+      "latest_publication_date": null,
+      "publication_days": 0,
+      "calendar_days": 0,
+      "latest_raw": null,
+      "latest_7d": null,
+      "latest_30d": null,
+      "change_7d": null,
+      "change_30d": null,
+      "current_year": null,
+      "current_year_mean": null,
+      "latest_title": "",
+      "latest_url": "",
+      "data_source": "placeholder",
+      "file_json": "data/IT.json",
+      "file_csv": "data/IT.csv",
+      "is_placeholder": true,
+      "placeholder_note": "Reserved top-15 GDP slot. WDSI source onboarding and validation are pending."
+    },
+    {
+      "code": "CA",
+      "label": "Canada",
+      "label_zh": "Canada",
+      "series_zh": "Placeholder for planned Canadian diplomatic-text coverage",
+      "color": "#b24d4d",
+      "start_date": null,
+      "latest_date": null,
+      "latest_publication_date": null,
+      "publication_days": 0,
+      "calendar_days": 0,
+      "latest_raw": null,
+      "latest_7d": null,
+      "latest_30d": null,
+      "change_7d": null,
+      "change_30d": null,
+      "current_year": null,
+      "current_year_mean": null,
+      "latest_title": "",
+      "latest_url": "",
+      "data_source": "placeholder",
+      "file_json": "data/CA.json",
+      "file_csv": "data/CA.csv",
+      "is_placeholder": true,
+      "placeholder_note": "Reserved top-15 GDP slot. WDSI source onboarding and validation are pending."
+    },
+    {
+      "code": "BR",
+      "label": "Brazil",
+      "label_zh": "Brazil",
+      "series_zh": "Placeholder for planned Brazilian diplomatic-text coverage",
+      "color": "#4d7a3e",
+      "start_date": null,
+      "latest_date": null,
+      "latest_publication_date": null,
+      "publication_days": 0,
+      "calendar_days": 0,
+      "latest_raw": null,
+      "latest_7d": null,
+      "latest_30d": null,
+      "change_7d": null,
+      "change_30d": null,
+      "current_year": null,
+      "current_year_mean": null,
+      "latest_title": "",
+      "latest_url": "",
+      "data_source": "placeholder",
+      "file_json": "data/BR.json",
+      "file_csv": "data/BR.csv",
+      "is_placeholder": true,
+      "placeholder_note": "Reserved top-15 GDP slot. WDSI source onboarding and validation are pending."
     },
     {
       "code": "RU",
@@ -196,7 +290,9 @@
       "latest_url": "https://mid.ru/en/press_service/spokesman/briefings/2086905",
       "data_source": "records",
       "file_json": "data/RU.json",
-      "file_csv": "data/RU.csv"
+      "file_csv": "data/RU.csv",
+      "is_placeholder": false,
+      "placeholder_note": ""
     },
     {
       "code": "KR",
@@ -220,7 +316,87 @@
       "latest_url": "https://www.mofa.go.kr/eng/brd/m_5676/view.do?seq=323222&page=1",
       "data_source": "records",
       "file_json": "data/KR.json",
-      "file_csv": "data/KR.csv"
+      "file_csv": "data/KR.csv",
+      "is_placeholder": false,
+      "placeholder_note": ""
+    },
+    {
+      "code": "MX",
+      "label": "Mexico",
+      "label_zh": "Mexico",
+      "series_zh": "Placeholder for planned Mexican diplomatic-text coverage",
+      "color": "#2f7a70",
+      "start_date": null,
+      "latest_date": null,
+      "latest_publication_date": null,
+      "publication_days": 0,
+      "calendar_days": 0,
+      "latest_raw": null,
+      "latest_7d": null,
+      "latest_30d": null,
+      "change_7d": null,
+      "change_30d": null,
+      "current_year": null,
+      "current_year_mean": null,
+      "latest_title": "",
+      "latest_url": "",
+      "data_source": "placeholder",
+      "file_json": "data/MX.json",
+      "file_csv": "data/MX.csv",
+      "is_placeholder": true,
+      "placeholder_note": "Reserved top-15 GDP slot. WDSI source onboarding and validation are pending."
+    },
+    {
+      "code": "AU",
+      "label": "Australia",
+      "label_zh": "Australia",
+      "series_zh": "Placeholder for planned Australian diplomatic-text coverage",
+      "color": "#6c5b9a",
+      "start_date": null,
+      "latest_date": null,
+      "latest_publication_date": null,
+      "publication_days": 0,
+      "calendar_days": 0,
+      "latest_raw": null,
+      "latest_7d": null,
+      "latest_30d": null,
+      "change_7d": null,
+      "change_30d": null,
+      "current_year": null,
+      "current_year_mean": null,
+      "latest_title": "",
+      "latest_url": "",
+      "data_source": "placeholder",
+      "file_json": "data/AU.json",
+      "file_csv": "data/AU.csv",
+      "is_placeholder": true,
+      "placeholder_note": "Reserved top-15 GDP slot. WDSI source onboarding and validation are pending."
+    },
+    {
+      "code": "ES",
+      "label": "Spain",
+      "label_zh": "Spain",
+      "series_zh": "Placeholder for planned Spanish diplomatic-text coverage",
+      "color": "#c37b2d",
+      "start_date": null,
+      "latest_date": null,
+      "latest_publication_date": null,
+      "publication_days": 0,
+      "calendar_days": 0,
+      "latest_raw": null,
+      "latest_7d": null,
+      "latest_30d": null,
+      "change_7d": null,
+      "change_30d": null,
+      "current_year": null,
+      "current_year_mean": null,
+      "latest_title": "",
+      "latest_url": "",
+      "data_source": "placeholder",
+      "file_json": "data/ES.json",
+      "file_csv": "data/ES.csv",
+      "is_placeholder": true,
+      "placeholder_note": "Reserved top-15 GDP slot. WDSI source onboarding and validation are pending."
     }
   ]
 }

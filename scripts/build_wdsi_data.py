@@ -10,6 +10,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = ROOT / "data"
 RECORDS_DIR = ROOT / "records"
+PLACEHOLDER_NOTE = "Reserved top-15 GDP slot. WDSI source onboarding and validation are pending."
 LEGACY_DIR = ROOT.parent / "data" / "情绪测度结果数据"
 
 COUNTRIES = [
@@ -78,6 +79,33 @@ COUNTRIES = [
         "color": "#2f5aa8",
     },
     {
+        "code": "IT",
+        "label": "Italy",
+        "label_zh": "Italy",
+        "series_zh": "Placeholder for planned Italian diplomatic-text coverage",
+        "legacy_filename": "",
+        "color": "#3f7562",
+        "placeholder": True,
+    },
+    {
+        "code": "CA",
+        "label": "Canada",
+        "label_zh": "Canada",
+        "series_zh": "Placeholder for planned Canadian diplomatic-text coverage",
+        "legacy_filename": "",
+        "color": "#b24d4d",
+        "placeholder": True,
+    },
+    {
+        "code": "BR",
+        "label": "Brazil",
+        "label_zh": "Brazil",
+        "series_zh": "Placeholder for planned Brazilian diplomatic-text coverage",
+        "legacy_filename": "",
+        "color": "#4d7a3e",
+        "placeholder": True,
+    },
+    {
         "code": "RU",
         "label": "Russia",
         "label_zh": "Russia",
@@ -85,9 +113,36 @@ COUNTRIES = [
         "legacy_filename": "",
         "color": "#a24a3f",
     },
+    {
+        "code": "MX",
+        "label": "Mexico",
+        "label_zh": "Mexico",
+        "series_zh": "Placeholder for planned Mexican diplomatic-text coverage",
+        "legacy_filename": "",
+        "color": "#2f7a70",
+        "placeholder": True,
+    },
+    {
+        "code": "AU",
+        "label": "Australia",
+        "label_zh": "Australia",
+        "series_zh": "Placeholder for planned Australian diplomatic-text coverage",
+        "legacy_filename": "",
+        "color": "#6c5b9a",
+        "placeholder": True,
+    },
+    {
+        "code": "ES",
+        "label": "Spain",
+        "label_zh": "Spain",
+        "series_zh": "Placeholder for planned Spanish diplomatic-text coverage",
+        "legacy_filename": "",
+        "color": "#c37b2d",
+        "placeholder": True,
+    },
 ]
 
-COUNTRY_ORDER = ["US", "CN", "DE", "JP", "IN", "UK", "FR", "RU", "KR"]
+COUNTRY_ORDER = ["US", "CN", "DE", "JP", "IN", "UK", "FR", "IT", "CA", "BR", "RU", "KR", "MX", "AU", "ES"]
 COUNTRIES = sorted(COUNTRIES, key=lambda meta: COUNTRY_ORDER.index(meta["code"]))
 
 EVENTS = [
@@ -210,11 +265,46 @@ def read_country(meta: dict[str, str]) -> tuple[dict[str, object], pd.DataFrame]
         "data_source": data_source,
         "file_json": f"data/{meta['code']}.json",
         "file_csv": f"data/{meta['code']}.csv",
+        "is_placeholder": False,
+        "placeholder_note": "",
     }
 
     export_frame = merged[["date", "raw", "rolling7", "rolling30", "publication"]].copy()
     export_frame["date"] = export_frame["date"].dt.strftime("%Y-%m-%d")
     return summary, export_frame
+
+
+def build_placeholder_summary(meta: dict[str, str]) -> dict[str, object]:
+    return {
+        "code": meta["code"],
+        "label": meta["label"],
+        "label_zh": meta["label_zh"],
+        "series_zh": meta["series_zh"],
+        "color": meta["color"],
+        "start_date": None,
+        "latest_date": None,
+        "latest_publication_date": None,
+        "publication_days": 0,
+        "calendar_days": 0,
+        "latest_raw": None,
+        "latest_7d": None,
+        "latest_30d": None,
+        "change_7d": None,
+        "change_30d": None,
+        "current_year": None,
+        "current_year_mean": None,
+        "latest_title": "",
+        "latest_url": "",
+        "data_source": "placeholder",
+        "file_json": f"data/{meta['code']}.json",
+        "file_csv": f"data/{meta['code']}.csv",
+        "is_placeholder": True,
+        "placeholder_note": PLACEHOLDER_NOTE,
+    }
+
+
+def build_placeholder_frame() -> pd.DataFrame:
+    return pd.DataFrame(columns=["date", "raw", "rolling7", "rolling30", "publication"])
 
 
 def main() -> None:
@@ -227,8 +317,13 @@ def main() -> None:
         try:
             summary, frame = read_country(meta)
         except (FileNotFoundError, ValueError) as exc:
-            print(f"Skipping {meta['code']}: {exc}")
-            continue
+            if meta.get("placeholder"):
+                print(f"Placeholder {meta['code']}: {exc}")
+                summary = build_placeholder_summary(meta)
+                frame = build_placeholder_frame()
+            else:
+                print(f"Skipping {meta['code']}: {exc}")
+                continue
         countries.append(summary)
 
         json_payload = {
@@ -236,6 +331,8 @@ def main() -> None:
             "label": summary["label"],
             "label_zh": summary["label_zh"],
             "generated_at": datetime.now(timezone.utc).isoformat(),
+            "is_placeholder": bool(summary.get("is_placeholder")),
+            "placeholder_note": str(summary.get("placeholder_note", "") or ""),
             "records": [
                 {
                     "date": row.date,
@@ -254,12 +351,14 @@ def main() -> None:
         )
         frame.to_csv(OUTPUT_DIR / f"{meta['code']}.csv", index=False, encoding="utf-8-sig")
 
-        country_frame = frame.copy()
-        country_frame.insert(0, "country", meta["label"])
-        country_frame.insert(0, "code", meta["code"])
-        all_rows.append(country_frame)
+        if not summary["is_placeholder"]:
+            country_frame = frame.copy()
+            country_frame.insert(0, "country", meta["label"])
+            country_frame.insert(0, "code", meta["code"])
+            all_rows.append(country_frame)
 
-    if not countries or not all_rows:
+    live_countries = [country for country in countries if not country.get("is_placeholder")]
+    if not countries or not all_rows or not live_countries:
         raise RuntimeError("No country data available to build site assets.")
 
     pd.concat(all_rows, ignore_index=True).to_csv(
@@ -272,8 +371,10 @@ def main() -> None:
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "overall": {
             "country_count": len(countries),
-            "first_date": min(country["start_date"] for country in countries),
-            "last_date": max(country["latest_date"] for country in countries),
+            "live_country_count": len(live_countries),
+            "placeholder_count": len(countries) - len(live_countries),
+            "first_date": min(country["start_date"] for country in live_countries),
+            "last_date": max(country["latest_date"] for country in live_countries),
         },
         "countries": countries,
     }
