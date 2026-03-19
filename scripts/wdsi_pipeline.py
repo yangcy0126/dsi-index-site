@@ -1447,8 +1447,11 @@ class FranceMfaSpokespersonSource:
         re.compile(r"/fr/salle-de-presse/point-de-presse-live-du-porte-parole-du-meae/article/"),
         re.compile(r"/fr/les-ministres/[^/]+/presse-et-medias/article/"),
         re.compile(r"/fr/les-ministres/[^/]+/discours/article/"),
+        re.compile(r"/fr/les-ministres/[^/]+/interventions-a-l-assemblee-nationale-et-au-senat/article/"),
         re.compile(r"/fr/dossiers-pays/.+/evenements(?:/.+)?/article/"),
         re.compile(r"/fr/dossiers-pays/.+/actualites-et-evenements(?:/.+)?/article/"),
+        re.compile(r"/fr/politique-etrangere-de-la-france/.+/actualites[^/]*(?:/.+)?/article/"),
+        re.compile(r"/fr/politique-etrangere-de-la-france/.+/evenements[^/]*(?:/.+)?/article/"),
     )
 
     def __init__(self, session: requests.Session) -> None:
@@ -1562,6 +1565,10 @@ class FranceMfaSpokespersonSource:
             return "fr_meae_press_statement"
         if "/discours/article/" in normalized:
             return "fr_meae_speech"
+        if "/interventions-a-l-assemblee-nationale-et-au-senat/article/" in normalized:
+            return "fr_meae_parliament_intervention"
+        if "/fr/politique-etrangere-de-la-france/" in normalized:
+            return "fr_meae_policy_event"
         if "/dossiers-pays/" in normalized:
             return "fr_meae_country_event"
         return "fr_meae_statement"
@@ -1590,6 +1597,14 @@ class RussiaMfaNewsSource:
             "item_url_fragment": "/en/press_service/spokesman/official_statement/",
             "source_kind": "ru_mfa_statement",
             "speaker": "",
+            "max_pages": 50,
+        },
+        {
+            "list_url": "https://mid.ru/en/press_service/spokesman/briefings/",
+            "item_url_fragment": "/en/press_service/spokesman/briefings/",
+            "source_kind": "ru_mfa_briefing",
+            "speaker": "MFA spokesperson",
+            "max_pages": 30,
         },
     )
 
@@ -1684,8 +1699,9 @@ class RussiaMfaNewsSource:
     ) -> list[dict[str, str]]:
         section_url = str(section["list_url"])
         collected: list[dict[str, str]] = []
+        section_max_pages = min(max_pages, int(section.get("max_pages", max_pages)))
 
-        for page_number in range(1, max_pages + 1):
+        for page_number in range(1, section_max_pages + 1):
             page_url = section_url if page_number == 1 else f"{section_url}?PAGEN_1={page_number}"
             try:
                 self._load_mid_list_page(page, page_url, referer=section_url if page_number > 1 else None)
