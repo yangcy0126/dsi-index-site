@@ -127,6 +127,7 @@ def determine_fetch_range(existing: pd.DataFrame, lookback_days: int) -> tuple[s
 def maybe_expand_history_start(existing: pd.DataFrame, source: object, start_date: str) -> str:
     bootstrap_start_date = str(getattr(source, "bootstrap_history_start_date", "") or "")
     history_start_date = str(getattr(source, "history_start_date", "") or "")
+    history_backfill_chunk_days = int(getattr(source, "history_backfill_chunk_days", 0) or 0)
     if not bootstrap_start_date and not history_start_date:
         return start_date
 
@@ -139,6 +140,12 @@ def maybe_expand_history_start(existing: pd.DataFrame, source: object, start_dat
 
     earliest_existing = published_dates.min().date().isoformat()
     if earliest_existing > history_start_date and start_date > history_start_date:
+        if history_backfill_chunk_days > 0:
+            chunk_start = max(
+                datetime.fromisoformat(history_start_date).date(),
+                published_dates.min().date() - timedelta(days=history_backfill_chunk_days),
+            )
+            return chunk_start.isoformat()
         return history_start_date
     return start_date
 

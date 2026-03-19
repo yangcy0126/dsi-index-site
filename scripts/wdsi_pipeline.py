@@ -1713,6 +1713,9 @@ class GermanyForeignOfficeSource:
 class ItalyMfaPressReleaseSource:
     country_code = "IT"
     history_start_date = "2022-01-01"
+    bootstrap_history_start_date = "2026-01-01"
+    resume_missing_history = True
+    history_backfill_chunk_days = 150
     archive_url = "https://www.esteri.it/en/sala_stampa/archivionotizie/comunicati/"
     month_page_size = 10
 
@@ -2096,7 +2099,9 @@ class ItalyMfaPressReleaseSource:
 class AustraliaForeignMinisterMediaReleaseSource:
     country_code = "AU"
     history_start_date = "2022-05-23"
+    bootstrap_history_start_date = "2026-01-01"
     resume_missing_history = True
+    history_backfill_chunk_days = 150
     archive_url = "https://www.foreignminister.gov.au/minister/penny-wong/media-releases"
 
     def __init__(self, session: requests.Session) -> None:
@@ -2131,12 +2136,21 @@ class AustraliaForeignMinisterMediaReleaseSource:
             if not has_next or (oldest_on_page is not None and oldest_on_page < start_date):
                 break
 
+        if not candidates:
+            return []
+
         records: list[ScrapedRecord] = []
-        for url, title, published_at in candidates:
-            try:
-                records.append(self._fetch_detail_record(url, title, published_at))
-            except Exception as exc:
-                print(f"AU: skipping {url} after fetch/parse error: {exc}")
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = {
+                executor.submit(self._fetch_detail_record, url, title, published_at): (url, title, published_at)
+                for url, title, published_at in candidates
+            }
+            for future in as_completed(futures):
+                url, title, published_at = futures[future]
+                try:
+                    records.append(future.result())
+                except Exception as exc:
+                    print(f"AU: skipping {url} after fetch/parse error: {exc}")
 
         deduped = {record.url: record for record in records}
         return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
@@ -2226,7 +2240,9 @@ class AustraliaForeignMinisterMediaReleaseSource:
 class CanadaGlobalAffairsNewsSource:
     country_code = "CA"
     history_start_date = "2017-03-31"
+    bootstrap_history_start_date = "2026-01-01"
     resume_missing_history = True
+    history_backfill_chunk_days = 180
     api_url = "https://api.io.canada.ca/io-server/gc/news/en/v2"
     department = "departmentofforeignaffairstradeanddevelopment"
 
@@ -2284,12 +2300,26 @@ class CanadaGlobalAffairsNewsSource:
 
             cursor = (newest_timestamp + timedelta(seconds=1)).isoformat()
 
+        if not candidates:
+            return []
+
         records: list[ScrapedRecord] = []
-        for url, title, published_at, teaser in candidates:
-            try:
-                records.append(self._fetch_detail_record(url, title, published_at, teaser))
-            except Exception as exc:
-                print(f"CA: skipping {url} after fetch/parse error: {exc}")
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = {
+                executor.submit(self._fetch_detail_record, url, title, published_at, teaser): (
+                    url,
+                    title,
+                    published_at,
+                    teaser,
+                )
+                for url, title, published_at, teaser in candidates
+            }
+            for future in as_completed(futures):
+                url, title, published_at, teaser = futures[future]
+                try:
+                    records.append(future.result())
+                except Exception as exc:
+                    print(f"CA: skipping {url} after fetch/parse error: {exc}")
 
         deduped = {record.url: record for record in records}
         return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))

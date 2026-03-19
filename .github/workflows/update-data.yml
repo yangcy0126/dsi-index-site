@@ -24,7 +24,7 @@ permissions:
 jobs:
   update-country:
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ matrix.country == 'RU' && 45 || matrix.country == 'IN' && 90 || matrix.country == 'CA' && 90 || matrix.country == 'BR' && 90 || matrix.country == 'MX' && 90 || matrix.country == 'ES' && 90 || 70 }}
+    timeout-minutes: ${{ matrix.country == 'RU' && 45 || matrix.country == 'IN' && 90 || matrix.country == 'CA' && 90 || matrix.country == 'AU' && 90 || matrix.country == 'IT' && 90 || matrix.country == 'BR' && 90 || matrix.country == 'MX' && 90 || matrix.country == 'ES' && 90 || 70 }}
     strategy:
       fail-fast: false
       matrix:
