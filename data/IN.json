@@ -2,7 +2,7 @@
   "code": "IN",
   "label": "India",
   "label_zh": "India",
-  "generated_at": "2026-03-19T09:04:58.948314+00:00",
+  "generated_at": "2026-03-19T10:42:45.135420+00:00",
   "records": [
     {
       "date": "2026-02-18",
@@ -167,51 +167,51 @@
     },
     {
       "date": "2026-03-13",
-      "raw": -0.083,
-      "rolling7": -1.44,
+      "raw": -0.087,
+      "rolling7": -1.441,
       "rolling30": -0.256,
       "publication": true
     },
     {
       "date": "2026-03-14",
-      "raw": null,
-      "rolling7": -1.167,
-      "rolling30": -0.249,
-      "publication": false
+      "raw": 0.0,
+      "rolling7": -1.155,
+      "rolling30": -0.246,
+      "publication": true
     },
     {
       "date": "2026-03-15",
       "raw": 0.0,
-      "rolling7": -0.881,
-      "rolling30": -0.239,
+      "rolling7": -0.87,
+      "rolling30": -0.236,
       "publication": true
     },
     {
       "date": "2026-03-16",
       "raw": 0.0,
-      "rolling7": -0.595,
-      "rolling30": -0.231,
+      "rolling7": -0.584,
+      "rolling30": -0.228,
       "publication": true
     },
     {
       "date": "2026-03-17",
       "raw": 1.0,
-      "rolling7": -0.167,
-      "rolling30": -0.187,
+      "rolling7": -0.155,
+      "rolling30": -0.184,
       "publication": true
     },
     {
       "date": "2026-03-18",
       "raw": null,
-      "rolling7": 0.262,
-      "rolling30": -0.146,
+      "rolling7": 0.273,
+      "rolling30": -0.143,
       "publication": false
     },
     {
       "date": "2026-03-19",
       "raw": 0.0,
-      "rolling7": 0.262,
-      "rolling30": -0.141,
+      "rolling7": 0.273,
+      "rolling30": -0.138,
       "publication": true
     }
   ]
