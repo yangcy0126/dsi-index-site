@@ -74,6 +74,7 @@ RU_LIST_TIMESTAMP_RE = re.compile(
 RU_ARTICLE_ID_RE = re.compile(r"^\d{2,4}-\d{2}-\d{2}-\d{4}$")
 DE_DOTTED_DATE_RE = re.compile(r"(?P<day>\d{1,2})\.(?P<month>\d{1,2})\.(?P<year>\d{4})")
 INDIA_PAGE_UPDATED_RE = re.compile(r"Page last updated on:\s*(?P<day>\d{1,2})/(?P<month>\d{1,2})/(?P<year>\d{4})")
+INDIA_SLASH_DATE_RE = re.compile(r"(?P<day>\d{1,2})/(?P<month>\d{1,2})/(?P<year>\d{4})")
 JINA_CACHE: dict[str, str] = {}
 
 FR_MONTHS = {
@@ -252,9 +253,24 @@ def parse_de_date(value: str) -> str:
 def parse_india_page_updated(value: str) -> str:
     text = clean_text(value)
     match = INDIA_PAGE_UPDATED_RE.search(text)
-    if not match:
-        raise ValueError(f"Could not determine India MEA publication date from: {value[:160]}")
-    return date(int(match.group("year")), int(match.group("month")), int(match.group("day"))).isoformat()
+    if match:
+        return date(int(match.group("year")), int(match.group("month")), int(match.group("day"))).isoformat()
+
+    month_match = re.search(rf"{MONTH_NAME_PATTERN}\s+\d{{1,2}},\s+\d{{4}}", text)
+    if month_match:
+        return parse_us_date(month_match.group(0))
+
+    answered_match = re.search(r"ANSWERED ON[-:\s]*(?P<date>\d{1,2}/\d{1,2}/\d{4})", text, re.I)
+    if answered_match:
+        slash_match = INDIA_SLASH_DATE_RE.search(answered_match.group("date"))
+        assert slash_match is not None
+        return date(
+            int(slash_match.group("year")),
+            int(slash_match.group("month")),
+            int(slash_match.group("day")),
+        ).isoformat()
+
+    raise ValueError(f"Could not determine India MEA publication date from: {value[:160]}")
 
 
 def request_json(
@@ -1459,6 +1475,8 @@ class KoreaMofaPressReleaseSource:
 
 class GermanyForeignOfficeSource:
     country_code = "DE"
+    history_start_date = "2023-01-01"
+    resume_missing_history = True
     site_root = "https://www.auswaertiges-amt.de"
     archive_url = "https://www.auswaertiges-amt.de/ajax/json-filterlist/en/newsroom/news/609204-609204"
     page_size = 20
@@ -1623,6 +1641,9 @@ class GermanyForeignOfficeSource:
 
 class IndiaMeaOfficialSource:
     country_code = "IN"
+    history_start_date = "2025-01-01"
+    history_scan_limit = 2400
+    resume_missing_history = True
     recent_index_urls = (
         "https://www.mea.gov.in/press-releases.htm?51%2FPress_Releases=",
         "https://www.mea.gov.in/media-briefings.htm?49%2FMedia_Briefings=",
@@ -1642,6 +1663,8 @@ class IndiaMeaOfficialSource:
         # The ASP.NET archive does not expose stable pagination controls in this environment,
         # so we walk recent detail ids backwards and stop once we are safely before the window.
         scan_limit = max(240, min(max_pages * 8, 720))
+        if start_date <= self.history_start_date:
+            scan_limit = max(scan_limit, self.history_scan_limit)
         lower_bound = max(1, latest_id - scan_limit)
 
         records: list[ScrapedRecord] = []
@@ -1703,6 +1726,8 @@ class IndiaMeaOfficialSource:
         markdown = request_markdown_via_jina(url)
         if markdown.startswith("Title: Sorry for the inconvenience."):
             raise ValueError(f"Missing India MEA detail page for {dtl_id}")
+        if self._is_unavailable_markdown(markdown):
+            raise ValueError(f"India MEA detail page {dtl_id} is unavailable in English.")
 
         title = self._extract_title(markdown)
         published_at = parse_india_page_updated(markdown)
@@ -1773,10 +1798,10 @@ class IndiaMeaOfficialSource:
         lowered_content = clean_text(content[:800]).lower()
         if lowered_title.startswith("question no") or "lok sabha" in lowered_content or "rajya sabha" in lowered_content:
             return "in_mea_parliament_answer"
-        if "official spokesperson" in lowered_title:
-            return "in_mea_statement"
         if "briefing" in lowered_title or lowered_title.startswith("transcript"):
             return "in_mea_media_briefing"
+        if "official spokesperson" in lowered_title:
+            return "in_mea_statement"
         if "interview" in lowered_title:
             return "in_mea_interview"
         if lowered_title.startswith("speech") or lowered_title.startswith("statement"):
@@ -1795,6 +1820,11 @@ class IndiaMeaOfficialSource:
         if "minister of external affairs" in lowered_title:
             return "Ministry of External Affairs"
         return ""
+
+    @staticmethod
+    def _is_unavailable_markdown(markdown: str) -> bool:
+        lowered = clean_text(markdown).lower()
+        return "the page you are refering is not available in selected language" in lowered
 
 
 class FranceMfaSpokespersonSource:
