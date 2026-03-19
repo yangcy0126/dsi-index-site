@@ -24,6 +24,7 @@ permissions:
 jobs:
   update-country:
     runs-on: ubuntu-latest
+    timeout-minutes: ${{ matrix.country == 'RU' && 45 || 70 }}
     strategy:
       fail-fast: false
       matrix:

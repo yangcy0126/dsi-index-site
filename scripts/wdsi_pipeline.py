@@ -1442,6 +1442,7 @@ class KoreaMofaPressReleaseSource:
 class FranceMfaSpokespersonSource:
     country_code = "FR"
     history_start_date = "2022-01-01"
+    resume_missing_history = True
     sitemap_url = "https://www.diplomatie.gouv.fr/sitemap.xml"
     relevant_patterns = (
         re.compile(r"/fr/salle-de-presse/point-de-presse-live-du-porte-parole-du-meae/article/"),

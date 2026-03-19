@@ -125,6 +125,9 @@ def maybe_expand_history_start(existing: pd.DataFrame, source: object, start_dat
     if published_dates.empty:
         return history_start_date
 
+    if not bool(getattr(source, "resume_missing_history", False)):
+        return start_date
+
     earliest_existing = published_dates.min().date().isoformat()
     if earliest_existing > history_start_date and start_date > history_start_date:
         return history_start_date
