@@ -82,7 +82,7 @@ COUNTRIES = [
         "code": "IT",
         "label": "Italy",
         "label_zh": "Italy",
-        "series_zh": "Placeholder for planned Italian diplomatic-text coverage",
+        "series_zh": "Italian MFA press releases",
         "legacy_filename": "",
         "color": "#3f7562",
         "placeholder": True,
