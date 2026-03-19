@@ -568,6 +568,28 @@ h3 {
   box-shadow: 0 10px 24px rgba(20, 38, 40, 0.08);
 }
 
+.site-visitors {
+  position: fixed;
+  left: 18px;
+  bottom: 14px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  border-radius: 18px;
+  background: rgba(248, 245, 236, 0.88);
+  border: 1px solid rgba(15, 58, 61, 0.12);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 24px rgba(20, 38, 40, 0.08);
+}
+
+.site-visitors img {
+  display: block;
+  max-width: min(220px, 38vw);
+  height: auto;
+}
+
 .tone-negative {
   color: #a03e2a;
 }
@@ -624,5 +646,15 @@ h3 {
     bottom: 12px;
     font-size: 0.72rem;
     padding: 7px 10px;
+  }
+
+  .site-visitors {
+    left: 12px;
+    bottom: 12px;
+    padding: 6px 8px;
+  }
+
+  .site-visitors img {
+    max-width: min(180px, 46vw);
   }
 }
