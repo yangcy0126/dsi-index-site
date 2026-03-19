@@ -2,7 +2,7 @@
   "code": "MX",
   "label": "Mexico",
   "label_zh": "Mexico",
-  "generated_at": "2026-03-19T16:12:02.556468+00:00",
+  "generated_at": "2026-03-19T16:57:00.492669+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -1044,219 +1044,219 @@
     },
     {
       "date": "2025-06-03",
-      "raw": 0.0,
-      "rolling7": 0.143,
-      "rolling30": 0.167,
+      "raw": 2.0,
+      "rolling7": 0.429,
+      "rolling30": 0.233,
       "publication": true
     },
     {
       "date": "2025-06-04",
       "raw": null,
-      "rolling7": 0.0,
-      "rolling30": 0.167,
+      "rolling7": 0.571,
+      "rolling30": 0.3,
       "publication": false
     },
     {
       "date": "2025-06-05",
       "raw": -3.0,
-      "rolling7": -0.429,
-      "rolling30": 0.067,
+      "rolling7": 0.143,
+      "rolling30": 0.2,
       "publication": true
     },
     {
       "date": "2025-06-06",
       "raw": 0.0,
-      "rolling7": -0.429,
-      "rolling30": 0.067,
+      "rolling7": 0.143,
+      "rolling30": 0.2,
       "publication": true
     },
     {
       "date": "2025-06-07",
       "raw": 0.0,
-      "rolling7": -0.429,
-      "rolling30": 0.067,
+      "rolling7": 0.143,
+      "rolling30": 0.2,
       "publication": true
     },
     {
       "date": "2025-06-08",
       "raw": null,
-      "rolling7": -0.429,
-      "rolling30": 0.067,
+      "rolling7": 0.143,
+      "rolling30": 0.2,
       "publication": false
     },
     {
       "date": "2025-06-09",
       "raw": 0.0,
-      "rolling7": -0.429,
-      "rolling30": 0.067,
+      "rolling7": 0.143,
+      "rolling30": 0.2,
       "publication": true
     },
     {
       "date": "2025-06-10",
       "raw": 0.0,
-      "rolling7": -0.429,
-      "rolling30": 0.067,
+      "rolling7": -0.143,
+      "rolling30": 0.2,
       "publication": true
     },
     {
       "date": "2025-06-11",
       "raw": null,
       "rolling7": -0.429,
-      "rolling30": 0.067,
+      "rolling30": 0.2,
       "publication": false
     },
     {
       "date": "2025-06-12",
       "raw": null,
       "rolling7": 0.0,
-      "rolling30": 0.067,
+      "rolling30": 0.2,
       "publication": false
     },
     {
       "date": "2025-06-13",
       "raw": 0.0,
       "rolling7": 0.0,
-      "rolling30": 0.067,
+      "rolling30": 0.2,
       "publication": true
     },
     {
       "date": "2025-06-14",
       "raw": 0.0,
       "rolling7": 0.0,
-      "rolling30": 0.0,
+      "rolling30": 0.133,
       "publication": true
     },
     {
       "date": "2025-06-15",
       "raw": null,
       "rolling7": 0.0,
-      "rolling30": 0.0,
+      "rolling30": 0.133,
       "publication": false
     },
     {
       "date": "2025-06-16",
       "raw": null,
       "rolling7": 0.0,
-      "rolling30": 0.0,
+      "rolling30": 0.133,
       "publication": false
     },
     {
       "date": "2025-06-17",
       "raw": 0.0,
       "rolling7": 0.0,
-      "rolling30": 0.0,
+      "rolling30": 0.133,
       "publication": true
     },
     {
       "date": "2025-06-18",
       "raw": 0.0,
       "rolling7": 0.0,
-      "rolling30": 0.0,
+      "rolling30": 0.133,
       "publication": true
     },
     {
       "date": "2025-06-19",
       "raw": 0.0,
       "rolling7": 0.0,
-      "rolling30": 0.0,
+      "rolling30": 0.133,
       "publication": true
     },
     {
       "date": "2025-06-20",
       "raw": -1.0,
       "rolling7": -0.143,
-      "rolling30": -0.033,
+      "rolling30": 0.1,
       "publication": true
     },
     {
       "date": "2025-06-21",
       "raw": null,
       "rolling7": -0.286,
-      "rolling30": -0.067,
+      "rolling30": 0.067,
       "publication": false
     },
     {
       "date": "2025-06-22",
       "raw": null,
       "rolling7": -0.429,
-      "rolling30": -0.1,
+      "rolling30": 0.033,
       "publication": false
     },
     {
       "date": "2025-06-23",
       "raw": null,
       "rolling7": -0.571,
-      "rolling30": -0.133,
+      "rolling30": 0.0,
       "publication": false
     },
     {
       "date": "2025-06-24",
       "raw": 0.0,
       "rolling7": -0.571,
-      "rolling30": -0.133,
+      "rolling30": 0.0,
       "publication": true
     },
     {
       "date": "2025-06-25",
       "raw": 0.0,
       "rolling7": -0.571,
-      "rolling30": -0.167,
+      "rolling30": -0.033,
       "publication": true
     },
     {
       "date": "2025-06-26",
       "raw": null,
       "rolling7": -0.571,
-      "rolling30": -0.2,
+      "rolling30": -0.067,
       "publication": false
     },
     {
       "date": "2025-06-27",
       "raw": 0.0,
       "rolling7": -0.429,
-      "rolling30": -0.233,
+      "rolling30": -0.1,
       "publication": true
     },
     {
       "date": "2025-06-28",
       "raw": null,
       "rolling7": -0.286,
-      "rolling30": -0.233,
+      "rolling30": -0.1,
       "publication": false
     },
     {
       "date": "2025-06-29",
       "raw": null,
       "rolling7": -0.143,
-      "rolling30": -0.233,
+      "rolling30": -0.1,
       "publication": false
     },
     {
       "date": "2025-06-30",
       "raw": 0.0,
       "rolling7": 0.0,
-      "rolling30": -0.233,
+      "rolling30": -0.1,
       "publication": true
     },
     {
       "date": "2025-07-01",
       "raw": null,
       "rolling7": 0.0,
-      "rolling30": -0.233,
+      "rolling30": -0.1,
       "publication": false
     },
     {
       "date": "2025-07-02",
       "raw": null,
       "rolling7": 0.0,
-      "rolling30": -0.233,
+      "rolling30": -0.1,
       "publication": false
     },
     {
       "date": "2025-07-03",
       "raw": null,
       "rolling7": 0.0,
-      "rolling30": -0.233,
+      "rolling30": -0.167,
       "publication": false
     },
     {
