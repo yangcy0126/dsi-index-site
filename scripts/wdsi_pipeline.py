@@ -7,6 +7,7 @@ import os
 import re
 import subprocess
 import time
+from email.utils import parsedate_to_datetime
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -84,6 +85,7 @@ ITALY_SITE_TITLE_SUFFIX_RE = re.compile(
 AU_LISTING_ENTRY_RE = re.compile(
     r"^\*\s+\[(?P<title>.+?)\]\((?P<url>https://www\.foreignminister\.gov\.au/[^\s)]+)\)\s+(?P<date>\d{1,2}\s+[A-Za-z]+\s+\d{4})$"
 )
+AU_INLINE_DATE_RE = re.compile(r"(?P<date>\d{1,2}\s+[A-Za-z]+\s+\d{4})$")
 MX_LISTING_DATE_RE = re.compile(rf"^(?P<date>{MONTH_NAME_PATTERN}\s+\d{{1,2}},\s+\d{{4}})\s+Fecha de publicación")
 MX_DETAIL_DATE_RE = re.compile(rf"\|\s*(?P<date>{MONTH_NAME_PATTERN}\s+\d{{1,2}},\s+\d{{4}})\s*\|")
 ES_LISTING_ENTRY_RE = re.compile(
@@ -2103,6 +2105,7 @@ class AustraliaForeignMinisterMediaReleaseSource:
     resume_missing_history = True
     history_backfill_chunk_days = 150
     archive_url = "https://www.foreignminister.gov.au/minister/penny-wong/media-releases"
+    rss_url = "https://www.foreignminister.gov.au/rss.xml"
 
     def __init__(self, session: requests.Session) -> None:
         self.session = session
@@ -2137,6 +2140,9 @@ class AustraliaForeignMinisterMediaReleaseSource:
                 break
 
         if not candidates:
+            candidates = self._fetch_rss_candidates(start_date, end_date)
+
+        if not candidates:
             return []
 
         records: list[ScrapedRecord] = []
@@ -2168,6 +2174,10 @@ class AustraliaForeignMinisterMediaReleaseSource:
                 continue
             match = AU_LISTING_ENTRY_RE.match(line)
             if not match:
+                generic = self._extract_listing_candidate_generic(line)
+                if generic is None:
+                    continue
+                candidates.append(generic)
                 continue
             candidates.append(
                 (
@@ -2177,6 +2187,51 @@ class AustraliaForeignMinisterMediaReleaseSource:
                 )
             )
         return candidates, "[Next page" in markdown
+
+    def _extract_listing_candidate_generic(self, line: str) -> tuple[str, str, str] | None:
+        if not line.startswith("*"):
+            return None
+        links = markdown_links(line)
+        if len(links) != 1:
+            return None
+        title, url = links[0]
+        if "foreignminister.gov.au" not in url or "/minister/penny-wong/media-release/" not in url:
+            return None
+        date_match = AU_INLINE_DATE_RE.search(line)
+        if not date_match:
+            return None
+        return normalize_generic_url(url), clean_text(title), parse_us_date(date_match.group("date"))
+
+    def _fetch_rss_candidates(self, start_date: str, end_date: str) -> list[tuple[str, str, str]]:
+        try:
+            response = self.session.get(self.rss_url, headers=BROWSER_HEADERS, timeout=45)
+            response.raise_for_status()
+        except requests.RequestException:
+            return []
+
+        soup = BeautifulSoup(response.text, "xml")
+        candidates: list[tuple[str, str, str]] = []
+        seen_urls: set[str] = set()
+        for item in soup.select("item"):
+            link_node = item.select_one("link")
+            title_node = item.select_one("title")
+            pubdate_node = item.select_one("pubDate")
+            if link_node is None or title_node is None or pubdate_node is None:
+                continue
+            url = normalize_generic_url(clean_text(link_node.get_text(" ", strip=True)))
+            if "/minister/penny-wong/media-release/" not in url:
+                continue
+            try:
+                published_at = parsedate_to_datetime(clean_text(pubdate_node.get_text(" ", strip=True))).date().isoformat()
+            except Exception:
+                continue
+            if not (start_date <= published_at <= end_date):
+                continue
+            if url in seen_urls:
+                continue
+            seen_urls.add(url)
+            candidates.append((url, clean_text(title_node.get_text(" ", strip=True)), published_at))
+        return sorted(candidates, key=lambda item: (item[2], item[0]))
 
     def _fetch_detail_record(self, url: str, fallback_title: str, fallback_published_at: str) -> ScrapedRecord:
         markdown = request_markdown_via_jina(url)
