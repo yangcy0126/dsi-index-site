@@ -434,7 +434,16 @@ def request_json_with_curl(url: str, *, headers: dict[str, str] | None = None) -
 
 
 def _supports_curl_fallback(url: str) -> bool:
-    return any(domain in url for domain in ("mofa.go.jp", "gov.uk", "diplomatie.gouv.fr"))
+    return any(
+        domain in url
+        for domain in (
+            "mofa.go.jp",
+            "gov.uk",
+            "diplomatie.gouv.fr",
+            "auswaertiges-amt.de",
+            "mea.gov.in",
+        )
+    )
 
 
 def _supports_browser_fallback(url: str) -> bool:
@@ -1546,8 +1555,18 @@ class GermanyForeignOfficeSource:
                 )
                 for url, title, published_at, source_kind in candidates
             }
+            failures = 0
             for future in as_completed(futures):
-                records.append(future.result())
+                url, _, _, _ = futures[future]
+                try:
+                    records.append(future.result())
+                except Exception as exc:
+                    failures += 1
+                    if failures <= 3:
+                        print(f"DE: skipping {url} after fetch/parse error: {exc}")
+
+        if not records:
+            raise RuntimeError("Germany Foreign Office fetch produced no parseable records.")
 
         deduped = {record.url: record for record in records}
         return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
@@ -1641,9 +1660,13 @@ class GermanyForeignOfficeSource:
 
 class IndiaMeaOfficialSource:
     country_code = "IN"
-    history_start_date = "2025-01-01"
-    history_scan_limit = 2400
-    resume_missing_history = True
+    history_start_date = "2026-02-18"
+    bootstrap_history_start_date = "2026-02-18"
+    history_scan_limit = 1000
+    resume_missing_history = False
+    recent_listing_start_date = "2026-02-18"
+    recent_listing_url = "https://www.mea.gov.in/whats-new.htm"
+    recent_sections = ("Press Releases", "Media Briefings", "Lok Sabha", "Rajya Sabha")
     recent_index_urls = (
         "https://www.mea.gov.in/press-releases.htm?51%2FPress_Releases=",
         "https://www.mea.gov.in/media-briefings.htm?49%2FMedia_Briefings=",
@@ -1655,10 +1678,16 @@ class IndiaMeaOfficialSource:
 
     def fetch_recent(self, max_pages: int = 6) -> list[ScrapedRecord]:
         end_date = datetime.now(timezone.utc).date()
-        start_date = end_date - timedelta(days=max(max_pages * 30, 180))
+        start_date = max(end_date - timedelta(days=max(max_pages * 10, 20)), iso_to_date(self.recent_listing_start_date))
         return self.fetch_between(start_date.isoformat(), end_date.isoformat(), max_pages=max_pages)
 
     def fetch_between(self, start_date: str, end_date: str, max_pages: int = 90) -> list[ScrapedRecord]:
+        if start_date >= self.recent_listing_start_date:
+            return self._fetch_recent_listing_between(start_date, end_date)
+
+        return self._fetch_archive_between(start_date, end_date, max_pages=max_pages)
+
+    def _fetch_archive_between(self, start_date: str, end_date: str, max_pages: int = 90) -> list[ScrapedRecord]:
         latest_id = self._latest_detail_id()
         # The ASP.NET archive does not expose stable pagination controls in this environment,
         # so we walk recent detail ids backwards and stop once we are safely before the window.
@@ -1709,6 +1738,123 @@ class IndiaMeaOfficialSource:
 
         deduped = {record.url: record for record in records}
         return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
+
+    def _fetch_recent_listing_between(self, start_date: str, end_date: str) -> list[ScrapedRecord]:
+        markdown = request_markdown_via_jina(self.recent_listing_url)
+        items = self._parse_recent_listing(markdown)
+        if not items:
+            return []
+
+        candidates = [
+            item for item in items if start_date <= item["published_at"] <= end_date  # type: ignore[index]
+        ]
+        if not candidates:
+            return []
+
+        records: list[ScrapedRecord] = []
+        with ThreadPoolExecutor(max_workers=6) as executor:
+            futures = {
+                executor.submit(
+                    self._fetch_recent_listing_record,
+                    str(item["url"]),
+                    str(item["title"]),
+                    str(item["published_at"]),
+                ): (
+                    str(item["url"]),
+                    str(item["title"]),
+                    str(item["published_at"]),
+                )
+                for item in candidates
+            }
+            for future in as_completed(futures):
+                url, title, published_at = futures[future]
+                try:
+                    records.append(future.result())
+                except Exception as exc:
+                    try:
+                        time.sleep(4)
+                        records.append(self._fetch_recent_listing_record(url, title, published_at))
+                    except Exception as retry_exc:
+                        print(f"IN: skipping {url} from what's-new after fetch/parse error: {retry_exc}")
+
+        deduped = {record.url: record for record in records}
+        return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
+
+    def _parse_recent_listing(self, markdown: str) -> list[dict[str, str]]:
+        lines = markdown.splitlines()
+        date_pattern = re.compile(r"^[A-Z][a-z]+\s+\d{1,2},\s+\d{4}$")
+        item_pattern = re.compile(
+            r"^\*\s+(Press Releases|Media Briefings|Lok Sabha|Rajya Sabha)\[(.+?)\]\((https://www\.mea\.gov\.in/[^\s)]+)"
+        )
+
+        items: list[dict[str, str]] = []
+        seen_urls: set[str] = set()
+        for index, raw_line in enumerate(lines):
+            line = clean_text(raw_line)
+            match = item_pattern.match(line)
+            if not match:
+                continue
+
+            section, title, url = match.groups()
+            if section not in self.recent_sections:
+                continue
+
+            date_line = ""
+            pointer = index + 1
+            while pointer < len(lines):
+                candidate = clean_text(lines[pointer])
+                if candidate:
+                    date_line = candidate
+                    break
+                pointer += 1
+
+            if not date_pattern.match(date_line):
+                continue
+
+            normalized_url = normalize_generic_url(url)
+            if normalized_url in seen_urls:
+                continue
+            seen_urls.add(normalized_url)
+
+            items.append(
+                {
+                    "section": section,
+                    "title": title,
+                    "url": normalized_url,
+                    "published_at": parse_us_date(date_line),
+                }
+            )
+
+        return items
+
+    def _fetch_recent_listing_record(
+        self,
+        url: str,
+        fallback_title: str,
+        fallback_published_at: str,
+    ) -> ScrapedRecord:
+        markdown = request_markdown_via_jina(url)
+        if self._is_unavailable_markdown(markdown):
+            raise ValueError(f"India MEA listing detail page is unavailable in English: {url}")
+
+        title = self._extract_title(markdown) or clean_text(fallback_title)
+        try:
+            published_at = parse_india_page_updated(markdown)
+        except ValueError:
+            published_at = fallback_published_at
+        content = self._extract_content(markdown, title)
+        source_kind = self._source_kind(title, content)
+
+        return ScrapedRecord(
+            country_code=self.country_code,
+            published_at=published_at,
+            url=normalize_generic_url(url),
+            title=title,
+            content=content,
+            source_kind=source_kind,
+            language="en",
+            speaker=self._speaker(title, content),
+        )
 
     def _latest_detail_id(self) -> int:
         latest_id = 0
@@ -1763,9 +1909,9 @@ class IndiaMeaOfficialSource:
 
         body_lines = lines[start:]
         heading_candidates = {f"# {title}", f"## {title}"}
-        heading_index = next((idx for idx, line in enumerate(body_lines) if line in heading_candidates), None)
-        if heading_index is not None:
-            body_lines = body_lines[heading_index + 1 :]
+        heading_indexes = [idx for idx, line in enumerate(body_lines) if line in heading_candidates]
+        if heading_indexes:
+            body_lines = body_lines[heading_indexes[-1] + 1 :]
 
         content_lines: list[str] = []
         for line in body_lines:
@@ -1775,7 +1921,9 @@ class IndiaMeaOfficialSource:
                 break
             if line.startswith("[Click here for ") and " version" in line:
                 break
-            if line.startswith("[![Image") or (line.startswith("![") and "sharing button" in line.lower()):
+            if line.startswith("[]("):
+                continue
+            if line.startswith("[![Image") or line.startswith("!["):
                 continue
             if line.startswith("*   Name *(required)") or line.startswith("*   Write Your Comment"):
                 break

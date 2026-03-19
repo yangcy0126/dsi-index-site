@@ -119,13 +119,14 @@ def determine_fetch_range(existing: pd.DataFrame, lookback_days: int) -> tuple[s
 
 
 def maybe_expand_history_start(existing: pd.DataFrame, source: object, start_date: str) -> str:
+    bootstrap_start_date = str(getattr(source, "bootstrap_history_start_date", "") or "")
     history_start_date = str(getattr(source, "history_start_date", "") or "")
-    if not history_start_date:
+    if not bootstrap_start_date and not history_start_date:
         return start_date
 
     published_dates = pd.to_datetime(existing.get("published_at"), errors="coerce").dropna()
     if published_dates.empty:
-        return history_start_date
+        return bootstrap_start_date or history_start_date
 
     if not bool(getattr(source, "resume_missing_history", False)):
         return start_date
@@ -269,7 +270,7 @@ def main() -> None:
                         "scored_at": result["scored_at"],
                     }
                 )
-        elif code in {"US", "UK", "JP", "KR", "FR", "RU"}:
+        elif code in {"US", "UK", "JP", "KR", "DE", "IN", "FR", "RU"}:
             batched_inputs = [SimpleNamespace(**item) for item in additions]
             batched_results = scorer.score_flat_records(batched_inputs)  # type: ignore[union-attr]
             for item, result in zip(additions, batched_results, strict=False):

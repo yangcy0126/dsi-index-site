@@ -24,7 +24,7 @@ permissions:
 jobs:
   update-country:
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ matrix.country == 'RU' && 45 || 70 }}
+    timeout-minutes: ${{ matrix.country == 'RU' && 45 || matrix.country == 'IN' && 90 || 70 }}
     strategy:
       fail-fast: false
       matrix:
@@ -60,8 +60,20 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Update records (standard)
-        if: matrix.country != 'RU'
+        if: matrix.country != 'RU' && matrix.country != 'IN'
         run: python scripts/update_wdsi_records.py --countries ${{ matrix.country }} --lookback-days 200 --max-pages 90 --skip-build
+        env:
+          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
+          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
+          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
+
+      - name: Update records (India recent bootstrap)
+        if: matrix.country == 'IN'
+        run: python scripts/update_wdsi_records.py --countries IN --lookback-days 20 --max-pages 30 --skip-build
         env:
           WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
