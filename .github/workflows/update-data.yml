@@ -66,7 +66,7 @@ jobs:
             --countries ${{ matrix.country }} \
             --lookback-days ${{ matrix.country == 'CA' && 90 || matrix.country == 'IT' && 90 || matrix.country == 'BR' && 90 || matrix.country == 'MX' && 90 || 200 }} \
             --max-pages 90 \
-            --history-backfill-rounds 1 \
+            --history-backfill-rounds ${{ matrix.country == 'CA' && '0' || '1' }} \
             --skip-build
         env:
           WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
@@ -76,6 +76,15 @@ jobs:
           WDSI_MODEL: ${{ vars.WDSI_MODEL }}
           WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
+
+      - name: Upload country record checkpoint
+        if: matrix.country == 'CA' || matrix.country == 'IT' || matrix.country == 'BR'
+        uses: actions/upload-artifact@v4
+        with:
+          name: records-${{ matrix.country }}
+          path: records/${{ matrix.country }}.csv
+          if-no-files-found: error
+          overwrite: true
 
       - name: Update records (extra history backfill)
         if: matrix.country == 'CA' || matrix.country == 'IT' || matrix.country == 'BR'
@@ -129,6 +138,7 @@ jobs:
           name: records-${{ matrix.country }}
           path: records/${{ matrix.country }}.csv
           if-no-files-found: error
+          overwrite: true
 
   finalize:
     runs-on: ubuntu-latest
