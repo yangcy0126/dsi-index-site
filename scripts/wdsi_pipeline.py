@@ -3049,16 +3049,22 @@ class IndiaMeaOfficialSource:
     bootstrap_history_start_date = "2025-10-01"
     history_scan_limit = 2200
     history_backfill_chunk_days = 120
+    history_probe_step = 100
+    history_probe_buffer = 40
+    history_fetch_workers = 3
+    history_batch_size = 6
+    history_retry_delay_seconds = 1.0
+    recent_fetch_workers = 3
     resume_missing_history = True
     recent_listing_start_date = "2026-02-18"
     recent_listing_url = "https://www.mea.gov.in/whats-new.htm"
     recent_sections = ("Press Releases", "Media Briefings", "Lok Sabha", "Rajya Sabha")
     recent_index_urls = (
         "https://www.mea.gov.in/whats-new.htm",
-        "https://www.mea.gov.in/press-releases.htm?51%2FPress_Releases=",
-        "https://www.mea.gov.in/media-briefings.htm?49%2FMedia_Briefings=",
-        "https://www.mea.gov.in/lok-sabha.htm?61%2FLok_Sabha=",
-        "https://www.mea.gov.in/rajya-sabha.htm?62%2FRajya_Sabha=",
+        "https://www.mea.gov.in/press-releases.htm?51/Press_Releases",
+        "https://www.mea.gov.in/media-briefings.htm?49/Media_Briefings",
+        "https://www.mea.gov.in/lok-sabha.htm?61/Lok_Sabha",
+        "https://www.mea.gov.in/rajya-sabha.htm?62/Rajya_Sabha",
     )
     detail_url_template = "https://www.mea.gov.in/press-releases.htm?dtl/{dtl_id}/"
 
@@ -3090,16 +3096,28 @@ class IndiaMeaOfficialSource:
                 lower_bound,
                 self._estimate_archive_lower_bound_id(start_date, latest_id, lower_bound, probed_records),
             )
+        upper_bound = latest_id
+        if end_date < self.recent_listing_start_date:
+            upper_bound = min(
+                upper_bound,
+                self._estimate_archive_upper_bound_id(end_date, latest_id, lower_bound, probed_records),
+            )
 
         records: list[ScrapedRecord] = []
         seen_urls: set[str] = set()
         stale_hits = 0
 
-        dtl_ids = list(range(latest_id, lower_bound - 1, -1))
-        with ThreadPoolExecutor(max_workers=12) as executor:
-            for batch_start in range(0, len(dtl_ids), 24):
-                batch_ids = dtl_ids[batch_start : batch_start + 24]
+        dtl_ids = list(range(upper_bound, lower_bound - 1, -1))
+        history_fetch_workers = max(1, int(getattr(self, "history_fetch_workers", 3) or 3))
+        history_batch_size = max(1, int(getattr(self, "history_batch_size", 6) or 6))
+        history_retry_delay_seconds = float(
+            getattr(self, "history_retry_delay_seconds", 1.0) or 1.0
+        )
+        with ThreadPoolExecutor(max_workers=history_fetch_workers) as executor:
+            for batch_start in range(0, len(dtl_ids), history_batch_size):
+                batch_ids = dtl_ids[batch_start : batch_start + history_batch_size]
                 batch_results: dict[int, ScrapedRecord] = {}
+                failed_ids: list[int] = []
                 futures = {
                     executor.submit(self._fetch_detail_record, dtl_id): dtl_id
                     for dtl_id in batch_ids
@@ -3114,6 +3132,13 @@ class IndiaMeaOfficialSource:
                     dtl_id = futures[future]
                     try:
                         batch_results[dtl_id] = future.result()
+                    except Exception:
+                        failed_ids.append(dtl_id)
+
+                for dtl_id in failed_ids:
+                    try:
+                        time.sleep(history_retry_delay_seconds)
+                        batch_results[dtl_id] = self._fetch_detail_record(dtl_id)
                     except Exception:
                         continue
 
@@ -3149,19 +3174,87 @@ class IndiaMeaOfficialSource:
         hard_lower_bound: int,
         probed_records: dict[int, ScrapedRecord | None],
     ) -> int:
-        probe_step = 200
-        probe_buffer = 120
-        previous_probe_id = latest_id
+        probe_step = int(getattr(self, "history_probe_step", 100) or 100)
+        probe_buffer = int(getattr(self, "history_probe_buffer", 40) or 40)
+        previous_probe: tuple[int, str] | None = None
 
         for dtl_id in range(latest_id, hard_lower_bound - 1, -probe_step):
             record = self._probe_detail_record(dtl_id, probed_records)
             if record is None:
                 continue
             if record.published_at < start_date:
+                if previous_probe is not None:
+                    return max(
+                        hard_lower_bound,
+                        self._estimate_boundary_id(
+                            start_date,
+                            previous_probe,
+                            (dtl_id, record.published_at),
+                            direction="lower",
+                        ),
+                    )
                 return max(hard_lower_bound, dtl_id - probe_buffer)
-            previous_probe_id = dtl_id
+            previous_probe = (dtl_id, record.published_at)
 
-        return max(hard_lower_bound, previous_probe_id - probe_buffer)
+        if previous_probe is None:
+            return hard_lower_bound
+        return max(hard_lower_bound, previous_probe[0] - probe_buffer)
+
+    def _estimate_archive_upper_bound_id(
+        self,
+        end_date: str,
+        latest_id: int,
+        hard_lower_bound: int,
+        probed_records: dict[int, ScrapedRecord | None],
+    ) -> int:
+        probe_step = int(getattr(self, "history_probe_step", 100) or 100)
+        probe_buffer = int(getattr(self, "history_probe_buffer", 40) or 40)
+        previous_probe: tuple[int, str] | None = None
+
+        for dtl_id in range(latest_id, hard_lower_bound - 1, -probe_step):
+            record = self._probe_detail_record(dtl_id, probed_records)
+            if record is None:
+                continue
+            if record.published_at <= end_date:
+                if previous_probe is not None:
+                    return min(
+                        latest_id,
+                        self._estimate_boundary_id(
+                            end_date,
+                            previous_probe,
+                            (dtl_id, record.published_at),
+                            direction="upper",
+                        ),
+                    )
+                return min(latest_id, dtl_id + probe_buffer)
+            previous_probe = (dtl_id, record.published_at)
+
+        return latest_id
+
+    def _estimate_boundary_id(
+        self,
+        target_date: str,
+        newer_probe: tuple[int, str],
+        older_probe: tuple[int, str],
+        direction: str,
+    ) -> int:
+        probe_buffer = int(getattr(self, "history_probe_buffer", 40) or 40)
+        newer_id, newer_date = newer_probe
+        older_id, older_date = older_probe
+        newer_ordinal = iso_to_date(newer_date).toordinal()
+        older_ordinal = iso_to_date(older_date).toordinal()
+        target_ordinal = iso_to_date(target_date).toordinal()
+
+        if newer_ordinal <= older_ordinal:
+            estimate = older_id if direction == "lower" else newer_id
+        else:
+            ratio = (newer_ordinal - target_ordinal) / (newer_ordinal - older_ordinal)
+            ratio = min(max(ratio, 0.0), 1.0)
+            estimate = round(newer_id - ((newer_id - older_id) * ratio))
+
+        if direction == "lower":
+            return max(1, estimate - probe_buffer)
+        return estimate + probe_buffer
 
     def _probe_detail_record(
         self,
@@ -3191,7 +3284,8 @@ class IndiaMeaOfficialSource:
             return []
 
         records: list[ScrapedRecord] = []
-        with ThreadPoolExecutor(max_workers=6) as executor:
+        recent_fetch_workers = max(1, int(getattr(self, "recent_fetch_workers", 3) or 3))
+        with ThreadPoolExecutor(max_workers=recent_fetch_workers) as executor:
             futures = {
                 executor.submit(
                     self._fetch_recent_listing_record,
