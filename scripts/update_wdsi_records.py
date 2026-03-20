@@ -238,6 +238,51 @@ def score_pending_rows(
     additions: list[dict[str, object]],
     scorer: OpenAIWDSIScorer,
 ) -> list[dict[str, object]]:
+    def is_recoverable_scoring_error(exc: Exception) -> bool:
+        message = str(exc).lower()
+        return any(
+            marker in message
+            for marker in (
+                "data_inspection_failed",
+                "input data may contain inappropriate content",
+                "inappropriate content",
+            )
+        )
+
+    def score_flat_with_recovery(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+        if not rows:
+            return []
+        batched_inputs = [SimpleNamespace(**item) for item in rows]
+        try:
+            batched_results = scorer.score_flat_records(batched_inputs)
+        except Exception as exc:
+            # Isolate records that trip provider-side content inspection without dropping the whole batch.
+            if not is_recoverable_scoring_error(exc):
+                raise
+            if len(rows) == 1:
+                item = rows[0]
+                print(f"{code}: skipping {item['published_at']} | {item['title']} after scoring error: {exc}")
+                return []
+            midpoint = len(rows) // 2
+            return score_flat_with_recovery(rows[:midpoint]) + score_flat_with_recovery(rows[midpoint:])
+
+        recovered_rows: list[dict[str, object]] = []
+        for item, result in zip(rows, batched_results, strict=False):
+            recovered_rows.append(
+                {
+                    **item,
+                    "score": result["score"],
+                    "score_reasoning": result["score_reasoning"],
+                    "war_related": result["war_related"],
+                    "confidence": result["confidence"],
+                    "model": result["model"],
+                    "pipeline_version": result["pipeline_version"],
+                    "response_id": result["response_id"],
+                    "scored_at": result["scored_at"],
+                }
+            )
+        return recovered_rows
+
     scored_rows: list[dict[str, object]] = []
     if code == "CN":
         batched_inputs = [SimpleNamespace(**item) for item in additions]
@@ -259,23 +304,7 @@ def score_pending_rows(
         return scored_rows
 
     if code in {"US", "UK", "JP", "KR", "DE", "IN", "IT", "CA", "BR", "AU", "MX", "ES", "FR", "RU"}:
-        batched_inputs = [SimpleNamespace(**item) for item in additions]
-        batched_results = scorer.score_flat_records(batched_inputs)
-        for item, result in zip(additions, batched_results, strict=False):
-            scored_rows.append(
-                {
-                    **item,
-                    "score": result["score"],
-                    "score_reasoning": result["score_reasoning"],
-                    "war_related": result["war_related"],
-                    "confidence": result["confidence"],
-                    "model": result["model"],
-                    "pipeline_version": result["pipeline_version"],
-                    "response_id": result["response_id"],
-                    "scored_at": result["scored_at"],
-                }
-            )
-        return scored_rows
+        return score_flat_with_recovery(additions)
 
     for item in additions:
         result = scorer.score_record(SimpleNamespace(**item))

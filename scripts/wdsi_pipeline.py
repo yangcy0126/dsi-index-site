@@ -2848,7 +2848,7 @@ class BrazilItamaratyPressReleaseSource:
     country_code = "BR"
     history_start_date = "2022-01-01"
     resume_missing_history = True
-    history_backfill_chunk_days = 240
+    history_backfill_chunk_days = 150
     history_max_pages = 120
     archive_url = "https://www.gov.br/mre/en/en/contact-us/press-area/press-releases/press-releases"
 

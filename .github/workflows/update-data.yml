@@ -79,6 +79,7 @@ jobs:
 
       - name: Update records (extra history backfill)
         if: matrix.country == 'CA' || matrix.country == 'IT' || matrix.country == 'BR'
+        continue-on-error: true
         run: |
           python -u scripts/update_wdsi_records.py \
             --countries ${{ matrix.country }} \
@@ -122,6 +123,7 @@ jobs:
           WDSI_PLAYWRIGHT_HEADLESS: "0"
 
       - name: Upload country record
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: records-${{ matrix.country }}
