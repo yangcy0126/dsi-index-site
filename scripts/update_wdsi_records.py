@@ -176,6 +176,7 @@ def build_fetch_plan(
     history_backfill_rounds: int,
     start_date_override: str | None,
     end_date_override: str | None,
+    history_only: bool,
 ) -> list[tuple[str, str, str]]:
     if start_date_override or end_date_override:
         today = datetime.now(timezone.utc).date().isoformat()
@@ -188,7 +189,9 @@ def build_fetch_plan(
         bootstrap_start = maybe_expand_history_start(existing, source, recent_start)
         return [("bootstrap", bootstrap_start, recent_end)]
 
-    plan: list[tuple[str, str, str]] = [("recent", recent_start, recent_end)]
+    plan: list[tuple[str, str, str]] = []
+    if not history_only:
+        plan.append(("recent", recent_start, recent_end))
     history_start_date = str(getattr(source, "history_start_date", "") or "")
     if history_backfill_rounds <= 0 or not history_start_date:
         return plan
@@ -361,6 +364,11 @@ def main() -> None:
         help="How many additional historical chunks to backfill beyond the recent refresh window.",
     )
     parser.add_argument(
+        "--history-only",
+        action="store_true",
+        help="Skip the recent refresh window and only backfill older history chunks.",
+    )
+    parser.add_argument(
         "--skip-build",
         action="store_true",
         help="Update records without rebuilding site data.",
@@ -392,6 +400,7 @@ def main() -> None:
             args.history_backfill_rounds,
             args.start_date,
             args.end_date,
+            args.history_only,
         )
 
         for window_label, start_date, end_date in fetch_plan:
