@@ -24,7 +24,7 @@ permissions:
 jobs:
   update-country:
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ matrix.country == 'RU' && 60 || matrix.country == 'IN' && 90 || matrix.country == 'CA' && 90 || matrix.country == 'AU' && 90 || matrix.country == 'IT' && 90 || matrix.country == 'BR' && 90 || matrix.country == 'MX' && 90 || matrix.country == 'ES' && 90 || matrix.country == 'DE' && 90 || matrix.country == 'FR' && 90 || 70 }}
+    timeout-minutes: ${{ matrix.country == 'RU' && 60 || matrix.country == 'CA' && 120 || matrix.country == 'IT' && 120 || matrix.country == 'BR' && 120 || matrix.country == 'MX' && 120 || matrix.country == 'IN' && 90 || matrix.country == 'AU' && 90 || matrix.country == 'ES' && 90 || matrix.country == 'DE' && 90 || matrix.country == 'FR' && 90 || 70 }}
     strategy:
       fail-fast: false
       matrix:
@@ -62,11 +62,11 @@ jobs:
       - name: Update records (standard)
         if: matrix.country != 'RU' && matrix.country != 'IN'
         run: |
-          python scripts/update_wdsi_records.py \
+          python -u scripts/update_wdsi_records.py \
             --countries ${{ matrix.country }} \
-            --lookback-days 200 \
+            --lookback-days ${{ matrix.country == 'CA' && 90 || matrix.country == 'IT' && 90 || matrix.country == 'BR' && 90 || matrix.country == 'MX' && 90 || 200 }} \
             --max-pages 90 \
-            --history-backfill-rounds ${{ matrix.country == 'AU' && 4 || matrix.country == 'IT' && 3 || matrix.country == 'CA' && 2 || matrix.country == 'BR' && 3 || matrix.country == 'MX' && 3 || matrix.country == 'ES' && 3 || matrix.country == 'DE' && 2 || 1 }} \
+            --history-backfill-rounds 1 \
             --skip-build
         env:
           WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
@@ -79,7 +79,7 @@ jobs:
 
       - name: Update records (India recent bootstrap)
         if: matrix.country == 'IN'
-        run: python scripts/update_wdsi_records.py --countries IN --lookback-days 20 --max-pages 30 --skip-build
+        run: python -u scripts/update_wdsi_records.py --countries IN --lookback-days 20 --max-pages 30 --skip-build
         env:
           WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -91,7 +91,7 @@ jobs:
 
       - name: Update records (headed browser for RU)
         if: matrix.country == 'RU'
-        run: xvfb-run -a python scripts/update_wdsi_records.py --countries ${{ matrix.country }} --lookback-days 200 --max-pages 90 --history-backfill-rounds 2 --skip-build
+        run: xvfb-run -a python -u scripts/update_wdsi_records.py --countries ${{ matrix.country }} --lookback-days 200 --max-pages 90 --history-backfill-rounds 2 --skip-build
         env:
           WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
