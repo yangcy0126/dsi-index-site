@@ -2299,7 +2299,7 @@ class CanadaGlobalAffairsNewsSource:
     history_start_date = "2017-03-31"
     bootstrap_history_start_date = "2026-01-01"
     resume_missing_history = True
-    history_backfill_chunk_days = 120
+    history_backfill_chunk_days = 180
     api_url = "https://api.io.canada.ca/io-server/gc/news/en/v2"
     department = "departmentofforeignaffairstradeanddevelopment"
 
