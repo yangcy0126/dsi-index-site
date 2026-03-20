@@ -108,7 +108,7 @@ jobs:
 
       - name: Update records (India recent bootstrap)
         if: matrix.country == 'IN'
-        run: python -u scripts/update_wdsi_records.py --countries IN --lookback-days 20 --max-pages 30 --skip-build
+        run: python -u scripts/update_wdsi_records.py --countries IN --lookback-days 20 --max-pages 30 --history-backfill-rounds 1 --skip-build
         env:
           WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

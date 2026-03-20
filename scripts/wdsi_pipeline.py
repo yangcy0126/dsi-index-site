@@ -3045,16 +3045,20 @@ class BrazilItamaratyPressReleaseSource:
 
 class IndiaMeaOfficialSource:
     country_code = "IN"
-    history_start_date = "2026-02-18"
-    bootstrap_history_start_date = "2026-02-18"
-    history_scan_limit = 1000
-    resume_missing_history = False
+    history_start_date = "2025-01-01"
+    bootstrap_history_start_date = "2025-10-01"
+    history_scan_limit = 2200
+    history_backfill_chunk_days = 120
+    resume_missing_history = True
     recent_listing_start_date = "2026-02-18"
     recent_listing_url = "https://www.mea.gov.in/whats-new.htm"
     recent_sections = ("Press Releases", "Media Briefings", "Lok Sabha", "Rajya Sabha")
     recent_index_urls = (
+        "https://www.mea.gov.in/whats-new.htm",
         "https://www.mea.gov.in/press-releases.htm?51%2FPress_Releases=",
         "https://www.mea.gov.in/media-briefings.htm?49%2FMedia_Briefings=",
+        "https://www.mea.gov.in/lok-sabha.htm?61%2FLok_Sabha=",
+        "https://www.mea.gov.in/rajya-sabha.htm?62%2FRajya_Sabha=",
     )
     detail_url_template = "https://www.mea.gov.in/press-releases.htm?dtl/{dtl_id}/"
 
@@ -3077,20 +3081,34 @@ class IndiaMeaOfficialSource:
         # The ASP.NET archive does not expose stable pagination controls in this environment,
         # so we walk recent detail ids backwards and stop once we are safely before the window.
         scan_limit = max(240, min(max_pages * 8, 720))
-        if start_date <= self.history_start_date:
+        if start_date < self.recent_listing_start_date:
             scan_limit = max(scan_limit, self.history_scan_limit)
         lower_bound = max(1, latest_id - scan_limit)
+        probed_records: dict[int, ScrapedRecord | None] = {}
+        if start_date < self.recent_listing_start_date:
+            lower_bound = max(
+                lower_bound,
+                self._estimate_archive_lower_bound_id(start_date, latest_id, lower_bound, probed_records),
+            )
 
         records: list[ScrapedRecord] = []
         seen_urls: set[str] = set()
         stale_hits = 0
 
         dtl_ids = list(range(latest_id, lower_bound - 1, -1))
-        with ThreadPoolExecutor(max_workers=6) as executor:
-            for batch_start in range(0, len(dtl_ids), 12):
-                batch_ids = dtl_ids[batch_start : batch_start + 12]
-                futures = {executor.submit(self._fetch_detail_record, dtl_id): dtl_id for dtl_id in batch_ids}
+        with ThreadPoolExecutor(max_workers=12) as executor:
+            for batch_start in range(0, len(dtl_ids), 24):
+                batch_ids = dtl_ids[batch_start : batch_start + 24]
                 batch_results: dict[int, ScrapedRecord] = {}
+                futures = {
+                    executor.submit(self._fetch_detail_record, dtl_id): dtl_id
+                    for dtl_id in batch_ids
+                    if dtl_id not in probed_records
+                }
+
+                for dtl_id, record in probed_records.items():
+                    if dtl_id in batch_ids and record is not None:
+                        batch_results[dtl_id] = record
 
                 for future in as_completed(futures):
                     dtl_id = futures[future]
@@ -3123,6 +3141,42 @@ class IndiaMeaOfficialSource:
 
         deduped = {record.url: record for record in records}
         return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
+
+    def _estimate_archive_lower_bound_id(
+        self,
+        start_date: str,
+        latest_id: int,
+        hard_lower_bound: int,
+        probed_records: dict[int, ScrapedRecord | None],
+    ) -> int:
+        probe_step = 200
+        probe_buffer = 120
+        previous_probe_id = latest_id
+
+        for dtl_id in range(latest_id, hard_lower_bound - 1, -probe_step):
+            record = self._probe_detail_record(dtl_id, probed_records)
+            if record is None:
+                continue
+            if record.published_at < start_date:
+                return max(hard_lower_bound, dtl_id - probe_buffer)
+            previous_probe_id = dtl_id
+
+        return max(hard_lower_bound, previous_probe_id - probe_buffer)
+
+    def _probe_detail_record(
+        self,
+        dtl_id: int,
+        probed_records: dict[int, ScrapedRecord | None],
+    ) -> ScrapedRecord | None:
+        if dtl_id in probed_records:
+            return probed_records[dtl_id]
+        try:
+            record = self._fetch_detail_record(dtl_id)
+        except Exception:
+            probed_records[dtl_id] = None
+            return None
+        probed_records[dtl_id] = record
+        return record
 
     def _fetch_recent_listing_between(self, start_date: str, end_date: str) -> list[ScrapedRecord]:
         markdown = request_markdown_via_jina(self.recent_listing_url)
@@ -3242,6 +3296,11 @@ class IndiaMeaOfficialSource:
         )
 
     def _latest_detail_id(self) -> int:
+        recent_listing_markdown = request_markdown_via_jina(self.recent_listing_url)
+        recent_ids = [int(match) for match in re.findall(r"\?dtl/(\d+)\b", recent_listing_markdown)]
+        if recent_ids:
+            return max(recent_ids)
+
         latest_id = 0
         for index_url in self.recent_index_urls:
             markdown = request_markdown_via_jina(index_url)
