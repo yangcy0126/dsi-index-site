@@ -2361,7 +2361,7 @@ class CanadaGlobalAffairsNewsSource:
             return []
 
         records: list[ScrapedRecord] = []
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=8) as executor:
             futures = {
                 executor.submit(self._fetch_detail_record, url, title, published_at, teaser): (
                     url,
@@ -2527,7 +2527,7 @@ class MexicoSrePressArchiveSource:
     country_code = "MX"
     history_start_date = "2022-01-01"
     resume_missing_history = True
-    history_backfill_chunk_days = 240
+    history_backfill_chunk_days = 180
     history_max_pages = 150
     archive_url = "https://www.gob.mx/sre/es/archivo/prensa?idiom=en"
 
@@ -2564,11 +2564,21 @@ class MexicoSrePressArchiveSource:
                 break
 
         records: list[ScrapedRecord] = []
-        for url, title, published_at in candidates:
-            try:
-                records.append(self._fetch_detail_record(url, title, published_at))
-            except Exception as exc:
-                print(f"MX: skipping {url} after fetch/parse error: {exc}")
+        with ThreadPoolExecutor(max_workers=6) as executor:
+            futures = {
+                executor.submit(self._fetch_detail_record, url, title, published_at): (
+                    url,
+                    title,
+                    published_at,
+                )
+                for url, title, published_at in candidates
+            }
+            for future in as_completed(futures):
+                url, title, published_at = futures[future]
+                try:
+                    records.append(future.result())
+                except Exception as exc:
+                    print(f"MX: skipping {url} after fetch/parse error: {exc}")
 
         deduped = {record.url: record for record in records}
         return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
