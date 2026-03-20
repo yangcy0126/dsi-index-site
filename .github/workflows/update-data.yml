@@ -24,7 +24,7 @@ permissions:
 jobs:
   update-country:
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ matrix.country == 'RU' && 60 || matrix.country == 'IT' && 180 || matrix.country == 'CA' && 150 || matrix.country == 'BR' && 150 || matrix.country == 'MX' && 120 || matrix.country == 'IN' && 120 || matrix.country == 'AU' && 90 || matrix.country == 'ES' && 90 || matrix.country == 'DE' && 90 || matrix.country == 'FR' && 90 || 70 }}
+    timeout-minutes: ${{ matrix.country == 'RU' && 60 || matrix.country == 'IT' && 180 || matrix.country == 'CA' && 180 || matrix.country == 'BR' && 150 || matrix.country == 'MX' && 150 || matrix.country == 'IN' && 180 || matrix.country == 'AU' && 120 || matrix.country == 'ES' && 90 || matrix.country == 'DE' && 90 || matrix.country == 'FR' && 90 || 70 }}
     strategy:
       fail-fast: false
       matrix:
@@ -78,7 +78,7 @@ jobs:
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
 
       - name: Upload country record checkpoint
-        if: matrix.country == 'CA' || matrix.country == 'IT' || matrix.country == 'BR'
+        if: matrix.country == 'CA' || matrix.country == 'IT' || matrix.country == 'BR' || matrix.country == 'MX' || matrix.country == 'AU'
         uses: actions/upload-artifact@v4
         with:
           name: records-${{ matrix.country }}
@@ -87,7 +87,27 @@ jobs:
           overwrite: true
 
       - name: Update records (extra history backfill)
-        if: matrix.country == 'CA' || matrix.country == 'IT' || matrix.country == 'BR'
+        if: matrix.country == 'CA' || matrix.country == 'IT' || matrix.country == 'BR' || matrix.country == 'MX' || matrix.country == 'AU'
+        continue-on-error: true
+        run: |
+          python -u scripts/update_wdsi_records.py \
+            --countries ${{ matrix.country }} \
+            --lookback-days 1 \
+            --max-pages 90 \
+            --history-backfill-rounds 1 \
+            --history-only \
+            --skip-build
+        env:
+          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
+          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
+          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
+
+      - name: Update records (second extra history backfill)
+        if: matrix.country == 'CA' || matrix.country == 'MX'
         continue-on-error: true
         run: |
           python -u scripts/update_wdsi_records.py \
@@ -109,6 +129,55 @@ jobs:
       - name: Update records (India recent bootstrap)
         if: matrix.country == 'IN'
         run: python -u scripts/update_wdsi_records.py --countries IN --lookback-days 20 --max-pages 30 --history-backfill-rounds 1 --skip-build
+        env:
+          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
+          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
+          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
+
+      - name: Upload India checkpoint
+        if: matrix.country == 'IN'
+        uses: actions/upload-artifact@v4
+        with:
+          name: records-IN
+          path: records/IN.csv
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Update records (India extra history backfill 1)
+        if: matrix.country == 'IN'
+        continue-on-error: true
+        run: |
+          python -u scripts/update_wdsi_records.py \
+            --countries IN \
+            --lookback-days 1 \
+            --max-pages 30 \
+            --history-backfill-rounds 1 \
+            --history-only \
+            --skip-build
+        env:
+          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
+          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
+          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
+
+      - name: Update records (India extra history backfill 2)
+        if: matrix.country == 'IN'
+        continue-on-error: true
+        run: |
+          python -u scripts/update_wdsi_records.py \
+            --countries IN \
+            --lookback-days 1 \
+            --max-pages 30 \
+            --history-backfill-rounds 1 \
+            --history-only \
+            --skip-build
         env:
           WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
