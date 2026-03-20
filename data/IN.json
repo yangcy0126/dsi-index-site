@@ -2,7 +2,7 @@
   "code": "IN",
   "label": "India",
   "label_zh": "India",
-  "generated_at": "2026-03-20T11:07:10.960374+00:00",
+  "generated_at": "2026-03-20T12:50:31.915048+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -162,65 +162,65 @@
     },
     {
       "date": "2026-03-12",
-      "raw": 0.0,
-      "rolling7": -1.429,
-      "rolling30": -0.263,
+      "raw": -0.048,
+      "rolling7": -1.435,
+      "rolling30": -0.265,
       "publication": true
     },
     {
       "date": "2026-03-13",
       "raw": -0.087,
-      "rolling7": -1.441,
-      "rolling30": -0.256,
+      "rolling7": -1.448,
+      "rolling30": -0.258,
       "publication": true
     },
     {
       "date": "2026-03-14",
       "raw": 0.0,
-      "rolling7": -1.155,
-      "rolling30": -0.246,
+      "rolling7": -1.162,
+      "rolling30": -0.248,
       "publication": true
     },
     {
       "date": "2026-03-15",
       "raw": 0.0,
-      "rolling7": -0.87,
-      "rolling30": -0.236,
+      "rolling7": -0.876,
+      "rolling30": -0.238,
       "publication": true
     },
     {
       "date": "2026-03-16",
       "raw": 0.0,
-      "rolling7": -0.584,
-      "rolling30": -0.228,
+      "rolling7": -0.591,
+      "rolling30": -0.229,
       "publication": true
     },
     {
       "date": "2026-03-17",
       "raw": 1.0,
-      "rolling7": -0.155,
-      "rolling30": -0.184,
+      "rolling7": -0.162,
+      "rolling30": -0.185,
       "publication": true
     },
     {
       "date": "2026-03-18",
       "raw": null,
-      "rolling7": 0.273,
-      "rolling30": -0.143,
+      "rolling7": 0.266,
+      "rolling30": -0.145,
       "publication": false
     },
     {
       "date": "2026-03-19",
       "raw": 0.0,
       "rolling7": 0.273,
-      "rolling30": -0.138,
+      "rolling30": -0.14,
       "publication": true
     },
     {
       "date": "2026-03-20",
       "raw": null,
       "rolling7": 0.286,
-      "rolling30": -0.138,
+      "rolling30": -0.14,
       "publication": false
     }
   ]
