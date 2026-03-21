@@ -408,6 +408,35 @@ jobs:
           WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
 
+      - name: Upload post-eighth-extra checkpoint
+        if: matrix.country == 'US'
+        uses: actions/upload-artifact@v4
+        with:
+          name: records-US
+          path: records/US.csv
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Update records (ninth extra history backfill)
+        if: matrix.country == 'US'
+        continue-on-error: true
+        run: |
+          python -u scripts/update_wdsi_records.py \
+            --countries US \
+            --lookback-days 1 \
+            --max-pages 90 \
+            --history-backfill-rounds 1 \
+            --history-only \
+            --skip-build
+        env:
+          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
+          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
+          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
+
       - name: Upload India checkpoint after extra 3
         if: matrix.country == 'IN'
         uses: actions/upload-artifact@v4
