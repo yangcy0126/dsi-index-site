@@ -538,13 +538,20 @@ def request_markdown_via_jina(url: str) -> str:
         return cached
 
     gateway_url = f"https://r.jina.ai/http://{url}"
+    is_state_archive_listing = "state.gov/press-releases/page/" in url
     last_error: Exception | None = None
-    for attempt, timeout_seconds in enumerate((30, 45, 60, 60, 60), start=1):
+    timeout_schedule = (30, 45, 60, 60, 60, 60, 60) if is_state_archive_listing else (30, 45, 60, 60, 60)
+    for attempt, timeout_seconds in enumerate(timeout_schedule, start=1):
         try:
             response = requests.get(gateway_url, headers=BROWSER_HEADERS, timeout=timeout_seconds)
             if response.status_code == 429:
                 retry_after = response.headers.get("Retry-After")
-                sleep_seconds = float(retry_after) if retry_after else min(20, 4 * attempt)
+                if retry_after:
+                    sleep_seconds = float(retry_after)
+                elif is_state_archive_listing:
+                    sleep_seconds = min(90, 12 * attempt)
+                else:
+                    sleep_seconds = min(20, 4 * attempt)
                 last_error = RuntimeError(f"Jina rate limited {url}")
                 time.sleep(sleep_seconds)
                 continue
@@ -742,13 +749,17 @@ class UsStateDepartmentSource:
     resume_missing_history = True
     resume_gap_after_legacy = True
     history_backfill_chunk_days = 365
-    history_max_pages = 180
+    history_max_pages = 760
 
     press_archive_url = "https://www.state.gov/press-releases/"
     archived_press_archive_urls = (
         ("2017-2021", "http://2017-2021.state.gov/press-releases/", "2017-01-20", "2021-01-19"),
         ("2021-2025", "http://2021-2025.state.gov/press-releases/", "2021-01-20", "2025-01-19"),
     )
+    archived_press_page_limits = {
+        "2017-2021": 760,
+        "2021-2025": 180,
+    }
     briefing_sitemaps = (
         ("2017-2021", "https://2017-2021.state.gov/state_briefing-sitemap.xml", "2017-01-20", "2021-01-19"),
         ("2021-2025", "https://2021-2025.state.gov/state_briefing-sitemap.xml", "2021-01-20", "2025-01-19"),
@@ -931,17 +942,20 @@ class UsStateDepartmentSource:
     ) -> list[ScrapedRecord]:
         candidates: list[tuple[str, str, str]] = []
         seen_urls: set[str] = set()
-        for _, base_url, era_start, era_end in self.archived_press_archive_urls:
+        for era_label, base_url, era_start, era_end in self.archived_press_archive_urls:
             overlap = self._overlap_window(start_date, end_date, era_start, era_end)
             if overlap is None:
                 continue
 
-            for page in range(1, max_pages + 1):
+            page_limit = min(max_pages, int(self.archived_press_page_limits.get(era_label, max_pages)))
+            for page in self._iter_archived_press_pages(era_label, overlap[1], page_limit):
                 listing_url = base_url if page == 1 else f"{base_url}page/{page}/"
                 markdown = request_markdown_via_jina(listing_url)
+                if era_label == "2017-2021":
+                    time.sleep(0.35)
                 page_entries = self._parse_archived_press_listing(markdown)
                 if not page_entries:
-                    break
+                    continue
 
                 oldest_on_page = min(entry[2] for entry in page_entries)
                 for link, title, published_at, speaker in page_entries:
@@ -1366,6 +1380,28 @@ class UsStateDepartmentSource:
             return ""
         month_name = match.group("month").replace("-", " ").title()
         return f"Department Press Briefing {month_name} {int(match.group('day'))}, {match.group('year')}"
+
+    def _iter_archived_press_pages(self, era_label: str, overlap_end: str, page_limit: int) -> range:
+        if era_label != "2017-2021":
+            return range(1, page_limit + 1)
+
+        end_date = iso_to_date(overlap_end)
+        if end_date >= date(2020, 7, 1):
+            start_page = 80
+        elif end_date >= date(2020, 1, 1):
+            start_page = 180
+        elif end_date >= date(2019, 7, 1):
+            start_page = 300
+        elif end_date >= date(2018, 10, 1):
+            start_page = 500
+        elif end_date >= date(2018, 1, 1):
+            start_page = 620
+        elif end_date >= date(2017, 7, 1):
+            start_page = 670
+        else:
+            start_page = 730
+
+        return range(min(start_page, page_limit), page_limit + 1)
 
     @staticmethod
     def _parse_legacy_listing_date(value: str) -> str:
