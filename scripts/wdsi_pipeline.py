@@ -859,8 +859,10 @@ class UsStateDepartmentSource:
         *,
         max_pages: int,
     ) -> list[ScrapedRecord]:
-        if self._overlap_window(start_date, end_date, "2025-01-20", "2099-12-31") is None:
+        overlap = self._overlap_window(start_date, end_date, "2025-01-20", "2099-12-31")
+        if overlap is None:
             return []
+        overlap_start, overlap_end = overlap
 
         candidates: list[tuple[str, str, str, str]] = []
         seen_urls: set[str] = set()
@@ -887,14 +889,14 @@ class UsStateDepartmentSource:
                     continue
                 if oldest_on_page is None or published_at < oldest_on_page:
                     oldest_on_page = published_at
-                if not (start_date <= published_at <= end_date):
+                if not (overlap_start <= published_at <= overlap_end):
                     continue
                 if link in seen_urls:
                     continue
                 seen_urls.add(link)
                 candidates.append((link, clean_text(link_node.get_text(" ", strip=True)), published_at, ""))
 
-            if oldest_on_page is not None and oldest_on_page < start_date:
+            if oldest_on_page is not None and oldest_on_page < overlap_start:
                 break
 
         if not candidates:
