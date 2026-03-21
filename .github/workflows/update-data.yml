@@ -64,8 +64,8 @@ jobs:
         run: |
           python -u scripts/update_wdsi_records.py \
             --countries ${{ matrix.country }} \
-            --lookback-days ${{ matrix.country == 'CA' && 90 || matrix.country == 'IT' && 90 || matrix.country == 'BR' && 90 || matrix.country == 'MX' && 90 || 200 }} \
-            --max-pages 90 \
+            --lookback-days ${{ matrix.country == 'US' && 90 || matrix.country == 'CA' && 90 || matrix.country == 'IT' && 90 || matrix.country == 'BR' && 90 || matrix.country == 'MX' && 90 || 200 }} \
+            --max-pages ${{ matrix.country == 'US' && 40 || 90 }} \
             --history-backfill-rounds ${{ matrix.country == 'CA' && '0' || matrix.country == 'US' && '0' || '1' }} \
             --skip-build
         env:
