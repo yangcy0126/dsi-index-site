@@ -15,9 +15,9 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;700&display=swap"
       rel="stylesheet"
     >
-    <link rel="stylesheet" href="styles.css?v=20260319-top15-1">
+    <link rel="stylesheet" href="styles.css?v=20260321-trump-1">
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
-    <script src="script.js?v=20260319-top15-1" defer></script>
+    <script src="script.js?v=20260321-trump-1" defer></script>
   </head>
   <body>
     <div class="page-shell">
@@ -31,6 +31,7 @@
           <a href="#explorer">Explorer</a>
           <a href="#method">Method</a>
           <a href="#download">Download</a>
+          <a href="#trump-supplement">Trump Supplement</a>
         </nav>
       </header>
 
@@ -260,6 +261,90 @@
 
           <div class="download-panel">
             <div class="download-list" id="download-list"></div>
+          </div>
+        </section>
+
+        <section class="trump-supplement" id="trump-supplement">
+          <div class="section-heading">
+            <p class="eyebrow">Supplement</p>
+            <h2>Trump Indices Supplement</h2>
+            <p>
+              This bottom panel adds an actor-level signal alongside the ministry-based WDSI. It tracks Donald Trump's
+              own cross-platform posting tone, geopolitical stance, and shock intensity across Twitter and Truth
+              Social, and should be read as a complement rather than a level-for-level substitute for WDSI.
+            </p>
+          </div>
+
+          <div class="supplement-shell">
+            <div class="supplement-band">
+              <div>
+                <span>Coverage</span>
+                <strong id="trump-coverage-range">--</strong>
+              </div>
+              <div>
+                <span>Latest date</span>
+                <strong id="trump-latest-date">--</strong>
+              </div>
+              <div>
+                <span>Scored posts</span>
+                <strong id="trump-score-coverage">--</strong>
+              </div>
+              <div>
+                <span>Platforms</span>
+                <strong id="trump-platforms">--</strong>
+              </div>
+            </div>
+
+            <div class="supplement-toolbar">
+              <div class="series-toggle" id="trump-series-toggle" aria-label="Trump series selector">
+                <button class="toggle-button is-active" data-trump-series="7d" type="button">
+                  7-day smoothed
+                </button>
+                <button class="toggle-button" data-trump-series="30d" type="button">
+                  30-day smoothed
+                </button>
+                <button class="toggle-button" data-trump-series="daily" type="button">
+                  Daily value
+                </button>
+              </div>
+              <p class="supplement-note" id="trump-mode-note">Loading Trump supplement...</p>
+            </div>
+
+            <div class="trump-metric-grid">
+              <article class="supplement-card supplement-card-tone">
+                <p class="metric-label">Trump Tone Index</p>
+                <p class="metric-value" id="trump-tone-latest">--</p>
+                <p class="metric-detail" id="trump-tone-caption">Loading latest tone...</p>
+              </article>
+              <article class="supplement-card supplement-card-geo">
+                <p class="metric-label">Trump Geopolitical Index</p>
+                <p class="metric-value" id="trump-geo-latest">--</p>
+                <p class="metric-detail" id="trump-geo-caption">Loading latest geopolitical score...</p>
+              </article>
+              <article class="supplement-card supplement-card-shock">
+                <p class="metric-label">Trump Shock Index</p>
+                <p class="metric-value" id="trump-shock-latest">--</p>
+                <p class="metric-detail" id="trump-shock-caption">Loading latest shock reading...</p>
+              </article>
+            </div>
+
+            <div class="chart-frame supplement-chart-frame">
+              <div id="trump-chart" class="chart chart-compact"></div>
+            </div>
+
+            <div class="chart-foot">
+              <p id="trump-chart-caption">
+                Loading Trump supplement chart...
+              </p>
+              <div class="supplement-actions">
+                <a class="download-link" href="data/trump_daily_indices_llm.csv" target="_blank" rel="noreferrer">
+                  Open CSV
+                </a>
+                <a class="download-link download-link-secondary" href="data/trump_indices.json" target="_blank" rel="noreferrer">
+                  Open JSON
+                </a>
+              </div>
+            </div>
           </div>
         </section>
       </main>

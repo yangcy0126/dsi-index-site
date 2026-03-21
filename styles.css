@@ -440,6 +440,10 @@ h3 {
   margin-top: 16px;
 }
 
+.chart-compact {
+  min-height: 460px;
+}
+
 .event-chips {
   display: flex;
   gap: 10px;
@@ -534,6 +538,105 @@ h3 {
 
 .download-panel {
   display: block;
+}
+
+.trump-supplement {
+  background:
+    radial-gradient(circle at 84% 20%, rgba(15, 108, 116, 0.14), transparent 28%),
+    radial-gradient(circle at 18% 18%, rgba(184, 95, 53, 0.12), transparent 30%),
+    rgba(255, 251, 245, 0.84);
+}
+
+.supplement-shell {
+  padding: 20px;
+  border-radius: calc(var(--radius-xl) - 6px);
+  border: 1px solid rgba(20, 38, 40, 0.08);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.supplement-band {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(20, 38, 40, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.supplement-band span {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.supplement-band strong {
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.supplement-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.supplement-note {
+  margin: 0;
+  max-width: 46rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.trump-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.supplement-card {
+  position: relative;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(20, 38, 40, 0.08);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.supplement-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 999px;
+}
+
+.supplement-card-tone::before {
+  background: #b85f35;
+}
+
+.supplement-card-geo::before {
+  background: #0f6c74;
+}
+
+.supplement-card-shock::before {
+  background: #213132;
+}
+
+.supplement-chart-frame {
+  margin-top: 16px;
+}
+
+.supplement-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .download-list {
@@ -641,6 +744,14 @@ h3 {
   color: var(--muted);
 }
 
+.signal-hot {
+  color: var(--warm);
+}
+
+.signal-cool {
+  color: var(--accent);
+}
+
 @keyframes slide-up {
   from {
     opacity: 0;
@@ -658,6 +769,11 @@ h3 {
   .download-panel {
     grid-template-columns: 1fr;
   }
+
+  .supplement-band,
+  .trump-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 720px) {
@@ -671,7 +787,9 @@ h3 {
   }
 
   .metric-grid,
-  .coverage-band {
+  .coverage-band,
+  .supplement-band,
+  .trump-metric-grid {
     grid-template-columns: 1fr;
   }
 

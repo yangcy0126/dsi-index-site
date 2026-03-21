@@ -1,14 +1,17 @@
 const state = {
   summary: null,
   events: [],
+  trump: null,
   selectedCode: null,
   seriesMode: "rolling7",
+  trumpSeriesMode: "7d",
   cache: new Map(),
 };
 
 const summaryPath = "data/summary.json";
 const eventsPath = "data/events.json";
-const assetVersion = "20260319-top15-1";
+const trumpPath = "data/trump_indices.json";
+const assetVersion = "20260321-trump-1";
 
 function versionedPath(path) {
   const separator = path.includes("?") ? "&" : "?";
@@ -52,6 +55,92 @@ function formatScore(value, digits = 3) {
   }
   const rounded = Number(value).toFixed(digits);
   return rounded.replace(/\.?0+$/, "");
+}
+
+function formatWholeNumber(value) {
+  if (!hasNumericValue(value)) {
+    return "--";
+  }
+  return Number(value).toLocaleString("en-US");
+}
+
+function trumpSeriesLabel(mode) {
+  if (mode === "daily") {
+    return "daily";
+  }
+  if (mode === "30d") {
+    return "30-day smoothed";
+  }
+  return "7-day smoothed";
+}
+
+function getTrumpSeriesKey(baseKey) {
+  if (state.trumpSeriesMode === "daily") {
+    return baseKey;
+  }
+  if (state.trumpSeriesMode === "30d") {
+    return `${baseKey}_30d`;
+  }
+  return `${baseKey}_7d`;
+}
+
+function getLatestTrumpRecord() {
+  const records = state.trump?.records || [];
+  return records.length ? records[records.length - 1] : null;
+}
+
+function trumpToneMeta(score) {
+  if (!hasNumericValue(score)) {
+    return { label: "unavailable", className: "tone-muted" };
+  }
+  if (score <= -1.5) {
+    return { label: "highly hostile", className: "tone-negative" };
+  }
+  if (score <= -0.5) {
+    return { label: "pressure-heavy", className: "tone-negative" };
+  }
+  if (score < 0.5) {
+    return { label: "mixed or neutral", className: "tone-neutral" };
+  }
+  if (score < 1.5) {
+    return { label: "positive", className: "tone-positive" };
+  }
+  return { label: "triumphal", className: "tone-positive" };
+}
+
+function trumpGeopoliticalMeta(score) {
+  if (!hasNumericValue(score)) {
+    return { label: "unavailable", className: "tone-muted" };
+  }
+  if (score <= -1.5) {
+    return { label: "strongly escalatory", className: "tone-negative" };
+  }
+  if (score <= -0.5) {
+    return { label: "escalatory", className: "tone-negative" };
+  }
+  if (score < 0.5) {
+    return { label: "descriptive or balanced", className: "tone-neutral" };
+  }
+  if (score < 1.5) {
+    return { label: "de-escalatory", className: "tone-positive" };
+  }
+  return { label: "strongly de-escalatory", className: "tone-positive" };
+}
+
+function trumpShockMeta(score) {
+  if (!hasNumericValue(score)) {
+    return { label: "unavailable", className: "tone-muted" };
+  }
+  if (score >= 1.5) {
+    return { label: "extremely elevated", className: "signal-hot" };
+  }
+  if (score >= 0.5) {
+    return { label: "elevated", className: "signal-hot" };
+  }
+  if (score > -0.5) {
+    return { label: "contained", className: "tone-neutral" };
+  }
+  return { label: "subdued", className: "signal-cool" };
 }
 
 function toneMeta(score) {
@@ -325,6 +414,187 @@ function renderCsvOnlyDownloadList() {
   });
 }
 
+function renderTrumpSupplementMeta() {
+  const section = document.getElementById("trump-supplement");
+  if (!state.trump || !(state.trump.records || []).length) {
+    section.hidden = true;
+    return;
+  }
+
+  section.hidden = false;
+  const latest = getLatestTrumpRecord();
+  const coverage = state.trump.scoring_coverage || {};
+
+  document.getElementById("trump-coverage-range").textContent =
+    `${formatDate(state.trump.coverage_start)} to ${formatDate(state.trump.coverage_end)}`;
+  document.getElementById("trump-latest-date").textContent = formatDate(latest?.date);
+  document.getElementById("trump-score-coverage").textContent =
+    `${formatWholeNumber(coverage.accepted_scored_posts)} / ${formatWholeNumber(coverage.authored_text_posts)}`;
+  document.getElementById("trump-platforms").textContent = "Twitter + Truth Social";
+  document.getElementById("trump-mode-note").textContent =
+    `Current view: ${trumpSeriesLabel(state.trumpSeriesMode)}. The shaded band marks the platform transition gap from Jan 9, 2021 to Feb 13, 2022.`;
+}
+
+function renderTrumpMetricCards() {
+  const latest = getLatestTrumpRecord();
+  if (!latest) {
+    return;
+  }
+
+  const toneKey = getTrumpSeriesKey("trump_tone_index");
+  const geoKey = getTrumpSeriesKey("trump_geopolitical_index");
+  const shockKey = getTrumpSeriesKey("trump_shock_index");
+  const toneValue = Number(latest[toneKey]);
+  const geoValue = Number(latest[geoKey]);
+  const shockValue = Number(latest[shockKey]);
+  const tone = trumpToneMeta(toneValue);
+  const geo = trumpGeopoliticalMeta(geoValue);
+  const shock = trumpShockMeta(shockValue);
+  const modeLabel = trumpSeriesLabel(state.trumpSeriesMode);
+
+  const toneEl = document.getElementById("trump-tone-latest");
+  toneEl.textContent = formatScore(toneValue);
+  toneEl.className = `metric-value ${tone.className}`;
+  document.getElementById("trump-tone-caption").textContent =
+    `${modeLabel} average across all authored Trump posts. Latest reading suggests ${tone.label} rhetoric.`;
+
+  const geoEl = document.getElementById("trump-geo-latest");
+  geoEl.textContent = formatScore(geoValue);
+  geoEl.className = `metric-value ${geo.className}`;
+  document.getElementById("trump-geo-caption").textContent =
+    `${modeLabel} mean for China, tariffs, war, NATO, migration, and other geopolitical posts. Latest stance is ${geo.label}.`;
+
+  const shockEl = document.getElementById("trump-shock-latest");
+  shockEl.textContent = formatScore(shockValue);
+  shockEl.className = `metric-value ${shock.className}`;
+  document.getElementById("trump-shock-caption").textContent =
+    `${modeLabel} composite of post volume, intensity, all-caps, exclamation marks, and reblog density. Latest reading is ${shock.label}.`;
+}
+
+function buildTrumpChartLayout() {
+  return {
+    margin: { l: 46, r: 24, t: 36, b: 44 },
+    paper_bgcolor: "rgba(0,0,0,0)",
+    plot_bgcolor: "rgba(255,255,255,0)",
+    hovermode: "x unified",
+    font: {
+      family: '"Space Grotesk", sans-serif',
+      color: "#213132",
+    },
+    xaxis: {
+      showgrid: true,
+      gridcolor: "rgba(20, 38, 40, 0.08)",
+      zeroline: false,
+      tickfont: { color: "#5b6968" },
+    },
+    yaxis: {
+      title: "Trump index",
+      range: [-3.2, 3.2],
+      showgrid: true,
+      gridcolor: "rgba(20, 38, 40, 0.08)",
+      zeroline: true,
+      zerolinecolor: "rgba(20, 38, 40, 0.18)",
+      tickfont: { color: "#5b6968" },
+    },
+    legend: {
+      orientation: "h",
+      yanchor: "bottom",
+      y: 1.02,
+      xanchor: "left",
+      x: 0,
+    },
+    shapes: [
+      {
+        type: "rect",
+        x0: "2021-01-09",
+        x1: "2022-02-13",
+        y0: -3.2,
+        y1: 3.2,
+        line: { width: 0 },
+        fillcolor: "rgba(20, 38, 40, 0.06)",
+      },
+    ],
+    annotations: [
+      {
+        x: "2021-07-15",
+        y: 2.75,
+        xref: "x",
+        yref: "y",
+        text: "platform gap",
+        showarrow: false,
+        font: { size: 11, color: "#5b6968" },
+      },
+    ],
+  };
+}
+
+function renderTrumpChart() {
+  const records = state.trump?.records || [];
+  if (!records.length) {
+    return;
+  }
+
+  const toneKey = getTrumpSeriesKey("trump_tone_index");
+  const geoKey = getTrumpSeriesKey("trump_geopolitical_index");
+  const shockKey = getTrumpSeriesKey("trump_shock_index");
+  const dates = records.map((record) => record.date);
+
+  const traces = [
+    {
+      x: dates,
+      y: records.map((record) => record[toneKey]),
+      type: "scatter",
+      mode: "lines",
+      name: "Trump Tone Index",
+      line: {
+        color: "#b85f35",
+        width: 2.6,
+      },
+      hovertemplate: "%{x}<br>Trump Tone Index: %{y:.3f}<extra></extra>",
+    },
+    {
+      x: dates,
+      y: records.map((record) => record[geoKey]),
+      type: "scatter",
+      mode: "lines",
+      name: "Trump Geopolitical Index",
+      line: {
+        color: "#0f6c74",
+        width: 2.4,
+      },
+      hovertemplate: "%{x}<br>Trump Geopolitical Index: %{y:.3f}<extra></extra>",
+    },
+    {
+      x: dates,
+      y: records.map((record) => record[shockKey]),
+      type: "scatter",
+      mode: "lines",
+      name: "Trump Shock Index",
+      line: {
+        color: "#213132",
+        width: 2.2,
+      },
+      hovertemplate: "%{x}<br>Trump Shock Index: %{y:.3f}<extra></extra>",
+    },
+  ];
+
+  Plotly.react("trump-chart", traces, buildTrumpChartLayout(), {
+    displayModeBar: true,
+    responsive: true,
+    displaylogo: false,
+    modeBarButtonsToRemove: ["select2d", "lasso2d", "autoScale2d"],
+  });
+
+  document.getElementById("trump-chart-caption").textContent =
+    `This panel overlays the ${trumpSeriesLabel(state.trumpSeriesMode)} Trump Tone Index, Trump Geopolitical Index, and Trump Shock Index across Twitter and Truth Social. Levels are complementary to WDSI rather than directly comparable to ministry-based WDSI values.`;
+}
+
+function renderTrumpSupplement() {
+  renderTrumpSupplementMeta();
+  renderTrumpMetricCards();
+  renderTrumpChart();
+}
+
 function updateEventChips(countryData) {
   const chips = document.getElementById("event-chips");
   chips.innerHTML = "";
@@ -542,11 +812,33 @@ function bindSeriesToggle() {
   });
 }
 
+function bindTrumpSeriesToggle() {
+  const container = document.getElementById("trump-series-toggle");
+  container.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-trump-series]");
+    if (!button || !state.trump) {
+      return;
+    }
+
+    state.trumpSeriesMode = button.dataset.trumpSeries;
+    container.querySelectorAll("button").forEach((node) => {
+      node.classList.toggle("is-active", node === button);
+    });
+
+    renderTrumpSupplement();
+  });
+}
+
 async function init() {
   try {
-    const [summary, events] = await Promise.all([fetchJson(summaryPath), fetchJson(eventsPath)]);
+    const [summary, events, trump] = await Promise.all([
+      fetchJson(summaryPath),
+      fetchJson(eventsPath),
+      fetchJson(trumpPath).catch(() => null),
+    ]);
     state.summary = summary;
     state.events = events.events || [];
+    state.trump = trump;
     state.selectedCode =
       state.selectedCode && getCountryByCode(state.selectedCode)
         ? state.selectedCode
@@ -557,6 +849,8 @@ async function init() {
     renderCountryTabs();
     renderCsvOnlyDownloadList();
     bindSeriesToggle();
+    bindTrumpSeriesToggle();
+    renderTrumpSupplement();
 
     if (state.selectedCode) {
       await setSelectedCountry(state.selectedCode);
