@@ -3048,7 +3048,7 @@ class IndiaMeaOfficialSource:
     history_start_date = "2025-01-01"
     bootstrap_history_start_date = "2025-10-01"
     history_scan_limit = 2200
-    history_backfill_chunk_days = 120
+    history_backfill_chunk_days = 90
     history_probe_step = 100
     history_probe_buffer = 40
     history_fetch_workers = 3
