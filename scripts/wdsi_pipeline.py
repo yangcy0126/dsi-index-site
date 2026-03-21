@@ -719,11 +719,68 @@ class ChinaMfaRegularPressSource:
 
 class UsStateDepartmentSource:
     country_code = "US"
-    press_archive_url = "https://www.state.gov/press-releases/"
-    briefing_endpoint = (
-        "https://www.state.gov/wp-json/wp/v2/state_briefing"
-        "?state_briefing_type=393&per_page=100&page={page}"
+    history_start_date = "2010-01-01"
+    legacy_period_end_date = "2017-01-19"
+    legacy_source_kinds = ("legacy_us_spokesperson",)
+    resume_scope_history = True
+    scope_history_start_date = "2017-01-20"
+    scope_history_source_kinds = (
+        "state_announcement",
+        "state_joint_statement",
+        "state_notice_to_the_press",
+        "state_press_conference",
+        "state_press_release",
+        "state_press_statement",
+        "state_public_schedule",
+        "state_readout",
+        "state_remarks",
+        "state_remarks_to_press",
+        "state_special_briefing",
+        "state_special_briefing_via_telephone",
+        "state_fpc_briefing",
     )
+    resume_missing_history = True
+    resume_gap_after_legacy = True
+    history_backfill_chunk_days = 365
+    history_max_pages = 180
+
+    press_archive_url = "https://www.state.gov/press-releases/"
+    archived_press_archive_urls = (
+        ("2017-2021", "http://2017-2021.state.gov/press-releases/", "2017-01-20", "2021-01-19"),
+        ("2021-2025", "http://2021-2025.state.gov/press-releases/", "2021-01-20", "2025-01-19"),
+    )
+    briefing_sitemaps = (
+        ("2017-2021", "https://2017-2021.state.gov/state_briefing-sitemap.xml", "2017-01-20", "2021-01-19"),
+        ("2021-2025", "https://2021-2025.state.gov/state_briefing-sitemap.xml", "2021-01-20", "2025-01-19"),
+        ("current", "https://www.state.gov/state_briefing-sitemap.xml", "2025-01-20", "2099-12-31"),
+    )
+    legacy_index_root = "http://2009-2017.state.gov/r/pa/prs/ps"
+    state_title_suffix_re = re.compile(r"\s*[-–]\s*United States Department of State\s*$", re.I)
+    state_listing_date_re = re.compile(rf"(?P<date>{MONTH_NAME_PATTERN}\s+\d{{1,2}},\s+\d{{4}})")
+    legacy_listing_re = re.compile(
+        r"^\*\*(?P<date>\d{2}/\d{2}/\d{2})\*\*\[(?P<title>.+?)\]\((?P<url>https?://[^)\s]+)\)(?P<rest>.*)$"
+    )
+    briefing_slug_date_re = re.compile(
+        r"department-press-briefing-(?P<month>[a-z]+)-(?P<day>\d{1,2})-(?P<year>\d{4})",
+        re.I,
+    )
+    doc_type_labels = {
+        "Announcement": "state_announcement",
+        "Joint Statement": "state_joint_statement",
+        "Notice to the Press": "state_notice_to_the_press",
+        "Press Conference": "state_press_conference",
+        "Press Release": "state_press_release",
+        "Press Statement": "state_press_statement",
+        "Public Schedule": "state_public_schedule",
+        "Readout": "state_readout",
+        "Remarks": "state_remarks",
+        "Remarks to the Press": "state_remarks_to_press",
+        "Special Briefing": "state_special_briefing",
+        "Special Briefing via Telephone": "state_special_briefing_via_telephone",
+        "Department Press Briefing": "state_department_press_briefing",
+        "FPC Briefing": "state_fpc_briefing",
+        "Foreign Press Centers Briefing": "state_fpc_briefing",
+    }
 
     def __init__(self, session: requests.Session) -> None:
         self.session = session
@@ -737,18 +794,77 @@ class UsStateDepartmentSource:
         start = start_date[:10]
         end = end_date[:10]
         records: list[ScrapedRecord] = []
-        records.extend(self._fetch_press_releases(start, end, max_pages=max_pages))
-        records.extend(self._fetch_press_briefings(start, end, max_pages=max_pages))
+        records.extend(self._fetch_legacy_press_releases(start, end))
+        records.extend(self._fetch_current_press_releases(start, end, max_pages=max_pages))
+        records.extend(self._fetch_archived_press_releases(start, end, max_pages=max_pages))
+        records.extend(self._fetch_press_briefings(start, end))
         return list({record.url: record for record in records}.values())
 
-    def _fetch_press_releases(
+    def _fetch_legacy_press_releases(self, start_date: str, end_date: str) -> list[ScrapedRecord]:
+        overlap = self._overlap_window(start_date, end_date, "2010-01-01", "2017-01-19")
+        if overlap is None:
+            return []
+
+        candidates: list[tuple[str, str, str, str]] = []
+        seen_urls: set[str] = set()
+        for year, month in iter_months(*overlap):
+            month_url = f"{self.legacy_index_root}/{year:04d}/{month:02d}/index.htm"
+            try:
+                markdown = request_markdown_via_jina(month_url)
+            except Exception:
+                continue
+
+            body = extract_jina_markdown_body(markdown)
+            for line in body.splitlines():
+                match = self.legacy_listing_re.match(clean_text(line))
+                if not match:
+                    continue
+                published_at = self._parse_legacy_listing_date(match.group("date"))
+                if not (overlap[0] <= published_at <= overlap[1]):
+                    continue
+                url = clean_text(match.group("url"))
+                if url in seen_urls:
+                    continue
+                seen_urls.add(url)
+                speaker = clean_text(match.group("rest").split(";", 2)[1] if ";" in match.group("rest") else "")
+                candidates.append((url, clean_text(match.group("title")), published_at, speaker))
+
+        if not candidates:
+            return []
+
+        records: list[ScrapedRecord] = []
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {
+                executor.submit(
+                    self._parse_state_article_threadsafe,
+                    url,
+                    title,
+                    published_at,
+                    speaker,
+                    "legacy_press_release",
+                ): (url, title)
+                for url, title, published_at, speaker in candidates
+            }
+            for future in as_completed(futures):
+                record = future.result()
+                if record is not None:
+                    records.append(record)
+
+        return sorted(records, key=lambda record: (record.published_at, record.url), reverse=True)
+
+    def _fetch_current_press_releases(
         self,
         start_date: str,
         end_date: str,
         *,
         max_pages: int,
     ) -> list[ScrapedRecord]:
-        candidates: list[tuple[str, str, str]] = []
+        if self._overlap_window(start_date, end_date, "2025-01-20", "2099-12-31") is None:
+            return []
+
+        candidates: list[tuple[str, str, str, str]] = []
+        seen_urls: set[str] = set()
+        oldest_on_page: str | None = None
         for page in range(1, max_pages + 1):
             url = self.press_archive_url if page == 1 else f"{self.press_archive_url}page/{page}/"
             soup = BeautifulSoup(request_html(self.session, url), "html.parser")
@@ -756,28 +872,27 @@ class UsStateDepartmentSource:
             if not items:
                 break
 
-            oldest_on_page: str | None = None
+            oldest_on_page = None
             for item in items:
                 link_node = item.select_one("a.collection-result__link[href]")
                 if link_node is None:
                     continue
 
-                link = str(link_node.get("href", "")).strip()
-                if "/releases/office-of-the-spokesperson/" not in link:
+                link = clean_text(str(link_node.get("href", "")))
+                if not self._looks_like_press_listing_article(link):
                     continue
 
                 published_at = self._extract_collection_date(item)
                 if not published_at:
                     continue
-
                 if oldest_on_page is None or published_at < oldest_on_page:
                     oldest_on_page = published_at
-
                 if not (start_date <= published_at <= end_date):
                     continue
-
-                title = clean_text(link_node.get_text(" ", strip=True))
-                candidates.append((link, title, published_at))
+                if link in seen_urls:
+                    continue
+                seen_urls.add(link)
+                candidates.append((link, clean_text(link_node.get_text(" ", strip=True)), published_at, ""))
 
             if oldest_on_page is not None and oldest_on_page < start_date:
                 break
@@ -788,94 +903,153 @@ class UsStateDepartmentSource:
         records: list[ScrapedRecord] = []
         with ThreadPoolExecutor(max_workers=8) as executor:
             futures = {
-                executor.submit(self._parse_press_release_article_threadsafe, link, title, published_at): (
+                executor.submit(
+                    self._parse_state_article_threadsafe,
+                    link,
+                    title,
+                    published_at,
+                    speaker,
+                    "current_press_release",
+                ): (link, title)
+                for link, title, published_at, speaker in candidates
+            }
+            for future in as_completed(futures):
+                record = future.result()
+                if record is not None:
+                    records.append(record)
+
+        return sorted(records, key=lambda record: (record.published_at, record.url), reverse=True)
+
+    def _fetch_archived_press_releases(
+        self,
+        start_date: str,
+        end_date: str,
+        *,
+        max_pages: int,
+    ) -> list[ScrapedRecord]:
+        candidates: list[tuple[str, str, str]] = []
+        seen_urls: set[str] = set()
+        for _, base_url, era_start, era_end in self.archived_press_archive_urls:
+            overlap = self._overlap_window(start_date, end_date, era_start, era_end)
+            if overlap is None:
+                continue
+
+            for page in range(1, max_pages + 1):
+                listing_url = base_url if page == 1 else f"{base_url}page/{page}/"
+                markdown = request_markdown_via_jina(listing_url)
+                page_entries = self._parse_archived_press_listing(markdown)
+                if not page_entries:
+                    break
+
+                oldest_on_page = min(entry[2] for entry in page_entries)
+                for link, title, published_at, speaker in page_entries:
+                    if not (overlap[0] <= published_at <= overlap[1]):
+                        continue
+                    if link in seen_urls:
+                        continue
+                    seen_urls.add(link)
+                    candidates.append((link, title, published_at, speaker))
+
+                if oldest_on_page < overlap[0]:
+                    break
+
+        if not candidates:
+            return []
+
+        records: list[ScrapedRecord] = []
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {
+                executor.submit(
+                    self._parse_state_article_threadsafe,
+                    link,
+                    title,
+                    published_at,
+                    speaker,
+                    "archived_press_release",
+                ): (
                     link,
                     title,
                     published_at,
                 )
-                for link, title, published_at in candidates
+                for link, title, published_at, speaker in candidates
             }
             for future in as_completed(futures):
-                records.append(future.result())
+                record = future.result()
+                if record is not None:
+                    records.append(record)
 
         return sorted(records, key=lambda record: (record.published_at, record.url), reverse=True)
 
-    def _fetch_press_briefings(self, start_date: str, end_date: str, max_pages: int = 8) -> list[ScrapedRecord]:
+    def _fetch_press_briefings(self, start_date: str, end_date: str) -> list[ScrapedRecord]:
+        candidates: list[tuple[str, str, str]] = []
+        seen_urls: set[str] = set()
+        for _, sitemap_url, era_start, era_end in self.briefing_sitemaps:
+            overlap = self._overlap_window(start_date, end_date, era_start, era_end)
+            if overlap is None:
+                continue
+
+            markdown = request_markdown_via_jina(sitemap_url)
+            body = extract_jina_markdown_body(markdown)
+            for line in body.splitlines():
+                links = markdown_links(line)
+                if not links:
+                    continue
+                title, url = links[0]
+                if "/briefings/department-press-briefing" not in url:
+                    continue
+                published_at = self._infer_briefing_date(url, title)
+                if not published_at or not (overlap[0] <= published_at <= overlap[1]):
+                    continue
+                if url in seen_urls:
+                    continue
+                seen_urls.add(url)
+                candidates.append((url, title, published_at))
+
+        if not candidates:
+            return []
+
         records: list[ScrapedRecord] = []
-        for page in range(1, max_pages + 1):
-            payload = request_json(self.session, self.briefing_endpoint.format(page=page), headers=STATE_HEADERS)
-            if not isinstance(payload, list):
-                return records
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {
+                executor.submit(
+                    self._parse_state_article_threadsafe,
+                    url,
+                    title,
+                    published_at,
+                    "",
+                    "department_press_briefing",
+                ): (url, title)
+                for url, title, published_at in candidates
+            }
+            for future in as_completed(futures):
+                record = future.result()
+                if record is not None:
+                    records.append(record)
 
-            matched = 0
-            for item in payload:
-                link = str(item.get("link", ""))
-                published_at = parse_us_date(str(item.get("date", "")))
-                if "/briefings/department-press-briefing" not in link:
-                    continue
-                matched += 1
-                if not (start_date <= published_at <= end_date):
-                    continue
-                records.append(self._make_record(item, "state_department_press_briefing"))
+        return sorted(records, key=lambda record: (record.published_at, record.url), reverse=True)
 
-            if matched == 0:
-                break
-        return records
+    def _parse_state_article_threadsafe(
+        self,
+        url: str,
+        title: str,
+        published_at: str,
+        speaker_hint: str,
+        source_hint: str,
+    ) -> ScrapedRecord | None:
+        try:
+            markdown = request_markdown_via_jina(url)
+            record = self._make_state_record_from_markdown(markdown, url, title, published_at, speaker_hint, source_hint)
+            if record is not None:
+                return record
+        except Exception:
+            pass
 
-    def _make_record(self, item: dict[str, object], source_kind: str) -> ScrapedRecord:
-        raw_html = str(
-            ((item.get("content") or {}) if isinstance(item.get("content"), dict) else {}).get("rendered", "")
-        )
-        soup = BeautifulSoup(raw_html, "html.parser")
+        if "www.state.gov" not in url:
+            return None
 
-        speaker = ""
-        speaker_node = soup.select_one(".article-meta__author-bureau")
-        if speaker_node:
-            speaker = clean_text(speaker_node.get_text(" ", strip=True))
-
-        for selector in [
-            ".wp-block-default-hero-container",
-            "#breadcrumb__wrapper",
-            ".article-meta",
-            ".wp-block-summary-article-index",
-            ".wp-block-buttons",
-            ".wp-block-tags-block",
-            ".related-content",
-            ".share-this-page",
-            "script",
-            "style",
-        ]:
-            for node in soup.select(selector):
-                node.decompose()
-
-        content = clean_text(soup.get_text("\n"))
-        title = clean_text(
-            strip_html(
-                str(((item.get("title") or {}) if isinstance(item.get("title"), dict) else {}).get("rendered", ""))
-            )
-        )
-        if not title or not content:
-            raise ValueError(f"Missing title or content for {item.get('link')}")
-
-        return ScrapedRecord(
-            country_code=self.country_code,
-            published_at=parse_us_date(str(item.get("date", ""))),
-            url=str(item.get("link", "")),
-            title=title,
-            content=content,
-            source_kind=source_kind,
-            language="en",
-            speaker=speaker,
-        )
-
-    def _parse_press_release_article(self, url: str, title: str, published_at: str) -> ScrapedRecord:
-        html_text = request_html(self.session, url)
-        return self._make_press_release_record_from_html(html_text, url, title, published_at)
-
-    def _parse_press_release_article_threadsafe(self, url: str, title: str, published_at: str) -> ScrapedRecord:
         with requests.Session() as session:
             html_text = request_html(session, url)
-        return self._make_press_release_record_from_html(html_text, url, title, published_at)
+        return self._make_press_release_record_from_html(html_text, url, title, published_at, speaker_hint, source_hint)
 
     def _make_press_release_record_from_html(
         self,
@@ -883,13 +1057,15 @@ class UsStateDepartmentSource:
         url: str,
         title: str,
         published_at: str,
+        speaker_hint: str = "",
+        source_hint: str = "current_press_release",
     ) -> ScrapedRecord:
         soup = BeautifulSoup(html_text, "html.parser")
         content_node = soup.select_one(".entry-content")
         if content_node is None:
             raise ValueError(f"Missing press-release body for {url}")
 
-        speaker = ""
+        speaker = speaker_hint
         speaker_node = soup.select_one(".article-meta__author-bureau")
         if speaker_node:
             speaker = clean_text(speaker_node.get_text(" ", strip=True))
@@ -914,16 +1090,303 @@ class UsStateDepartmentSource:
         if not content:
             raise ValueError(f"Missing parsed content for {url}")
 
+        doc_type = self._infer_doc_type_from_html(soup, title, source_hint)
+        resolved_title = self._clean_state_title(title)
+        if (resolved_title.startswith("http://") or resolved_title.startswith("https://")) and source_hint == "department_press_briefing":
+            resolved_title = self._infer_briefing_title(url) or resolved_title
+
+        return ScrapedRecord(
+            country_code=self.country_code,
+            published_at=published_at,
+            url=url,
+            title=resolved_title,
+            content=content,
+            source_kind=self._source_kind_for_article(source_hint, doc_type),
+            language="en",
+            speaker=speaker,
+        )
+
+    def _make_state_record_from_markdown(
+        self,
+        markdown: str,
+        url: str,
+        fallback_title: str,
+        published_at_hint: str,
+        speaker_hint: str,
+        source_hint: str,
+    ) -> ScrapedRecord | None:
+        body = extract_jina_markdown_body(markdown)
+        if "Exception: forbidden" in body or "HTTP ERROR 407" in body:
+            raise ValueError(f"Blocked while fetching {url}")
+
+        lines = [clean_text(line) for line in body.splitlines() if clean_text(line)]
+        if not lines:
+            raise ValueError(f"Empty markdown body for {url}")
+
+        title = self._clean_state_title(self._extract_state_title(lines, fallback_title))
+        if title.startswith("http://") or title.startswith("https://"):
+            if source_hint == "department_press_briefing":
+                title = self._infer_briefing_title(url) or title
+        published_at = published_at_hint or self._extract_state_date(lines, title, url, source_hint)
+        if not title or not published_at:
+            raise ValueError(f"Missing state title/date for {url}")
+
+        doc_type = self._extract_state_doc_type(lines, title, source_hint)
+        speaker = speaker_hint or self._extract_state_speaker(lines, doc_type)
+        content = self._extract_state_content(lines, title, published_at, doc_type, source_hint)
+        if not content:
+            raise ValueError(f"Missing state content for {url}")
+
         return ScrapedRecord(
             country_code=self.country_code,
             published_at=published_at,
             url=url,
             title=title,
             content=content,
-            source_kind="state_press_release",
+            source_kind=self._source_kind_for_article(source_hint, doc_type),
             language="en",
             speaker=speaker,
         )
+
+    def _extract_state_title(self, lines: list[str], fallback_title: str) -> str:
+        if lines and lines[0].startswith("# "):
+            return clean_text(lines[0].lstrip("# ").strip())
+        return fallback_title
+
+    def _extract_state_date(self, lines: list[str], title: str, url: str, source_hint: str) -> str:
+        for line in lines[:60]:
+            match = self.state_listing_date_re.search(line)
+            if match:
+                return parse_us_date(match.group("date"))
+        if source_hint == "department_press_briefing":
+            inferred = self._infer_briefing_date(url, title)
+            if inferred:
+                return inferred
+        return ""
+
+    def _extract_state_doc_type(self, lines: list[str], title: str, source_hint: str) -> str:
+        normalized_labels = {
+            clean_text(label).casefold(): label
+            for label in self.doc_type_labels
+        }
+        for line in lines[:40]:
+            canonical = normalized_labels.get(clean_text(line).casefold())
+            if canonical:
+                return canonical
+
+        lowered_title = clean_text(title).casefold()
+        if lowered_title.startswith("public schedule"):
+            return "Public Schedule"
+        if lowered_title.startswith("department press briefing"):
+            return "Department Press Briefing"
+        if lowered_title.startswith("special briefing via telephone"):
+            return "Special Briefing via Telephone"
+        if lowered_title.startswith("special briefing"):
+            return "Special Briefing"
+        if lowered_title.startswith("readout"):
+            return "Readout"
+        if source_hint == "department_press_briefing":
+            return "Department Press Briefing"
+        return "Press Release"
+
+    def _extract_state_speaker(self, lines: list[str], doc_type: str) -> str:
+        date_seen = False
+        for line in lines[:30]:
+            if line.startswith("# "):
+                continue
+            if clean_text(line).casefold() == clean_text(doc_type).casefold():
+                continue
+            if self.state_listing_date_re.search(line):
+                date_seen = True
+                continue
+            if date_seen:
+                break
+            if "Office of the Spokesperson" in line and "](" in line:
+                continue
+            if "](" in line:
+                continue
+            if len(line) > 2 and len(line) < 80 and ":" not in line:
+                return line
+        return ""
+
+    def _extract_state_content(
+        self,
+        lines: list[str],
+        title: str,
+        published_at: str,
+        doc_type: str,
+        source_hint: str,
+    ) -> str:
+        start_index = 0
+        if lines and lines[0].startswith("# "):
+            start_index = 1
+
+        if source_hint != "department_press_briefing":
+            date_line_index = None
+            for index, line in enumerate(lines[:80]):
+                if self.state_listing_date_re.search(line):
+                    date_line_index = index
+                    break
+            if date_line_index is not None:
+                start_index = date_line_index + 1
+
+        while start_index < len(lines) and self._looks_like_state_metadata_line(lines[start_index], doc_type):
+            start_index += 1
+
+        content = clean_text("\n".join(lines[start_index:]))
+        if source_hint == "department_press_briefing" and not content:
+            content = clean_text("\n".join(lines[1 if lines and lines[0].startswith("# ") else 0 :]))
+        return content
+
+    def _looks_like_state_metadata_line(self, line: str, doc_type: str) -> bool:
+        text = clean_text(line)
+        lowered = text.casefold()
+        if not text:
+            return True
+        if lowered == clean_text(doc_type).casefold():
+            return True
+        if self.state_listing_date_re.search(text):
+            return True
+        if text.startswith("[Home]") or text.startswith("*   [") or text.startswith("[Skip to content]"):
+            return True
+        if "You are viewing ARCHIVED CONTENT" in text or "For current information" in text:
+            return True
+        if "Office of the Spokesperson" in text and "](" in text:
+            return True
+        if text.startswith("An official website of the United States"):
+            return True
+        if text.startswith("Official websites use .gov") or text.startswith("Secure .gov websites use HTTPS"):
+            return True
+        return False
+
+    def _source_kind_for_article(self, source_hint: str, doc_type: str) -> str:
+        if source_hint == "legacy_press_release":
+            return "legacy_us_spokesperson"
+        if source_hint == "department_press_briefing":
+            return "state_department_press_briefing"
+        return self.doc_type_labels.get(doc_type, "state_press_release")
+
+    def _infer_doc_type_from_html(self, soup: BeautifulSoup, title: str, source_hint: str) -> str:
+        doc_type = ""
+        for selector in (".article-meta__document-type", ".hero__kicker", ".eyebrow"):
+            node = soup.select_one(selector)
+            if node:
+                doc_type = clean_text(node.get_text(" ", strip=True))
+                break
+        if doc_type:
+            return doc_type
+        return self._extract_state_doc_type([title], title, source_hint)
+
+    def _parse_archived_press_listing(self, markdown: str) -> list[tuple[str, str, str, str]]:
+        entries: list[tuple[str, str, str, str]] = []
+        body = extract_jina_markdown_body(markdown)
+        for raw_line in body.splitlines():
+            line = raw_line.strip()
+            date_match = self.state_listing_date_re.search(line)
+            if not date_match:
+                continue
+            links = markdown_links(line)
+            if not links:
+                continue
+            title, url = links[0]
+            if not self._looks_like_press_listing_article(url):
+                continue
+            published_at = parse_us_date(date_match.group("date"))
+            link_match = MARKDOWN_LINK_RE.search(line)
+            speaker = ""
+            if link_match is not None:
+                speaker_text = clean_text(line[link_match.end() : date_match.start()])
+                if speaker_text and not speaker_text.startswith("["):
+                    speaker = speaker_text
+            entries.append((url, clean_text(title), published_at, speaker))
+        return entries
+
+    def _looks_like_press_listing_article(self, url: str) -> bool:
+        normalized = clean_text(url)
+        if "/press-releases/page/" in normalized or normalized.rstrip("/") in {
+            "https://www.state.gov/press-releases",
+            "https://www.state.gov/press-releases/",
+            "http://2017-2021.state.gov/press-releases",
+            "http://2017-2021.state.gov/press-releases/",
+            "http://2021-2025.state.gov/press-releases",
+            "http://2021-2025.state.gov/press-releases/",
+        }:
+            return False
+        excluded_prefixes = (
+            "https://register.state.gov/",
+            "https://foia.state.gov/",
+            "https://www.state.gov/privacy-policy",
+            "https://www.state.gov/section-508-accessibility-statement",
+            "https://www.state.gov/copyright-information",
+            "https://2017-2021.state.gov/privacy-policy",
+            "https://2017-2021.state.gov/section-508-accessibility-statement",
+            "https://2017-2021.state.gov/copyright-information",
+            "https://2021-2025.state.gov/privacy-policy",
+            "https://2021-2025.state.gov/section-508-accessibility-statement",
+            "https://2021-2025.state.gov/copyright-information",
+        )
+        if normalized.startswith(excluded_prefixes):
+            return False
+        excluded_paths = (
+            "/newsroom/",
+            "/policy-issues/",
+            "/countries-areas/",
+            "/bureaus-offices/",
+            "/business/",
+            "/employees/",
+            "/job-seekers/",
+            "/students/",
+            "/travelers/",
+            "/visas/",
+            "/about/",
+            "/u-s-department-of-state-archive-websites",
+        )
+        path = urlsplit(normalized).path.rstrip("/") or "/"
+        if path in {"/department-email-updates", "/public-schedule", "/department-press-briefings"}:
+            return False
+        return not any(path.startswith(prefix.rstrip("/")) for prefix in excluded_paths)
+
+    def _infer_briefing_date(self, url: str, title: str) -> str:
+        slug = urlsplit(url).path.rstrip("/").split("/")[-1]
+        match = self.briefing_slug_date_re.search(slug)
+        if match:
+            month_name = match.group("month").replace("-", " ").title()
+            return parse_us_date(f"{month_name} {int(match.group('day'))}, {match.group('year')}")
+        title_match = self.state_listing_date_re.search(title)
+        if title_match:
+            return parse_us_date(title_match.group("date"))
+        return ""
+
+    def _infer_briefing_title(self, url: str) -> str:
+        slug = urlsplit(url).path.rstrip("/").split("/")[-1]
+        match = self.briefing_slug_date_re.search(slug)
+        if not match:
+            return ""
+        month_name = match.group("month").replace("-", " ").title()
+        return f"Department Press Briefing {month_name} {int(match.group('day'))}, {match.group('year')}"
+
+    @staticmethod
+    def _parse_legacy_listing_date(value: str) -> str:
+        return datetime.strptime(clean_text(value), "%m/%d/%y").date().isoformat()
+
+    @staticmethod
+    def _overlap_window(
+        start_date: str,
+        end_date: str,
+        era_start: str,
+        era_end: str,
+    ) -> tuple[str, str] | None:
+        overlap_start = max(start_date, era_start)
+        overlap_end = min(end_date, era_end)
+        if overlap_start > overlap_end:
+            return None
+        return overlap_start, overlap_end
+
+    def _clean_state_title(self, title: str) -> str:
+        cleaned = clean_text(title).replace("＃", "#")
+        cleaned = self.state_title_suffix_re.sub("", cleaned)
+        cleaned = cleaned.rstrip("- ").strip()
+        return cleaned
 
     @staticmethod
     def _extract_collection_date(item: BeautifulSoup) -> str:

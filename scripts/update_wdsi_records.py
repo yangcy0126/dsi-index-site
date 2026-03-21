@@ -108,12 +108,34 @@ def pending_records(
     return additions, replaced_urls
 
 
-def determine_fetch_range(existing: pd.DataFrame, lookback_days: int) -> tuple[str, str]:
+def effective_legacy_mask(existing: pd.DataFrame, source: object | None = None) -> pd.Series:
+    if existing.empty:
+        return pd.Series(dtype=bool)
+
+    mask = existing.get("is_legacy", pd.Series(dtype=str)).astype(str).str.lower() == "true"
+    legacy_source_kinds = {
+        str(kind)
+        for kind in (getattr(source, "legacy_source_kinds", ()) or ())
+        if str(kind).strip()
+    }
+    if legacy_source_kinds and "source_kind" in existing.columns:
+        mask = mask | existing["source_kind"].astype(str).isin(legacy_source_kinds)
+
+    legacy_period_end_date = str(getattr(source, "legacy_period_end_date", "") or "")
+    if legacy_period_end_date and "published_at" in existing.columns:
+        published_dates = pd.to_datetime(existing["published_at"], errors="coerce")
+        cutoff = datetime.fromisoformat(legacy_period_end_date).date()
+        mask = mask & published_dates.notna() & (published_dates.dt.date <= cutoff)
+
+    return mask
+
+
+def determine_fetch_range(existing: pd.DataFrame, lookback_days: int, source: object | None = None) -> tuple[str, str]:
     today = datetime.now(timezone.utc).date()
     window_start = today - timedelta(days=max(lookback_days, 1))
 
     legacy_dates = pd.to_datetime(
-        existing.loc[existing["is_legacy"].astype(str).str.lower() == "true", "published_at"],
+        existing.loc[effective_legacy_mask(existing, source), "published_at"],
         errors="coerce",
     ).dropna()
     if len(legacy_dates):
@@ -180,10 +202,10 @@ def build_fetch_plan(
 ) -> list[tuple[str, str, str]]:
     if start_date_override or end_date_override:
         today = datetime.now(timezone.utc).date().isoformat()
-        recent_start, _ = determine_fetch_range(existing, lookback_days)
+        recent_start, _ = determine_fetch_range(existing, lookback_days, source)
         return [("requested", start_date_override or recent_start, end_date_override or today)]
 
-    recent_start, recent_end = determine_fetch_range(existing, lookback_days)
+    recent_start, recent_end = determine_fetch_range(existing, lookback_days, source)
     published_dates = pd.to_datetime(existing.get("published_at"), errors="coerce").dropna()
     if published_dates.empty:
         bootstrap_start = maybe_expand_history_start(existing, source, recent_start)
@@ -195,15 +217,62 @@ def build_fetch_plan(
     history_start_date = str(getattr(source, "history_start_date", "") or "")
     if history_backfill_rounds <= 0 or not history_start_date:
         return plan
+
+    history_floor = datetime.fromisoformat(history_start_date).date()
+
+    chunk_days = int(getattr(source, "history_backfill_chunk_days", 0) or 0)
+
+    legacy_mask = effective_legacy_mask(existing, source)
+    legacy_dates = pd.to_datetime(existing.loc[legacy_mask, "published_at"], errors="coerce").dropna()
+    modern_dates = pd.to_datetime(existing.loc[~legacy_mask, "published_at"], errors="coerce").dropna()
+    if bool(getattr(source, "resume_gap_after_legacy", False)) and len(legacy_dates):
+        history_floor = max(history_floor, legacy_dates.max().date() + timedelta(days=1))
+
+    if bool(getattr(source, "resume_scope_history", False)) and "source_kind" in existing.columns:
+        scope_start_date = str(getattr(source, "scope_history_start_date", "") or history_start_date)
+        scope_floor = max(history_floor, datetime.fromisoformat(scope_start_date).date())
+        scope_kinds = {
+            str(kind)
+            for kind in (getattr(source, "scope_history_source_kinds", ()) or ())
+            if str(kind).strip()
+        }
+        anchor_dates = pd.to_datetime(
+            existing.loc[existing["source_kind"].astype(str).isin(scope_kinds), "published_at"],
+            errors="coerce",
+        ).dropna()
+        if len(anchor_dates):
+            scope_backfill_end = anchor_dates.min().date() - timedelta(days=1)
+        else:
+            scope_backfill_end = datetime.fromisoformat(recent_start).date() - timedelta(days=1)
+
+        for round_index in range(history_backfill_rounds):
+            if scope_backfill_end < scope_floor:
+                break
+            if chunk_days > 0:
+                backfill_start = max(scope_floor, scope_backfill_end - timedelta(days=chunk_days))
+            else:
+                backfill_start = scope_floor
+            plan.append((f"history-{round_index + 1}", backfill_start.isoformat(), scope_backfill_end.isoformat()))
+            if backfill_start <= scope_floor:
+                break
+            scope_backfill_end = backfill_start - timedelta(days=1)
+
+        if len(plan) > (0 if history_only else 1):
+            return plan
+
     if not bool(getattr(source, "resume_missing_history", False)):
         return plan
 
-    history_floor = datetime.fromisoformat(history_start_date).date()
     backfill_end = published_dates.min().date() - timedelta(days=1)
+    if bool(getattr(source, "resume_gap_after_legacy", False)) and len(legacy_dates) and len(modern_dates):
+        gap_floor = max(history_floor, legacy_dates.max().date() + timedelta(days=1))
+        gap_end = modern_dates.min().date() - timedelta(days=1)
+        if gap_end >= gap_floor:
+            history_floor = gap_floor
+            backfill_end = gap_end
     if backfill_end < history_floor:
         return plan
 
-    chunk_days = int(getattr(source, "history_backfill_chunk_days", 0) or 0)
     for round_index in range(history_backfill_rounds):
         if backfill_end < history_floor:
             break
@@ -231,6 +300,25 @@ def fetch_records_for_window(
     if code in {"US", "UK", "KR", "DE", "IN", "IT", "CA", "BR", "AU", "MX", "ES", "FR", "RU"}:
         return source.fetch_between(start_date, end_date, max_pages=max_pages)
     return source.fetch_between(start_date, end_date)
+
+
+def record_is_legacy(source: object, record: object) -> bool:
+    if isinstance(record, dict):
+        kind = str(record.get("source_kind", "")).strip()
+    else:
+        kind = str(getattr(record, "source_kind", "")).strip()
+    if kind.startswith("legacy_"):
+        return True
+
+    legacy_source_kinds = {
+        str(item)
+        for item in (getattr(source, "legacy_source_kinds", ()) or ())
+        if str(item).strip()
+    }
+    if kind in legacy_source_kinds:
+        return True
+
+    return False
 
 
 def score_pending_rows(
@@ -449,7 +537,7 @@ def main() -> None:
                     "source_kind": record.source_kind,
                     "language": record.language,
                     "content_hash": record.content_hash,
-                    "is_legacy": False,
+                    "is_legacy": record_is_legacy(source, record),
                 }
                 for record in fetched_records
             ]
