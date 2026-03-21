@@ -440,6 +440,9 @@ jobs:
       - name: Rebuild site data
         run: python scripts/build_wdsi_data.py
 
+      - name: Check method lock
+        run: python scripts/check_method_lock.py
+
       - name: Commit and push
         run: |
           if git diff --quiet; then

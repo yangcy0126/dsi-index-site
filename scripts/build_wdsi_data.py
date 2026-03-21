@@ -12,6 +12,11 @@ OUTPUT_DIR = ROOT / "data"
 RECORDS_DIR = ROOT / "records"
 PLACEHOLDER_NOTE = "Reserved top-15 GDP slot. WDSI source onboarding and validation are pending."
 LEGACY_DIR = ROOT.parent / "data" / "情绪测度结果数据"
+AUTHORITATIVE_METHOD_NOTE = (
+    "Locked to DSI-ICF/code/data_integration.executed.ipynb: "
+    "publication-day raw score = same-day minimum, then forward-fill missing days, "
+    "then compute rolling means on the filled daily path."
+)
 
 COUNTRIES = [
     {
@@ -159,6 +164,44 @@ def round_or_none(value: float | None, digits: int = 3) -> float | None:
     return round(float(value), digits)
 
 
+def int_or_none(value: float | int | None) -> int | None:
+    if value is None or pd.isna(value):
+        return None
+    return int(round(float(value)))
+
+
+def collapse_to_daily_minimum(frame: pd.DataFrame) -> pd.DataFrame:
+    """Apply the original DSI-ICF daily aggregation rule: one day, one minimum raw score."""
+    return (
+        frame.sort_values(["date", "raw", "title", "url"], ascending=[True, True, True, True])
+        .groupby("date", as_index=False)
+        .first()
+        .sort_values("date")
+        .reset_index(drop=True)
+    )
+
+
+def build_filled_daily_series(daily: pd.DataFrame, end_date: pd.Timestamp) -> pd.DataFrame:
+    """Reproduce the original DSI-ICF notebook path: calendarize, forward-fill, then smooth."""
+    calendar = pd.DataFrame({"date": pd.date_range(daily["date"].min(), end_date, freq="D")})
+    merged = calendar.merge(daily.assign(publication=True), on="date", how="left")
+    merged["publication"] = merged["publication"].notna()
+    merged["filled"] = merged["raw"].ffill()
+    merged["rolling7"] = merged["filled"].rolling(7).mean()
+    merged["rolling30"] = merged["filled"].rolling(30).mean()
+    return merged
+
+
+def validate_method_lock(frame: pd.DataFrame) -> None:
+    raw_values = frame["raw"].dropna()
+    if not raw_values.empty and not (raw_values == raw_values.round()).all():
+        raise ValueError("Method lock failed: raw publication-day scores must remain integers.")
+    if len(frame) >= 6 and frame["rolling7"].iloc[:6].notna().any():
+        raise ValueError("Method lock failed: 7-day rolling series should be empty before day 7.")
+    if len(frame) >= 29 and frame["rolling30"].iloc[:29].notna().any():
+        raise ValueError("Method lock failed: 30-day rolling series should be empty before day 30.")
+
+
 def load_from_records(meta: dict[str, str]) -> pd.DataFrame:
     path = RECORDS_DIR / f"{meta['code']}.csv"
     if not path.exists():
@@ -177,12 +220,7 @@ def load_from_records(meta: dict[str, str]) -> pd.DataFrame:
         }
     )
     daily = daily.dropna(subset=["date", "raw"])
-    daily = (
-        daily.groupby("date", as_index=False)
-        .agg({"raw": "mean", "title": "last", "url": "last"})
-        .sort_values("date")
-        .reset_index(drop=True)
-    )
+    daily = collapse_to_daily_minimum(daily)
     return daily
 
 
@@ -203,7 +241,7 @@ def load_from_legacy(meta: dict[str, str]) -> pd.DataFrame:
     daily = daily.dropna(subset=[date_col, score_col])
     daily = (
         daily.groupby(date_col, as_index=False)[score_col]
-        .mean()
+        .min()
         .rename(columns={date_col: "date", score_col: "raw"})
         .sort_values("date")
         .reset_index(drop=True)
@@ -226,12 +264,7 @@ def read_country(meta: dict[str, str]) -> tuple[dict[str, object], pd.DataFrame]
 
     today = pd.Timestamp(datetime.now(timezone.utc).date())
     end_date = max(daily["date"].max(), today)
-    calendar = pd.DataFrame({"date": pd.date_range(daily["date"].min(), end_date, freq="D")})
-    merged = calendar.merge(daily.assign(publication=True), on="date", how="left")
-    merged["publication"] = merged["publication"].notna()
-    merged["filled"] = merged["raw"].ffill()
-    merged["rolling7"] = merged["filled"].rolling(7, min_periods=1).mean()
-    merged["rolling30"] = merged["filled"].rolling(30, min_periods=1).mean()
+    merged = build_filled_daily_series(daily, end_date)
 
     latest_rolling = float(merged["rolling7"].iloc[-1])
     latest_rolling30 = float(merged["rolling30"].iloc[-1])
@@ -251,7 +284,7 @@ def read_country(meta: dict[str, str]) -> tuple[dict[str, object], pd.DataFrame]
         "latest_publication_date": latest_publication["date"].date().isoformat(),
         "publication_days": int(len(daily)),
         "calendar_days": int(len(merged)),
-        "latest_raw": round_or_none(float(latest_publication["raw"])),
+        "latest_raw": int_or_none(latest_publication["raw"]),
         "latest_7d": round_or_none(latest_rolling),
         "latest_30d": round_or_none(latest_rolling30),
         "change_7d": round_or_none(latest_rolling - previous_7) if previous_7 is not None else None,
@@ -271,6 +304,8 @@ def read_country(meta: dict[str, str]) -> tuple[dict[str, object], pd.DataFrame]
 
     export_frame = merged[["date", "raw", "rolling7", "rolling30", "publication"]].copy()
     export_frame["date"] = export_frame["date"].dt.strftime("%Y-%m-%d")
+    export_frame["raw"] = export_frame["raw"].round().astype("Int64")
+    validate_method_lock(export_frame)
     return summary, export_frame
 
 
@@ -336,7 +371,7 @@ def main() -> None:
             "records": [
                 {
                     "date": row.date,
-                    "raw": round_or_none(row.raw),
+                    "raw": int_or_none(row.raw),
                     "rolling7": round_or_none(row.rolling7),
                     "rolling30": round_or_none(row.rolling30),
                     "publication": bool(row.publication),
@@ -369,6 +404,7 @@ def main() -> None:
 
     summary_payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
+        "method_note": AUTHORITATIVE_METHOD_NOTE,
         "overall": {
             "country_count": len(countries),
             "live_country_count": len(live_countries),

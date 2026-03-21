@@ -36,6 +36,12 @@ Rebuild website data files from `records/*.csv`:
 python scripts/build_wdsi_data.py
 ```
 
+Run the method lock check:
+
+```bash
+python scripts/check_method_lock.py
+```
+
 Preview recent source fetches without scoring or writing:
 
 ```bash
@@ -69,9 +75,11 @@ Then open `http://127.0.0.1:8000`.
 1. Historical baseline is imported into `records/*.csv`.
 2. `scripts/update_wdsi_records.py` fetches recent official texts.
 3. New or changed texts are scored with the OpenAI API on the `-3` to `3` WDSI scale.
-4. `scripts/build_wdsi_data.py` regenerates the frontend JSON and CSV files.
-5. GitHub Actions commits the changed `records/` and `data/` files.
-6. The existing Pages workflow deploys the refreshed site.
+4. `scripts/build_wdsi_data.py` applies the original DSI-ICF construction rule:
+   same-day raw score = daily minimum, then forward-fill, then rolling 7-day / 30-day means.
+5. `scripts/check_method_lock.py` verifies that the build still obeys that rule.
+6. GitHub Actions commits the changed `records/` and `data/` files.
+7. The existing Pages workflow deploys the refreshed site.
 
 ## GitHub Actions setup
 
@@ -110,6 +118,8 @@ When `WDSI_API_BASE_URL` is set, the pipeline automatically uses the OpenAI-comp
 
 - `records/`: canonical scored records used by the website build
 - `data/`: static assets served by the site
+- `METHODOLOGY_LOCK.md`: authoritative WDSI construction rule for this repo
 - `scripts/bootstrap_records.py`: one-time baseline import
 - `scripts/update_wdsi_records.py`: incremental fetch and score pipeline
 - `scripts/build_wdsi_data.py`: static asset builder
+- `scripts/check_method_lock.py`: deterministic guardrail against aggregation drift

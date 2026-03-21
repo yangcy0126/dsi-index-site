@@ -2,226 +2,233 @@
   "code": "IN",
   "label": "India",
   "label_zh": "India",
-  "generated_at": "2026-03-20T20:11:48.544865+00:00",
+  "generated_at": "2026-03-21T07:00:51.341193+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
     {
       "date": "2026-02-18",
-      "raw": 0.0,
-      "rolling7": 0.0,
-      "rolling30": 0.0,
+      "raw": 0,
+      "rolling7": null,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-02-19",
-      "raw": 0.4,
-      "rolling7": 0.2,
-      "rolling30": 0.2,
+      "raw": 0,
+      "rolling7": null,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-02-20",
-      "raw": 0.375,
-      "rolling7": 0.258,
-      "rolling30": 0.258,
+      "raw": 0,
+      "rolling7": null,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-02-21",
-      "raw": 0.0,
-      "rolling7": 0.194,
-      "rolling30": 0.194,
+      "raw": 0,
+      "rolling7": null,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-02-22",
-      "raw": 0.0,
-      "rolling7": 0.155,
-      "rolling30": 0.155,
+      "raw": 0,
+      "rolling7": null,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-02-23",
       "raw": null,
-      "rolling7": 0.129,
-      "rolling30": 0.129,
+      "rolling7": null,
+      "rolling30": null,
       "publication": false
     },
     {
       "date": "2026-02-24",
-      "raw": 0.0,
-      "rolling7": 0.111,
-      "rolling30": 0.111,
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-02-25",
-      "raw": 0.667,
-      "rolling7": 0.206,
-      "rolling30": 0.18,
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-02-26",
-      "raw": 0.833,
-      "rolling7": 0.268,
-      "rolling30": 0.253,
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-02-27",
       "raw": null,
-      "rolling7": 0.333,
-      "rolling30": 0.311,
+      "rolling7": 0.0,
+      "rolling30": null,
       "publication": false
     },
     {
       "date": "2026-02-28",
       "raw": null,
-      "rolling7": 0.452,
-      "rolling30": 0.358,
+      "rolling7": 0.0,
+      "rolling30": null,
       "publication": false
     },
     {
       "date": "2026-03-01",
-      "raw": 0.0,
-      "rolling7": 0.452,
-      "rolling30": 0.328,
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-03-02",
-      "raw": 0.0,
-      "rolling7": 0.452,
-      "rolling30": 0.303,
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-03-03",
       "raw": null,
-      "rolling7": 0.452,
-      "rolling30": 0.282,
+      "rolling7": 0.0,
+      "rolling30": null,
       "publication": false
     },
     {
       "date": "2026-03-04",
-      "raw": 0.0,
-      "rolling7": 0.357,
-      "rolling30": 0.263,
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-03-05",
-      "raw": 0.0,
-      "rolling7": 0.238,
-      "rolling30": 0.246,
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-03-06",
-      "raw": 0.0,
-      "rolling7": 0.119,
-      "rolling30": 0.232,
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-03-07",
-      "raw": -2.0,
+      "raw": -2,
       "rolling7": -0.286,
-      "rolling30": 0.108,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-03-08",
       "raw": null,
       "rolling7": -0.571,
-      "rolling30": -0.003,
+      "rolling30": null,
       "publication": false
     },
     {
       "date": "2026-03-09",
       "raw": null,
       "rolling7": -0.857,
-      "rolling30": -0.103,
+      "rolling30": null,
       "publication": false
     },
     {
       "date": "2026-03-10",
       "raw": null,
       "rolling7": -1.143,
-      "rolling30": -0.193,
+      "rolling30": null,
       "publication": false
     },
     {
       "date": "2026-03-11",
       "raw": null,
       "rolling7": -1.429,
-      "rolling30": -0.275,
+      "rolling30": null,
       "publication": false
     },
     {
       "date": "2026-03-12",
-      "raw": -0.048,
-      "rolling7": -1.435,
-      "rolling30": -0.265,
+      "raw": -2,
+      "rolling7": -1.714,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-03-13",
-      "raw": -0.087,
-      "rolling7": -1.448,
-      "rolling30": -0.258,
+      "raw": -2,
+      "rolling7": -2.0,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-03-14",
-      "raw": 0.0,
-      "rolling7": -1.162,
-      "rolling30": -0.248,
+      "raw": 0,
+      "rolling7": -1.714,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-03-15",
-      "raw": 0.0,
-      "rolling7": -0.876,
-      "rolling30": -0.238,
+      "raw": 0,
+      "rolling7": -1.429,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-03-16",
-      "raw": 0.0,
-      "rolling7": -0.591,
-      "rolling30": -0.229,
+      "raw": 0,
+      "rolling7": -1.143,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-03-17",
-      "raw": 1.0,
-      "rolling7": -0.162,
-      "rolling30": -0.185,
+      "raw": 0,
+      "rolling7": -0.857,
+      "rolling30": null,
       "publication": true
     },
     {
       "date": "2026-03-18",
       "raw": null,
-      "rolling7": 0.266,
-      "rolling30": -0.145,
+      "rolling7": -0.571,
+      "rolling30": null,
       "publication": false
     },
     {
       "date": "2026-03-19",
-      "raw": 0.0,
-      "rolling7": 0.273,
-      "rolling30": -0.14,
+      "raw": 0,
+      "rolling7": -0.286,
+      "rolling30": -0.467,
       "publication": true
     },
     {
       "date": "2026-03-20",
-      "raw": 0.0,
-      "rolling7": 0.286,
-      "rolling30": -0.14,
+      "raw": -2,
+      "rolling7": -0.286,
+      "rolling30": -0.533,
       "publication": true
+    },
+    {
+      "date": "2026-03-21",
+      "raw": null,
+      "rolling7": -0.571,
+      "rolling30": -0.6,
+      "publication": false
     }
   ]
 }

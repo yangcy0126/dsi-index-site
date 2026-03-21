@@ -154,7 +154,7 @@
             <p class="eyebrow">Explorer</p>
             <h2>Index Explorer</h2>
             <p>
-              The default view shows the 7-day smoothed WDSI. You can also switch to the 30-day smoothed series or the raw publication-day mean to see the more discrete jumps on release days.
+              The default view shows the 7-day smoothed WDSI. You can also switch to the 30-day smoothed series or the raw publication-day score to see the more discrete jumps on release days.
             </p>
           </div>
 
@@ -169,7 +169,7 @@
                   30-day smoothed WDSI
                 </button>
                 <button class="toggle-button" data-series="raw" type="button">
-                  Raw publication-day mean
+                  Raw publication-day score
                 </button>
               </div>
             </div>
@@ -215,7 +215,7 @@
             <article class="method-card">
               <span class="method-index">04</span>
               <h3>Construct the daily index series</h3>
-              <p>The paper first forms a raw score on each publication day. When multiple war-related passages appear on the same day, they are combined into one conference- or statement-level score rather than simply averaged. Missing days are then forward-filled and smoothed with a 7-day rolling average to form the baseline WDSI.</p>
+              <p>The paper first forms a raw score on each publication day. When multiple texts appear on the same day, the raw daily value takes the lowest score observed that day rather than an average. Missing days are then forward-filled, and the 7-day and 30-day series are computed as rolling means on that filled daily path.</p>
             </article>
           </div>
         </section>

@@ -227,7 +227,7 @@ function renderSelectedMetrics(country) {
   deltaEl.className = `metric-value ${deltaTone}`;
   document.getElementById("selected-publication-date").textContent = formatDate(country.latest_publication_date);
   document.getElementById("selected-publication-score").textContent =
-    `Latest publication-day raw mean: ${formatScore(country.latest_raw)} - ${scoreDeltaSentence(latestDelta, 30)}`;
+    `Latest publication-day raw score: ${formatScore(country.latest_raw)} - ${scoreDeltaSentence(latestDelta, 30)}`;
   document.getElementById("selected-coverage").textContent =
     `${formatDate(country.start_date)} to ${formatDate(country.latest_date)}`;
   document.getElementById("selected-publication-days").textContent =
@@ -241,7 +241,7 @@ function renderLegacyDownloadList() {
   const masterDownloads = [
     {
       title: "Full daily dataset (CSV)",
-      meta: "Calendar-day series for all countries, including raw publication-day means plus 7-day and 30-day smoothed values",
+      meta: "Calendar-day series for all countries, including raw publication-day scores plus 7-day and 30-day smoothed values",
       href: "data/wdsi_all_countries.csv",
     },
     {
@@ -296,7 +296,7 @@ function renderCsvOnlyDownloadList() {
   const masterDownloads = [
     {
       title: "Full daily dataset (CSV)",
-      meta: "Calendar-day series for all countries, including raw publication-day means plus 7-day and 30-day smoothed values",
+      meta: "Calendar-day series for all countries, including raw publication-day scores plus 7-day and 30-day smoothed values",
       href: "data/wdsi_all_countries.csv",
     },
   ];
@@ -487,13 +487,13 @@ function renderChart(country, countryData) {
       y: rawValues,
       type: "scatter",
       mode: "markers",
-      name: "Raw publication-day mean",
+      name: "Raw publication-day score",
       marker: {
         color: "#b85f35",
         size: showRaw ? 8 : 6,
         opacity: showRaw ? 0.88 : 0.22,
       },
-      hovertemplate: "%{x}<br>Raw publication-day mean: %{y:.3f}<extra></extra>",
+      hovertemplate: "%{x}<br>Raw publication-day score: %{y:.0f}<extra></extra>",
     },
   ];
 
@@ -505,7 +505,7 @@ function renderChart(country, countryData) {
   });
 
   document.getElementById("chart-caption").textContent =
-    `${country.label} is available as a raw publication-day mean together with 7-day and 30-day smoothed series. Current view: ${
+    `${country.label} is available as a raw publication-day score together with 7-day and 30-day smoothed series. Current view: ${
       showRolling7 ? "7-day smoothed trend" : showRolling30 ? "30-day smoothed trend" : "discrete publication-day moves"
     }.`;
 
