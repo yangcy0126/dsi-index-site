@@ -106,6 +106,15 @@ jobs:
           WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
 
+      - name: Upload post-extra checkpoint
+        if: matrix.country == 'CA' || matrix.country == 'MX'
+        uses: actions/upload-artifact@v4
+        with:
+          name: records-${{ matrix.country }}
+          path: records/${{ matrix.country }}.csv
+          if-no-files-found: error
+          overwrite: true
+
       - name: Update records (second extra history backfill)
         if: matrix.country == 'CA' || matrix.country == 'MX'
         continue-on-error: true
@@ -125,6 +134,15 @@ jobs:
           WDSI_MODEL: ${{ vars.WDSI_MODEL }}
           WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
+
+      - name: Upload post-second-extra checkpoint
+        if: matrix.country == 'CA'
+        uses: actions/upload-artifact@v4
+        with:
+          name: records-${{ matrix.country }}
+          path: records/${{ matrix.country }}.csv
+          if-no-files-found: error
+          overwrite: true
 
       - name: Update records (third extra history backfill)
         if: matrix.country == 'CA'
@@ -187,6 +205,15 @@ jobs:
           WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
 
+      - name: Upload India checkpoint after extra 1
+        if: matrix.country == 'IN'
+        uses: actions/upload-artifact@v4
+        with:
+          name: records-IN
+          path: records/IN.csv
+          if-no-files-found: error
+          overwrite: true
+
       - name: Update records (India extra history backfill 2)
         if: matrix.country == 'IN'
         continue-on-error: true
@@ -206,6 +233,15 @@ jobs:
           WDSI_MODEL: ${{ vars.WDSI_MODEL }}
           WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
+
+      - name: Upload India checkpoint after extra 2
+        if: matrix.country == 'IN'
+        uses: actions/upload-artifact@v4
+        with:
+          name: records-IN
+          path: records/IN.csv
+          if-no-files-found: error
+          overwrite: true
 
       - name: Update records (India extra history backfill 3)
         if: matrix.country == 'IN'
