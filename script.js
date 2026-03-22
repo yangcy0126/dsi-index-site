@@ -11,18 +11,18 @@ const state = {
 const summaryPath = "data/summary.json";
 const eventsPath = "data/events.json";
 const trumpPath = "data/trump_indices.json";
-const assetVersion = "20260322-trump-labels-1";
+const assetVersion = "20260322-trump-label-layout-1";
 const TRUMP_POLITICAL_EVENTS = [
-  { date: "2015-06-16", label: "Campaign launch", chartLabel: "Campaign launch" },
-  { date: "2016-11-08", label: "Wins 2016 election", chartLabel: "2016 win" },
-  { date: "2017-01-20", label: "First inauguration", chartLabel: "1st inauguration" },
-  { date: "2019-12-18", label: "First impeachment", chartLabel: "1st impeachment" },
-  { date: "2020-11-03", label: "2020 election", chartLabel: "2020 election" },
-  { date: "2021-01-06", label: "Jan 6 Capitol riot", chartLabel: "Capitol riot" },
-  { date: "2022-11-15", label: "2024 campaign launch", chartLabel: "2024 launch" },
-  { date: "2024-07-13", label: "Butler rally shooting", chartLabel: "Butler shooting" },
-  { date: "2024-11-05", label: "Wins 2024 election", chartLabel: "2024 win" },
-  { date: "2025-01-20", label: "Second inauguration", chartLabel: "2nd inauguration" },
+  { date: "2015-06-16", label: "Campaign launch", chartLabel: "Campaign launch", chartY: 2.95, chartAnchor: "bottom" },
+  { date: "2016-11-08", label: "Wins 2016 election", chartLabel: "2016 win", chartY: 2.55, chartAnchor: "bottom" },
+  { date: "2017-01-20", label: "First inauguration", chartLabel: "1st inauguration", chartY: 2.15, chartAnchor: "bottom" },
+  { date: "2019-12-18", label: "First impeachment", chartLabel: "1st impeachment", chartY: -2.15, chartAnchor: "top" },
+  { date: "2020-11-03", label: "2020 election", chartLabel: "2020 election", chartY: -2.95, chartAnchor: "top" },
+  { date: "2021-01-06", label: "Jan 6 Capitol riot", chartLabel: "Capitol riot", chartY: -2.45, chartAnchor: "top" },
+  { date: "2022-11-15", label: "2024 campaign launch", chartLabel: "2024 launch", chartY: 2.95, chartAnchor: "bottom" },
+  { date: "2024-07-13", label: "Butler rally shooting", chartLabel: "Butler shooting", chartY: 2.55, chartAnchor: "bottom" },
+  { date: "2024-11-05", label: "Wins 2024 election", chartLabel: "2024 win", chartY: 2.15, chartAnchor: "bottom" },
+  { date: "2025-01-20", label: "Second inauguration", chartLabel: "2nd inauguration", chartY: -2.15, chartAnchor: "top" },
 ];
 
 function versionedPath(path) {
@@ -494,7 +494,6 @@ function renderTrumpMetricCards() {
 
 function buildTrumpChartLayout(records) {
   const politicalEvents = getVisibleTrumpPoliticalEvents(records);
-  const eventYPositions = [2.95, 2.55, 2.15];
 
   return {
     margin: { l: 46, r: 24, t: 36, b: 44 },
@@ -560,15 +559,15 @@ function buildTrumpChartLayout(records) {
         showarrow: false,
         font: { size: 11, color: "#5b6968" },
       },
-      ...politicalEvents.map((event, index) => ({
+      ...politicalEvents.map((event) => ({
         x: event.date,
-        y: eventYPositions[index % eventYPositions.length],
+        y: event.chartY ?? 2.75,
         xref: "x",
         yref: "y",
         text: event.chartLabel || event.label,
         showarrow: false,
         xanchor: "center",
-        yanchor: "bottom",
+        yanchor: event.chartAnchor || "bottom",
         align: "center",
         bgcolor: "rgba(255, 248, 242, 0.92)",
         bordercolor: "rgba(184, 95, 53, 0.18)",
@@ -578,24 +577,6 @@ function buildTrumpChartLayout(records) {
       })),
     ],
   };
-}
-
-function renderTrumpEventChips(records) {
-  const chips = document.getElementById("trump-event-chips");
-  if (!chips) {
-    return;
-  }
-
-  const visibleEvents = getVisibleTrumpPoliticalEvents(records);
-  chips.innerHTML = "";
-  chips.hidden = !visibleEvents.length;
-
-  visibleEvents.forEach((event) => {
-    const chip = document.createElement("span");
-    chip.className = "event-chip";
-    chip.textContent = `${formatDate(event.date)} - ${event.label}`;
-    chips.appendChild(chip);
-  });
 }
 
 function renderTrumpChart() {
@@ -654,8 +635,6 @@ function renderTrumpChart() {
     displaylogo: false,
     modeBarButtonsToRemove: ["select2d", "lasso2d", "autoScale2d"],
   });
-
-  renderTrumpEventChips(records);
 
   document.getElementById("trump-chart-caption").textContent =
     `This panel overlays the ${trumpSeriesLabel(state.trumpSeriesMode)} Trump Tone Index, Trump Geopolitical Index, and Trump Shock Index across Twitter and Truth Social. Dotted markers flag major Trump political milestones, while the shaded band marks the platform transition gap. Levels are complementary to WDSI rather than directly comparable to ministry-based WDSI values.`;
