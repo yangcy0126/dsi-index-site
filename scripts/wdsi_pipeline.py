@@ -88,6 +88,11 @@ AU_LISTING_ENTRY_RE = re.compile(
 AU_INLINE_DATE_RE = re.compile(r"(?P<date>\d{1,2}\s+[A-Za-z]+\s+\d{4})$")
 MX_LISTING_DATE_RE = re.compile(rf"^(?P<date>{MONTH_NAME_PATTERN}\s+\d{{1,2}},\s+\d{{4}})\s+Fecha de publicación")
 MX_DETAIL_DATE_RE = re.compile(rf"\|\s*(?P<date>{MONTH_NAME_PATTERN}\s+\d{{1,2}},\s+\d{{4}})\s*\|")
+STATE_BRIEFING_TIME_RE = re.compile(r"^\d{1,2}:\d{2}\s*[ap]\.m\.\s*[A-Z]{2,4}$", re.I)
+STATE_BRIEFING_SPEAKER_RE = re.compile(
+    r"^(?:MR|MS|MRS|MODERATOR|QUESTION|SECRETARY|DEPUTY SECRETARY|ASSISTANT SECRETARY|AMBASSADOR|SENIOR ADMINISTRATION OFFICIAL)\b.*:?$",
+    re.I,
+)
 ES_LISTING_ENTRY_RE = re.compile(
     r"^\*\s+(?P<date>\d{1,2}\s+[A-Za-z]{3}\s+\d{2})\s+##\s+\[(?P<title>.+?)\]\((?P<url>https://www\.exteriores\.gob\.es/en/Comunicacion/Comunicados/Paginas/[^\s)]+)\)"
 )
@@ -496,12 +501,25 @@ def _supports_curl_fallback(url: str) -> bool:
             "diplomatie.gouv.fr",
             "auswaertiges-amt.de",
             "mea.gov.in",
+            "www.state.gov",
+            "2017-2021.state.gov",
+            "2021-2025.state.gov",
         )
     )
 
 
 def _supports_browser_fallback(url: str) -> bool:
-    return any(domain in url for domain in ("mofa.go.jp", "gov.uk", "esteri.it"))
+    return any(
+        domain in url
+        for domain in (
+            "mofa.go.jp",
+            "gov.uk",
+            "esteri.it",
+            "www.state.gov",
+            "2017-2021.state.gov",
+            "2021-2025.state.gov",
+        )
+    )
 
 
 def request_html_with_playwright(url: str) -> str:
@@ -590,6 +608,19 @@ def html_looks_like_block_page(html_text: str) -> bool:
         "technical difficulties" in lowered
         or "http error 407" in lowered
         or "exception: forbidden" in lowered
+        or "this page isn’t working" in lowered
+        or "this page isn't working" in lowered
+    )
+
+
+def markdown_looks_like_block_page(markdown_text: str) -> bool:
+    lowered = extract_jina_markdown_body(markdown_text or "").casefold()
+    return (
+        "technical difficulties" in lowered
+        or "http error 407" in lowered
+        or "exception: forbidden" in lowered
+        or "this page isn’t working" in lowered
+        or "this page isn't working" in lowered
     )
 
 
@@ -1133,6 +1164,10 @@ class UsStateDepartmentSource:
         content = clean_text(content_node.get_text("\n"))
         if not content:
             raise ValueError(f"Missing parsed content for {url}")
+        if source_hint == "department_press_briefing":
+            content = self._trim_state_briefing_content(content)
+            if not content:
+                raise ValueError(f"Missing parsed briefing transcript for {url}")
 
         doc_type = self._infer_doc_type_from_html(soup, title, source_hint)
         resolved_title = self._clean_state_title(title)
@@ -1160,7 +1195,7 @@ class UsStateDepartmentSource:
         source_hint: str,
     ) -> ScrapedRecord | None:
         body = extract_jina_markdown_body(markdown)
-        if "Exception: forbidden" in body or "HTTP ERROR 407" in body:
+        if markdown_looks_like_block_page(markdown):
             raise ValueError(f"Blocked while fetching {url}")
 
         lines = [clean_text(line) for line in body.splitlines() if clean_text(line)]
@@ -1180,6 +1215,12 @@ class UsStateDepartmentSource:
         content = self._extract_state_content(lines, title, published_at, doc_type, source_hint)
         if not content:
             raise ValueError(f"Missing state content for {url}")
+        if source_hint == "department_press_briefing":
+            lowered_title = title.casefold()
+            if lowered_title in {"2017-2021.state.gov", "2021-2025.state.gov", "www.state.gov", "state.gov"}:
+                raise ValueError(f"Blocked or malformed briefing title for {url}")
+            if len(content) < 400:
+                raise ValueError(f"Suspiciously short briefing content for {url}")
 
         return ScrapedRecord(
             country_code=self.country_code,
@@ -1273,6 +1314,12 @@ class UsStateDepartmentSource:
                     break
             if date_line_index is not None:
                 start_index = date_line_index + 1
+        else:
+            for index, line in enumerate(lines[:200]):
+                text = clean_text(line)
+                if STATE_BRIEFING_TIME_RE.fullmatch(text) or STATE_BRIEFING_SPEAKER_RE.match(text):
+                    start_index = index
+                    break
 
         while start_index < len(lines) and self._looks_like_state_metadata_line(lines[start_index], doc_type):
             start_index += 1
@@ -1281,6 +1328,15 @@ class UsStateDepartmentSource:
         if source_hint == "department_press_briefing" and not content:
             content = clean_text("\n".join(lines[1 if lines and lines[0].startswith("# ") else 0 :]))
         return content
+
+    def _trim_state_briefing_content(self, content: str) -> str:
+        lines = [clean_text(line) for line in content.splitlines() if clean_text(line)]
+        start_index = 0
+        for index, line in enumerate(lines[:200]):
+            if STATE_BRIEFING_TIME_RE.fullmatch(line) or STATE_BRIEFING_SPEAKER_RE.match(line):
+                start_index = index
+                break
+        return clean_text("\n".join(lines[start_index:]))
 
     def _looks_like_state_metadata_line(self, line: str, doc_type: str) -> bool:
         text = clean_text(line)

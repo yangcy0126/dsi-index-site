@@ -91,9 +91,17 @@ def pending_records(
         url = str(record["url"])
         current = existing_by_url.get(url)
         if current:
+            metadata_matches = (
+                str(current.get("published_at", "")) == str(record.get("published_at", ""))
+                and str(current.get("title", "")) == str(record.get("title", ""))
+                and str(current.get("speaker", "")) == str(record.get("speaker", ""))
+                and str(current.get("source_kind", "")) == str(record.get("source_kind", ""))
+                and str(current.get("language", "")) == str(record.get("language", ""))
+            )
             if (
                 str(current.get("content_hash", "")) == str(record["content_hash"])
                 and str(current.get("pipeline_version", "")) == pipeline_version
+                and metadata_matches
             ):
                 continue
             replaced_urls.add(url)
