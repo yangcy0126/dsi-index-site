@@ -11,7 +11,7 @@ const state = {
 const summaryPath = "data/summary.json";
 const eventsPath = "data/events.json";
 const trumpPath = "data/trump_indices.json";
-const assetVersion = "20260321-trump-1";
+const assetVersion = "20260322-download-1";
 
 function versionedPath(path) {
   const separator = path.includes("?") ? "&" : "?";
