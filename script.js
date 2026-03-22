@@ -11,7 +11,7 @@ const state = {
 const summaryPath = "data/summary.json";
 const eventsPath = "data/events.json";
 const trumpPath = "data/trump_indices.json";
-const assetVersion = "20260322-data-workbook-1";
+const assetVersion = "20260322-download-label-1";
 
 function versionedPath(path) {
   const separator = path.includes("?") ? "&" : "?";
@@ -371,7 +371,7 @@ function renderLegacyDownloadList() {
         <div class="download-meta">${item.meta}</div>
       </div>
       ${item.href
-        ? `<a class="download-link" href="${item.href}" target="_blank" rel="noreferrer">Download Data</a>`
+        ? `<a class="download-link" href="${item.href}" target="_blank" rel="noreferrer">Download</a>`
         : '<span class="download-link is-disabled">Pending</span>'}
     `;
     list.appendChild(row);
@@ -407,7 +407,7 @@ function renderCsvOnlyDownloadList() {
         <div class="download-meta">${item.meta}</div>
       </div>
       ${item.href
-        ? `<a class="download-link" href="${item.href}" target="_blank" rel="noreferrer">Download Data</a>`
+        ? `<a class="download-link" href="${item.href}" target="_blank" rel="noreferrer">Download</a>`
         : '<span class="download-link is-disabled">Pending</span>'}
     `;
     list.appendChild(row);
