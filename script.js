@@ -11,18 +11,18 @@ const state = {
 const summaryPath = "data/summary.json";
 const eventsPath = "data/events.json";
 const trumpPath = "data/trump_indices.json";
-const assetVersion = "20260322-trump-events-1";
+const assetVersion = "20260322-trump-labels-1";
 const TRUMP_POLITICAL_EVENTS = [
-  { date: "2015-06-16", label: "Campaign launch" },
-  { date: "2016-11-08", label: "Wins 2016 election" },
-  { date: "2017-01-20", label: "First inauguration" },
-  { date: "2019-12-18", label: "First impeachment" },
-  { date: "2020-11-03", label: "2020 election" },
-  { date: "2021-01-06", label: "Jan 6 Capitol riot" },
-  { date: "2022-11-15", label: "2024 campaign launch" },
-  { date: "2024-07-13", label: "Butler rally shooting" },
-  { date: "2024-11-05", label: "Wins 2024 election" },
-  { date: "2025-01-20", label: "Second inauguration" },
+  { date: "2015-06-16", label: "Campaign launch", chartLabel: "Campaign launch" },
+  { date: "2016-11-08", label: "Wins 2016 election", chartLabel: "2016 win" },
+  { date: "2017-01-20", label: "First inauguration", chartLabel: "1st inauguration" },
+  { date: "2019-12-18", label: "First impeachment", chartLabel: "1st impeachment" },
+  { date: "2020-11-03", label: "2020 election", chartLabel: "2020 election" },
+  { date: "2021-01-06", label: "Jan 6 Capitol riot", chartLabel: "Jan 6" },
+  { date: "2022-11-15", label: "2024 campaign launch", chartLabel: "2024 launch" },
+  { date: "2024-07-13", label: "Butler rally shooting", chartLabel: "Butler shooting" },
+  { date: "2024-11-05", label: "Wins 2024 election", chartLabel: "2024 win" },
+  { date: "2025-01-20", label: "Second inauguration", chartLabel: "2nd inauguration" },
 ];
 
 function versionedPath(path) {
@@ -565,9 +565,15 @@ function buildTrumpChartLayout(records) {
         y: eventYPositions[index % eventYPositions.length],
         xref: "x",
         yref: "y",
-        text: event.label,
-        textangle: -90,
+        text: event.chartLabel || event.label,
         showarrow: false,
+        xanchor: "center",
+        yanchor: "bottom",
+        align: "center",
+        bgcolor: "rgba(255, 248, 242, 0.92)",
+        bordercolor: "rgba(184, 95, 53, 0.18)",
+        borderwidth: 1,
+        borderpad: 4,
         font: { size: 10, color: "#7b4b33" },
       })),
     ],
