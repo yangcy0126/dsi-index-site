@@ -11,7 +11,7 @@ const state = {
 const summaryPath = "data/summary.json";
 const eventsPath = "data/events.json";
 const trumpPath = "data/trump_indices.json";
-const assetVersion = "20260322-download-label-1";
+const assetVersion = "20260322-country-meta-1";
 
 function versionedPath(path) {
   const separator = path.includes("?") ? "&" : "?";
@@ -349,8 +349,8 @@ function renderLegacyDownloadList() {
     {
       title: `${country.label} data`,
       meta: isPlaceholderCountry(country)
-        ? `${country.code} - placeholder slot, workbook pending`
-        : `${country.code} - workbook with daily data and variable definitions`,
+        ? `${country.code} - placeholder slot, CSV pending`
+        : `${country.code} - ${country.publication_days} publication days`,
       href: isPlaceholderCountry(country) ? null : country.file_xlsx || country.file_csv,
     },
     {
@@ -393,8 +393,8 @@ function renderCsvOnlyDownloadList() {
   const countryDownloads = state.summary.countries.map((country) => ({
     title: `${country.label} data`,
     meta: isPlaceholderCountry(country)
-      ? `${country.code} - placeholder slot, workbook pending`
-      : `${country.code} - workbook with daily data and variable definitions`,
+      ? `${country.code} - placeholder slot, CSV pending`
+      : `${country.code} - ${country.publication_days} publication days`,
     href: isPlaceholderCountry(country) ? null : country.file_xlsx || country.file_csv,
   }));
 
