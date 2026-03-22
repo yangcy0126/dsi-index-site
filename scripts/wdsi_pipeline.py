@@ -999,10 +999,20 @@ class UsStateDepartmentSource:
             page_limit = min(max_pages, int(self.archived_press_page_limits.get(era_label, max_pages)))
             for page in self._iter_archived_press_pages(era_label, overlap[1], page_limit):
                 listing_url = base_url if page == 1 else f"{base_url}page/{page}/"
-                markdown = request_markdown_via_jina(listing_url)
-                if era_label in {"2017-2021", "2021-2025"}:
-                    time.sleep(0.35)
-                page_entries = self._parse_archived_press_listing(markdown)
+                page_entries: list[tuple[str, str, str, str]] = []
+                try:
+                    markdown = request_markdown_via_jina(listing_url)
+                    if era_label in {"2017-2021", "2021-2025"}:
+                        time.sleep(0.35)
+                    page_entries = self._parse_archived_press_listing(markdown)
+                except Exception:
+                    page_entries = []
+                if not page_entries:
+                    try:
+                        html_text = request_html(self.session, listing_url)
+                        page_entries = self._parse_archived_press_listing_from_html(html_text)
+                    except Exception:
+                        page_entries = []
                 if not page_entries:
                     continue
 
@@ -1401,6 +1411,29 @@ class UsStateDepartmentSource:
             entries.append((url, clean_text(title), published_at, speaker))
         return entries
 
+    def _parse_archived_press_listing_from_html(self, html_text: str) -> list[tuple[str, str, str, str]]:
+        soup = BeautifulSoup(html_text, "html.parser")
+        items = soup.select("li.collection-result")
+        entries: list[tuple[str, str, str, str]] = []
+        for item in items:
+            link_node = item.select_one("a.collection-result__link[href]")
+            if link_node is None:
+                continue
+            link = clean_text(str(link_node.get("href", "")))
+            if not self._looks_like_press_listing_article(link):
+                continue
+            published_at = self._extract_collection_date(item)
+            if not published_at:
+                continue
+            speaker = ""
+            author_node = item.select_one(".collection-result-meta .collection-result-meta__item")
+            if author_node is not None:
+                author_text = clean_text(author_node.get_text(" ", strip=True))
+                if author_text and not re.fullmatch(r"[A-Za-z]+ \d{1,2}, \d{4}", author_text):
+                    speaker = author_text
+            entries.append((link, clean_text(link_node.get_text(" ", strip=True)), published_at, speaker))
+        return entries
+
     def _looks_like_press_listing_article(self, url: str) -> bool:
         normalized = clean_text(url)
         if "/press-releases/page/" in normalized or normalized.rstrip("/") in {
@@ -1468,14 +1501,42 @@ class UsStateDepartmentSource:
     def _iter_archived_press_pages(self, era_label: str, overlap_end: str, page_limit: int) -> range:
         end_date = iso_to_date(overlap_end)
         if era_label == "2021-2025":
-            if end_date >= date(2024, 4, 1):
-                start_page = 220
+            if end_date >= date(2025, 1, 1):
+                start_page = 1
+            elif end_date >= date(2024, 12, 1):
+                start_page = 20
+            elif end_date >= date(2024, 11, 1):
+                start_page = 40
+            elif end_date >= date(2024, 10, 1):
+                start_page = 60
+            elif end_date >= date(2024, 9, 1):
+                start_page = 80
+            elif end_date >= date(2024, 8, 1):
+                start_page = 120
+            elif end_date >= date(2024, 7, 1):
+                start_page = 140
+            elif end_date >= date(2024, 6, 1):
+                start_page = 160
+            elif end_date >= date(2024, 5, 1):
+                start_page = 180
+            elif end_date >= date(2024, 4, 1):
+                start_page = 200
+            elif end_date >= date(2024, 3, 1):
+                start_page = 240
             elif end_date >= date(2024, 2, 1):
                 start_page = 260
             elif end_date >= date(2024, 1, 1):
                 start_page = 280
+            elif end_date >= date(2023, 12, 1):
+                start_page = 300
+            elif end_date >= date(2023, 11, 1):
+                start_page = 320
+            elif end_date >= date(2023, 10, 1):
+                start_page = 360
             elif end_date >= date(2023, 9, 1):
                 start_page = 380
+            elif end_date >= date(2023, 8, 1):
+                start_page = 400
             elif end_date >= date(2023, 7, 1):
                 start_page = 420
             elif end_date >= date(2022, 8, 1):
@@ -1488,7 +1549,9 @@ class UsStateDepartmentSource:
                 start_page = 1020
             else:
                 start_page = 1040
-            return range(min(start_page, page_limit), page_limit + 1, 20)
+            band_start = min(start_page, page_limit)
+            band_end = min(page_limit, band_start + 60)
+            return range(band_start, band_end + 1)
 
         if era_label != "2017-2021":
             return range(1, page_limit + 1)
