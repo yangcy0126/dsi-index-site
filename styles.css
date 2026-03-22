@@ -641,6 +641,7 @@ h3 {
 
 .download-list {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -649,6 +650,11 @@ h3 {
   align-items: center;
   justify-content: space-between;
   gap: 18px;
+  min-height: 100%;
+}
+
+.download-item-wide {
+  grid-column: 1 / -1;
 }
 
 .download-item strong {
@@ -796,6 +802,10 @@ h3 {
   .download-item {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .download-list {
+    grid-template-columns: 1fr;
   }
 
   .site-credit {

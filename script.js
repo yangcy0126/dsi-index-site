@@ -364,7 +364,7 @@ function renderLegacyDownloadList() {
 
   [...masterDownloads, ...countryDownloads].forEach((item) => {
     const row = document.createElement("div");
-    row.className = "download-item";
+    row.className = `download-item ${item.href === "data/wdsi_all_countries.csv" ? "download-item-wide" : ""}`.trim();
     row.innerHTML = `
       <div>
         <strong>${item.title}</strong>
@@ -400,7 +400,7 @@ function renderCsvOnlyDownloadList() {
 
   [...masterDownloads, ...countryDownloads].forEach((item) => {
     const row = document.createElement("div");
-    row.className = "download-item";
+    row.className = `download-item ${item.href === "data/wdsi_all_countries.csv" ? "download-item-wide" : ""}`.trim();
     row.innerHTML = `
       <div>
         <strong>${item.title}</strong>
