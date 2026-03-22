@@ -11,7 +11,7 @@ const state = {
 const summaryPath = "data/summary.json";
 const eventsPath = "data/events.json";
 const trumpPath = "data/trump_indices.json";
-const assetVersion = "20260322-download-1";
+const assetVersion = "20260322-data-workbook-1";
 
 function versionedPath(path) {
   const separator = path.includes("?") ? "&" : "?";
@@ -329,9 +329,9 @@ function renderLegacyDownloadList() {
 
   const masterDownloads = [
     {
-      title: "Full daily dataset (CSV)",
-      meta: "Calendar-day series for all countries, including raw publication-day scores plus 7-day and 30-day smoothed values",
-      href: "data/wdsi_all_countries.csv",
+      title: "Full daily dataset",
+      meta: "Excel workbook with the full calendar-day panel and a variable-definitions sheet",
+      href: "data/wdsi_all_countries.xlsx",
     },
     {
       title: "Site summary (JSON)",
@@ -347,11 +347,11 @@ function renderLegacyDownloadList() {
 
   const countryDownloads = state.summary.countries.flatMap((country) => [
     {
-      title: `${country.label} data (CSV)`,
+      title: `${country.label} data`,
       meta: isPlaceholderCountry(country)
-        ? `${country.code} - placeholder slot, CSV pending`
-        : `${country.code} - ${country.publication_days} publication days`,
-      href: isPlaceholderCountry(country) ? null : country.file_csv,
+        ? `${country.code} - placeholder slot, workbook pending`
+        : `${country.code} - workbook with daily data and variable definitions`,
+      href: isPlaceholderCountry(country) ? null : country.file_xlsx || country.file_csv,
     },
     {
       title: `${country.label} data (JSON)`,
@@ -364,14 +364,14 @@ function renderLegacyDownloadList() {
 
   [...masterDownloads, ...countryDownloads].forEach((item) => {
     const row = document.createElement("div");
-    row.className = `download-item ${item.href === "data/wdsi_all_countries.csv" ? "download-item-wide" : ""}`.trim();
+    row.className = `download-item ${item.href === "data/wdsi_all_countries.xlsx" ? "download-item-wide" : ""}`.trim();
     row.innerHTML = `
       <div>
         <strong>${item.title}</strong>
         <div class="download-meta">${item.meta}</div>
       </div>
       ${item.href
-        ? `<a class="download-link" href="${item.href}" target="_blank" rel="noreferrer">Open file</a>`
+        ? `<a class="download-link" href="${item.href}" target="_blank" rel="noreferrer">Download Data</a>`
         : '<span class="download-link is-disabled">Pending</span>'}
     `;
     list.appendChild(row);
@@ -384,30 +384,30 @@ function renderCsvOnlyDownloadList() {
 
   const masterDownloads = [
     {
-      title: "Full daily dataset (CSV)",
-      meta: "Calendar-day series for all countries, including raw publication-day scores plus 7-day and 30-day smoothed values",
-      href: "data/wdsi_all_countries.csv",
+      title: "Full daily dataset",
+      meta: "Excel workbook with the full calendar-day panel and a variable-definitions sheet",
+      href: "data/wdsi_all_countries.xlsx",
     },
   ];
 
   const countryDownloads = state.summary.countries.map((country) => ({
-    title: `${country.label} data (CSV)`,
+    title: `${country.label} data`,
     meta: isPlaceholderCountry(country)
-      ? `${country.code} - placeholder slot, CSV pending`
-      : `${country.code} - ${country.publication_days} publication days`,
-    href: isPlaceholderCountry(country) ? null : country.file_csv,
+      ? `${country.code} - placeholder slot, workbook pending`
+      : `${country.code} - workbook with daily data and variable definitions`,
+    href: isPlaceholderCountry(country) ? null : country.file_xlsx || country.file_csv,
   }));
 
   [...masterDownloads, ...countryDownloads].forEach((item) => {
     const row = document.createElement("div");
-    row.className = `download-item ${item.href === "data/wdsi_all_countries.csv" ? "download-item-wide" : ""}`.trim();
+    row.className = `download-item ${item.href === "data/wdsi_all_countries.xlsx" ? "download-item-wide" : ""}`.trim();
     row.innerHTML = `
       <div>
         <strong>${item.title}</strong>
         <div class="download-meta">${item.meta}</div>
       </div>
       ${item.href
-        ? `<a class="download-link" href="${item.href}" target="_blank" rel="noreferrer">Open CSV</a>`
+        ? `<a class="download-link" href="${item.href}" target="_blank" rel="noreferrer">Download Data</a>`
         : '<span class="download-link is-disabled">Pending</span>'}
     `;
     list.appendChild(row);

@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
+from openpyxl.styles import Font
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,6 +18,54 @@ AUTHORITATIVE_METHOD_NOTE = (
     "publication-day raw score = same-day minimum, then forward-fill missing days, "
     "then compute rolling means on the filled daily path."
 )
+COUNTRY_WORKBOOK_COLUMNS = ["date", "raw", "rolling7", "rolling30", "publication"]
+MASTER_WORKBOOK_COLUMNS = ["code", "country", "date", "raw", "rolling7", "rolling30", "publication"]
+COUNTRY_VARIABLE_DEFINITIONS = [
+    {
+        "variable": "date",
+        "description": "Calendar date of the WDSI daily observation.",
+        "units_or_scale": "YYYY-MM-DD",
+        "notes": "Daily calendarized series after forward-filling missing days.",
+    },
+    {
+        "variable": "raw",
+        "description": "Publication-day raw WDSI score using the same-day minimum when multiple texts are released.",
+        "units_or_scale": "integer from -3 to 3",
+        "notes": "Blank on non-publication days.",
+    },
+    {
+        "variable": "rolling7",
+        "description": "7-day rolling mean computed on the forward-filled daily path.",
+        "units_or_scale": "continuous index",
+        "notes": "Primary short-horizon WDSI view shown on the site.",
+    },
+    {
+        "variable": "rolling30",
+        "description": "30-day rolling mean computed on the forward-filled daily path.",
+        "units_or_scale": "continuous index",
+        "notes": "Smoother medium-horizon WDSI trend.",
+    },
+    {
+        "variable": "publication",
+        "description": "Indicator for whether an official source publication was observed on that date.",
+        "units_or_scale": "True / False",
+        "notes": "False means the series value is carried forward from the most recent publication day.",
+    },
+]
+MASTER_EXTRA_VARIABLE_DEFINITIONS = [
+    {
+        "variable": "code",
+        "description": "Two-letter country or region code used by the WDSI site.",
+        "units_or_scale": "categorical text",
+        "notes": "Matches the tab and download naming convention on the site.",
+    },
+    {
+        "variable": "country",
+        "description": "English country or region label.",
+        "units_or_scale": "categorical text",
+        "notes": "Human-readable display label.",
+    },
+]
 
 COUNTRIES = [
     {
@@ -170,6 +219,42 @@ def int_or_none(value: float | int | None) -> int | None:
     return int(round(float(value)))
 
 
+def autosize_sheet(worksheet) -> None:
+    for column_cells in worksheet.columns:
+        letter = column_cells[0].column_letter
+        max_length = max(len(str(cell.value or "")) for cell in column_cells)
+        worksheet.column_dimensions[letter].width = min(max(max_length + 2, 12), 52)
+
+
+def write_workbook(
+    frame: pd.DataFrame,
+    output_path: Path,
+    *,
+    title: str,
+    subtitle: str,
+    variable_definitions: list[dict[str, str]],
+) -> None:
+    definitions = pd.DataFrame(variable_definitions)
+    with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+        frame.to_excel(writer, sheet_name="daily_data", index=False)
+        definitions.to_excel(writer, sheet_name="variable_definitions", index=False)
+
+        data_sheet = writer.sheets["daily_data"]
+        defs_sheet = writer.sheets["variable_definitions"]
+        data_sheet.freeze_panes = "A2"
+        defs_sheet.freeze_panes = "A2"
+        defs_sheet.insert_rows(1, amount=4)
+        defs_sheet["A1"] = title
+        defs_sheet["A2"] = subtitle
+        defs_sheet["A3"] = AUTHORITATIVE_METHOD_NOTE
+        defs_sheet["A1"].font = Font(bold=True, size=14)
+        defs_sheet["A2"].font = Font(italic=True)
+        defs_sheet["A3"].font = Font(italic=True)
+
+        autosize_sheet(data_sheet)
+        autosize_sheet(defs_sheet)
+
+
 def collapse_to_daily_minimum(frame: pd.DataFrame) -> pd.DataFrame:
     """Apply the original DSI-ICF daily aggregation rule: one day, one minimum raw score."""
     return (
@@ -298,6 +383,7 @@ def read_country(meta: dict[str, str]) -> tuple[dict[str, object], pd.DataFrame]
         "data_source": data_source,
         "file_json": f"data/{meta['code']}.json",
         "file_csv": f"data/{meta['code']}.csv",
+        "file_xlsx": f"data/{meta['code']}.xlsx",
         "is_placeholder": False,
         "placeholder_note": "",
     }
@@ -333,6 +419,7 @@ def build_placeholder_summary(meta: dict[str, str]) -> dict[str, object]:
         "data_source": "placeholder",
         "file_json": f"data/{meta['code']}.json",
         "file_csv": f"data/{meta['code']}.csv",
+        "file_xlsx": f"data/{meta['code']}.xlsx",
         "is_placeholder": True,
         "placeholder_note": PLACEHOLDER_NOTE,
     }
@@ -385,6 +472,17 @@ def main() -> None:
             encoding="utf-8",
         )
         frame.to_csv(OUTPUT_DIR / f"{meta['code']}.csv", index=False, encoding="utf-8-sig")
+        if not summary["is_placeholder"]:
+            write_workbook(
+                frame[COUNTRY_WORKBOOK_COLUMNS].copy(),
+                OUTPUT_DIR / f"{meta['code']}.xlsx",
+                title=f"{meta['label']} WDSI Data Workbook",
+                subtitle=(
+                    f"Coverage: {summary['start_date']} to {summary['latest_date']} | "
+                    f"Publication days: {summary['publication_days']}"
+                ),
+                variable_definitions=COUNTRY_VARIABLE_DEFINITIONS,
+            )
 
         if not summary["is_placeholder"]:
             country_frame = frame.copy()
@@ -396,10 +494,18 @@ def main() -> None:
     if not countries or not all_rows or not live_countries:
         raise RuntimeError("No country data available to build site assets.")
 
-    pd.concat(all_rows, ignore_index=True).to_csv(
-        OUTPUT_DIR / "wdsi_all_countries.csv",
-        index=False,
-        encoding="utf-8-sig",
+    full_daily = pd.concat(all_rows, ignore_index=True)
+    full_daily.to_csv(OUTPUT_DIR / "wdsi_all_countries.csv", index=False, encoding="utf-8-sig")
+    write_workbook(
+        full_daily[MASTER_WORKBOOK_COLUMNS].copy(),
+        OUTPUT_DIR / "wdsi_all_countries.xlsx",
+        title="WDSI Full Daily Dataset Workbook",
+        subtitle=(
+            f"Coverage: {min(country['start_date'] for country in live_countries)} to "
+            f"{max(country['latest_date'] for country in live_countries)} | "
+            f"Countries / regions: {len(live_countries)}"
+        ),
+        variable_definitions=MASTER_EXTRA_VARIABLE_DEFINITIONS + COUNTRY_VARIABLE_DEFINITIONS,
     )
 
     summary_payload = {

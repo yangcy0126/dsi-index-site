@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-22T01:39:54.271126+00:00",
+  "generated_at": "2026-03-22T01:49:49.878381+00:00",
   "method_note": "Locked to DSI-ICF/code/data_integration.executed.ipynb: publication-day raw score = same-day minimum, then forward-fill missing days, then compute rolling means on the filled daily path.",
   "overall": {
     "country_count": 15,
@@ -32,6 +32,7 @@
       "data_source": "records",
       "file_json": "data/US.json",
       "file_csv": "data/US.csv",
+      "file_xlsx": "data/US.xlsx",
       "is_placeholder": false,
       "placeholder_note": ""
     },
@@ -58,6 +59,7 @@
       "data_source": "records",
       "file_json": "data/CN.json",
       "file_csv": "data/CN.csv",
+      "file_xlsx": "data/CN.xlsx",
       "is_placeholder": false,
       "placeholder_note": ""
     },
@@ -84,6 +86,7 @@
       "data_source": "records",
       "file_json": "data/DE.json",
       "file_csv": "data/DE.csv",
+      "file_xlsx": "data/DE.xlsx",
       "is_placeholder": false,
       "placeholder_note": ""
     },
@@ -110,6 +113,7 @@
       "data_source": "records",
       "file_json": "data/JP.json",
       "file_csv": "data/JP.csv",
+      "file_xlsx": "data/JP.xlsx",
       "is_placeholder": false,
       "placeholder_note": ""
     },
@@ -136,6 +140,7 @@
       "data_source": "records",
       "file_json": "data/IN.json",
       "file_csv": "data/IN.csv",
+      "file_xlsx": "data/IN.xlsx",
       "is_placeholder": false,
       "placeholder_note": ""
     },
@@ -162,6 +167,7 @@
       "data_source": "records",
       "file_json": "data/UK.json",
       "file_csv": "data/UK.csv",
+      "file_xlsx": "data/UK.xlsx",
       "is_placeholder": false,
       "placeholder_note": ""
     },
@@ -188,6 +194,7 @@
       "data_source": "records",
       "file_json": "data/FR.json",
       "file_csv": "data/FR.csv",
+      "file_xlsx": "data/FR.xlsx",
       "is_placeholder": false,
       "placeholder_note": ""
     },
@@ -214,6 +221,7 @@
       "data_source": "records",
       "file_json": "data/IT.json",
       "file_csv": "data/IT.csv",
+      "file_xlsx": "data/IT.xlsx",
       "is_placeholder": false,
       "placeholder_note": ""
     },
@@ -240,6 +248,7 @@
       "data_source": "records",
       "file_json": "data/CA.json",
       "file_csv": "data/CA.csv",
+      "file_xlsx": "data/CA.xlsx",
       "is_placeholder": false,
       "placeholder_note": ""
     },
@@ -266,6 +275,7 @@
       "data_source": "records",
       "file_json": "data/BR.json",
       "file_csv": "data/BR.csv",
+      "file_xlsx": "data/BR.xlsx",
       "is_placeholder": false,
       "placeholder_note": ""
     },
@@ -292,6 +302,7 @@
       "data_source": "records",
       "file_json": "data/RU.json",
       "file_csv": "data/RU.csv",
+      "file_xlsx": "data/RU.xlsx",
       "is_placeholder": false,
       "placeholder_note": ""
     },
@@ -318,6 +329,7 @@
       "data_source": "records",
       "file_json": "data/KR.json",
       "file_csv": "data/KR.csv",
+      "file_xlsx": "data/KR.xlsx",
       "is_placeholder": false,
       "placeholder_note": ""
     },
@@ -344,6 +356,7 @@
       "data_source": "records",
       "file_json": "data/MX.json",
       "file_csv": "data/MX.csv",
+      "file_xlsx": "data/MX.xlsx",
       "is_placeholder": false,
       "placeholder_note": ""
     },
@@ -370,6 +383,7 @@
       "data_source": "records",
       "file_json": "data/AU.json",
       "file_csv": "data/AU.csv",
+      "file_xlsx": "data/AU.xlsx",
       "is_placeholder": false,
       "placeholder_note": ""
     },
@@ -396,6 +410,7 @@
       "data_source": "records",
       "file_json": "data/ES.json",
       "file_csv": "data/ES.csv",
+      "file_xlsx": "data/ES.xlsx",
       "is_placeholder": false,
       "placeholder_note": ""
     }
