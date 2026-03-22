@@ -393,18 +393,26 @@ def request_html(session: requests.Session, url: str) -> str:
             response.raise_for_status()
             if response.encoding == "ISO-8859-1" and response.apparent_encoding:
                 response.encoding = response.apparent_encoding
+            if html_looks_like_block_page(response.text):
+                raise RuntimeError(f"Blocked HTML response for {url}")
             return response.text
-        except requests.RequestException as exc:
+        except (requests.RequestException, RuntimeError) as exc:
             last_error = exc
             time.sleep(1.5)
     if _supports_curl_fallback(url):
         try:
-            return request_html_with_curl(url)
+            html_text = request_html_with_curl(url)
+            if html_looks_like_block_page(html_text):
+                raise RuntimeError(f"Blocked curl HTML response for {url}")
+            return html_text
         except Exception as curl_exc:  # pragma: no cover - external fallback
             last_error = curl_exc
     if _supports_browser_fallback(url):
         try:
-            return request_html_with_playwright(url)
+            html_text = request_html_with_playwright(url)
+            if html_looks_like_block_page(html_text):
+                raise RuntimeError(f"Blocked browser HTML response for {url}")
+            return html_text
         except Exception as browser_exc:  # pragma: no cover - external fallback
             last_error = browser_exc
     assert last_error is not None
@@ -576,6 +584,15 @@ def extract_jina_markdown_body(markdown: str) -> str:
     return markdown.strip()
 
 
+def html_looks_like_block_page(html_text: str) -> bool:
+    lowered = (html_text or "").casefold()
+    return (
+        "technical difficulties" in lowered
+        or "http error 407" in lowered
+        or "exception: forbidden" in lowered
+    )
+
+
 def markdown_links(line: str) -> list[tuple[str, str]]:
     return [(clean_text(match.group("label")), clean_text(match.group("url"))) for match in MARKDOWN_LINK_RE.finditer(line)]
 
@@ -733,6 +750,7 @@ class UsStateDepartmentSource:
     scope_history_start_date = "2017-01-20"
     scope_history_source_kinds = (
         "state_announcement",
+        "state_department_press_briefing",
         "state_joint_statement",
         "state_notice_to_the_press",
         "state_press_conference",
@@ -753,12 +771,12 @@ class UsStateDepartmentSource:
 
     press_archive_url = "https://www.state.gov/press-releases/"
     archived_press_archive_urls = (
-        ("2017-2021", "http://2017-2021.state.gov/press-releases/", "2017-01-20", "2021-01-19"),
-        ("2021-2025", "http://2021-2025.state.gov/press-releases/", "2021-01-20", "2025-01-19"),
+        ("2017-2021", "https://2017-2021.state.gov/press-releases/", "2017-01-20", "2021-01-19"),
+        ("2021-2025", "https://2021-2025.state.gov/press-releases/", "2021-01-20", "2025-01-19"),
     )
     archived_press_page_limits = {
         "2017-2021": 760,
-        "2021-2025": 180,
+        "2021-2025": 1200,
     }
     briefing_sitemaps = (
         ("2017-2021", "https://2017-2021.state.gov/state_briefing-sitemap.xml", "2017-01-20", "2021-01-19"),
@@ -951,7 +969,7 @@ class UsStateDepartmentSource:
             for page in self._iter_archived_press_pages(era_label, overlap[1], page_limit):
                 listing_url = base_url if page == 1 else f"{base_url}page/{page}/"
                 markdown = request_markdown_via_jina(listing_url)
-                if era_label == "2017-2021":
+                if era_label in {"2017-2021", "2021-2025"}:
                     time.sleep(0.35)
                 page_entries = self._parse_archived_press_listing(markdown)
                 if not page_entries:
@@ -1060,12 +1078,22 @@ class UsStateDepartmentSource:
         except Exception:
             pass
 
-        if "www.state.gov" not in url:
+        if not any(
+            host in url
+            for host in (
+                "www.state.gov",
+                "2017-2021.state.gov",
+                "2021-2025.state.gov",
+            )
+        ):
             return None
 
-        with requests.Session() as session:
-            html_text = request_html(session, url)
-        return self._make_press_release_record_from_html(html_text, url, title, published_at, speaker_hint, source_hint)
+        try:
+            with requests.Session() as session:
+                html_text = request_html(session, url)
+            return self._make_press_release_record_from_html(html_text, url, title, published_at, speaker_hint, source_hint)
+        except Exception:
+            return None
 
     def _make_press_release_record_from_html(
         self,
@@ -1382,10 +1410,33 @@ class UsStateDepartmentSource:
         return f"Department Press Briefing {month_name} {int(match.group('day'))}, {match.group('year')}"
 
     def _iter_archived_press_pages(self, era_label: str, overlap_end: str, page_limit: int) -> range:
+        end_date = iso_to_date(overlap_end)
+        if era_label == "2021-2025":
+            if end_date >= date(2024, 4, 1):
+                start_page = 220
+            elif end_date >= date(2024, 2, 1):
+                start_page = 260
+            elif end_date >= date(2024, 1, 1):
+                start_page = 280
+            elif end_date >= date(2023, 9, 1):
+                start_page = 380
+            elif end_date >= date(2023, 7, 1):
+                start_page = 420
+            elif end_date >= date(2022, 8, 1):
+                start_page = 700
+            elif end_date >= date(2021, 8, 1):
+                start_page = 980
+            elif end_date >= date(2021, 7, 1):
+                start_page = 1000
+            elif end_date >= date(2021, 6, 1):
+                start_page = 1020
+            else:
+                start_page = 1040
+            return range(min(start_page, page_limit), page_limit + 1, 20)
+
         if era_label != "2017-2021":
             return range(1, page_limit + 1)
 
-        end_date = iso_to_date(overlap_end)
         if end_date >= date(2020, 7, 1):
             start_page = 80
         elif end_date >= date(2020, 1, 1):

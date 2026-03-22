@@ -44,7 +44,7 @@ jobs:
         run: python -m pip install -r requirements.txt
 
       - name: Install browser fallback
-        if: matrix.country == 'JP' || matrix.country == 'UK' || matrix.country == 'RU' || matrix.country == 'IT'
+        if: matrix.country == 'JP' || matrix.country == 'UK' || matrix.country == 'RU' || matrix.country == 'IT' || matrix.country == 'US'
         run: |
           python -m pip install playwright
           python -m playwright install chromium
