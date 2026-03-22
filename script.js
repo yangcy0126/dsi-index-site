@@ -11,7 +11,19 @@ const state = {
 const summaryPath = "data/summary.json";
 const eventsPath = "data/events.json";
 const trumpPath = "data/trump_indices.json";
-const assetVersion = "20260322-country-meta-1";
+const assetVersion = "20260322-trump-events-1";
+const TRUMP_POLITICAL_EVENTS = [
+  { date: "2015-06-16", label: "Campaign launch" },
+  { date: "2016-11-08", label: "Wins 2016 election" },
+  { date: "2017-01-20", label: "First inauguration" },
+  { date: "2019-12-18", label: "First impeachment" },
+  { date: "2020-11-03", label: "2020 election" },
+  { date: "2021-01-06", label: "Jan 6 Capitol riot" },
+  { date: "2022-11-15", label: "2024 campaign launch" },
+  { date: "2024-07-13", label: "Butler rally shooting" },
+  { date: "2024-11-05", label: "Wins 2024 election" },
+  { date: "2025-01-20", label: "Second inauguration" },
+];
 
 function versionedPath(path) {
   const separator = path.includes("?") ? "&" : "?";
@@ -87,6 +99,15 @@ function getTrumpSeriesKey(baseKey) {
 function getLatestTrumpRecord() {
   const records = state.trump?.records || [];
   return records.length ? records[records.length - 1] : null;
+}
+
+function getVisibleTrumpPoliticalEvents(records) {
+  if (!records.length) {
+    return [];
+  }
+  const start = records[0].date;
+  const end = records[records.length - 1].date;
+  return TRUMP_POLITICAL_EVENTS.filter((event) => event.date >= start && event.date <= end);
 }
 
 function trumpToneMeta(score) {
@@ -471,7 +492,10 @@ function renderTrumpMetricCards() {
     `${modeLabel} composite of post volume, intensity, all-caps, exclamation marks, and reblog density. Latest reading is ${shock.label}.`;
 }
 
-function buildTrumpChartLayout() {
+function buildTrumpChartLayout(records) {
+  const politicalEvents = getVisibleTrumpPoliticalEvents(records);
+  const eventYPositions = [2.95, 2.55, 2.15];
+
   return {
     margin: { l: 46, r: 24, t: 36, b: 44 },
     paper_bgcolor: "rgba(0,0,0,0)",
@@ -513,6 +537,18 @@ function buildTrumpChartLayout() {
         line: { width: 0 },
         fillcolor: "rgba(20, 38, 40, 0.06)",
       },
+      ...politicalEvents.map((event) => ({
+        type: "line",
+        x0: event.date,
+        x1: event.date,
+        y0: -3.2,
+        y1: 3.2,
+        line: {
+          color: "rgba(184, 95, 53, 0.22)",
+          width: 1.2,
+          dash: "dot",
+        },
+      })),
     ],
     annotations: [
       {
@@ -524,8 +560,36 @@ function buildTrumpChartLayout() {
         showarrow: false,
         font: { size: 11, color: "#5b6968" },
       },
+      ...politicalEvents.map((event, index) => ({
+        x: event.date,
+        y: eventYPositions[index % eventYPositions.length],
+        xref: "x",
+        yref: "y",
+        text: event.label,
+        textangle: -90,
+        showarrow: false,
+        font: { size: 10, color: "#7b4b33" },
+      })),
     ],
   };
+}
+
+function renderTrumpEventChips(records) {
+  const chips = document.getElementById("trump-event-chips");
+  if (!chips) {
+    return;
+  }
+
+  const visibleEvents = getVisibleTrumpPoliticalEvents(records);
+  chips.innerHTML = "";
+  chips.hidden = !visibleEvents.length;
+
+  visibleEvents.forEach((event) => {
+    const chip = document.createElement("span");
+    chip.className = "event-chip";
+    chip.textContent = `${formatDate(event.date)} - ${event.label}`;
+    chips.appendChild(chip);
+  });
 }
 
 function renderTrumpChart() {
@@ -578,15 +642,17 @@ function renderTrumpChart() {
     },
   ];
 
-  Plotly.react("trump-chart", traces, buildTrumpChartLayout(), {
+  Plotly.react("trump-chart", traces, buildTrumpChartLayout(records), {
     displayModeBar: true,
     responsive: true,
     displaylogo: false,
     modeBarButtonsToRemove: ["select2d", "lasso2d", "autoScale2d"],
   });
 
+  renderTrumpEventChips(records);
+
   document.getElementById("trump-chart-caption").textContent =
-    `This panel overlays the ${trumpSeriesLabel(state.trumpSeriesMode)} Trump Tone Index, Trump Geopolitical Index, and Trump Shock Index across Twitter and Truth Social. Levels are complementary to WDSI rather than directly comparable to ministry-based WDSI values.`;
+    `This panel overlays the ${trumpSeriesLabel(state.trumpSeriesMode)} Trump Tone Index, Trump Geopolitical Index, and Trump Shock Index across Twitter and Truth Social. Dotted markers flag major Trump political milestones, while the shaded band marks the platform transition gap. Levels are complementary to WDSI rather than directly comparable to ministry-based WDSI values.`;
 }
 
 function renderTrumpSupplement() {
