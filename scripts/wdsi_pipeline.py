@@ -3603,10 +3603,10 @@ class IndiaMeaOfficialSource:
     history_backfill_chunk_days = 90
     history_probe_step = 100
     history_probe_buffer = 40
-    history_fetch_workers = 3
-    history_batch_size = 6
-    history_retry_delay_seconds = 1.0
-    recent_fetch_workers = 3
+    history_fetch_workers = 4
+    history_batch_size = 8
+    history_retry_delay_seconds = 0.5
+    recent_fetch_workers = 4
     resume_missing_history = True
     recent_listing_start_date = "2026-02-18"
     recent_listing_url = "https://www.mea.gov.in/whats-new.htm"
