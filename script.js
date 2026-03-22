@@ -18,7 +18,7 @@ const TRUMP_POLITICAL_EVENTS = [
   { date: "2017-01-20", label: "First inauguration", chartLabel: "1st inauguration" },
   { date: "2019-12-18", label: "First impeachment", chartLabel: "1st impeachment" },
   { date: "2020-11-03", label: "2020 election", chartLabel: "2020 election" },
-  { date: "2021-01-06", label: "Jan 6 Capitol riot", chartLabel: "Jan 6" },
+  { date: "2021-01-06", label: "Jan 6 Capitol riot", chartLabel: "Capitol riot" },
   { date: "2022-11-15", label: "2024 campaign launch", chartLabel: "2024 launch" },
   { date: "2024-07-13", label: "Butler rally shooting", chartLabel: "Butler shooting" },
   { date: "2024-11-05", label: "Wins 2024 election", chartLabel: "2024 win" },
