@@ -2,211 +2,1919 @@
   "code": "CA",
   "label": "Canada",
   "label_zh": "Canada",
-  "generated_at": "2026-03-22T01:49:46.675066+00:00",
+  "generated_at": "2026-03-22T07:00:01.671994+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
     {
-      "date": "2019-08-19",
+      "date": "2018-12-18",
       "raw": 0,
       "rolling7": null,
       "rolling30": null,
       "publication": true
     },
     {
-      "date": "2019-08-20",
-      "raw": 0,
+      "date": "2018-12-19",
+      "raw": null,
       "rolling7": null,
+      "rolling30": null,
+      "publication": false
+    },
+    {
+      "date": "2018-12-20",
+      "raw": null,
+      "rolling7": null,
+      "rolling30": null,
+      "publication": false
+    },
+    {
+      "date": "2018-12-21",
+      "raw": null,
+      "rolling7": null,
+      "rolling30": null,
+      "publication": false
+    },
+    {
+      "date": "2018-12-22",
+      "raw": null,
+      "rolling7": null,
+      "rolling30": null,
+      "publication": false
+    },
+    {
+      "date": "2018-12-23",
+      "raw": null,
+      "rolling7": null,
+      "rolling30": null,
+      "publication": false
+    },
+    {
+      "date": "2018-12-24",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": null,
+      "publication": false
+    },
+    {
+      "date": "2018-12-25",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": null,
+      "publication": false
+    },
+    {
+      "date": "2018-12-26",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": null,
+      "publication": false
+    },
+    {
+      "date": "2018-12-27",
+      "raw": 0,
+      "rolling7": 0.0,
       "rolling30": null,
       "publication": true
     },
     {
-      "date": "2019-08-21",
+      "date": "2018-12-28",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": null,
+      "publication": false
+    },
+    {
+      "date": "2018-12-29",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": null,
+      "publication": false
+    },
+    {
+      "date": "2018-12-30",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": null,
+      "publication": false
+    },
+    {
+      "date": "2018-12-31",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": null,
+      "publication": false
+    },
+    {
+      "date": "2019-01-01",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": null,
+      "publication": false
+    },
+    {
+      "date": "2019-01-02",
       "raw": 0,
-      "rolling7": null,
+      "rolling7": 0.0,
       "rolling30": null,
       "publication": true
     },
     {
-      "date": "2019-08-22",
-      "raw": 0,
-      "rolling7": null,
-      "rolling30": null,
-      "publication": true
-    },
-    {
-      "date": "2019-08-23",
-      "raw": 0,
-      "rolling7": null,
-      "rolling30": null,
-      "publication": true
-    },
-    {
-      "date": "2019-08-24",
+      "date": "2019-01-03",
       "raw": 2,
-      "rolling7": null,
+      "rolling7": 0.286,
       "rolling30": null,
       "publication": true
     },
     {
-      "date": "2019-08-25",
+      "date": "2019-01-04",
       "raw": null,
       "rolling7": 0.571,
       "rolling30": null,
       "publication": false
     },
     {
+      "date": "2019-01-05",
+      "raw": null,
+      "rolling7": 0.857,
+      "rolling30": null,
+      "publication": false
+    },
+    {
+      "date": "2019-01-06",
+      "raw": null,
+      "rolling7": 1.143,
+      "rolling30": null,
+      "publication": false
+    },
+    {
+      "date": "2019-01-07",
+      "raw": null,
+      "rolling7": 1.429,
+      "rolling30": null,
+      "publication": false
+    },
+    {
+      "date": "2019-01-08",
+      "raw": null,
+      "rolling7": 1.714,
+      "rolling30": null,
+      "publication": false
+    },
+    {
+      "date": "2019-01-09",
+      "raw": 0,
+      "rolling7": 1.714,
+      "rolling30": null,
+      "publication": true
+    },
+    {
+      "date": "2019-01-10",
+      "raw": -3,
+      "rolling7": 1.0,
+      "rolling30": null,
+      "publication": true
+    },
+    {
+      "date": "2019-01-11",
+      "raw": -3,
+      "rolling7": 0.286,
+      "rolling30": null,
+      "publication": true
+    },
+    {
+      "date": "2019-01-12",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": null,
+      "publication": true
+    },
+    {
+      "date": "2019-01-13",
+      "raw": null,
+      "rolling7": -0.286,
+      "rolling30": null,
+      "publication": false
+    },
+    {
+      "date": "2019-01-14",
+      "raw": 0,
+      "rolling7": -0.571,
+      "rolling30": null,
+      "publication": true
+    },
+    {
+      "date": "2019-01-15",
+      "raw": 0,
+      "rolling7": -0.857,
+      "rolling30": null,
+      "publication": true
+    },
+    {
+      "date": "2019-01-16",
+      "raw": 0,
+      "rolling7": -0.857,
+      "rolling30": 0.2,
+      "publication": true
+    },
+    {
+      "date": "2019-01-17",
+      "raw": -3,
+      "rolling7": -0.857,
+      "rolling30": 0.1,
+      "publication": true
+    },
+    {
+      "date": "2019-01-18",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": 0.1,
+      "publication": true
+    },
+    {
+      "date": "2019-01-19",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": 0.1,
+      "publication": true
+    },
+    {
+      "date": "2019-01-20",
+      "raw": null,
+      "rolling7": -0.429,
+      "rolling30": 0.1,
+      "publication": false
+    },
+    {
+      "date": "2019-01-21",
+      "raw": null,
+      "rolling7": -0.429,
+      "rolling30": 0.1,
+      "publication": false
+    },
+    {
+      "date": "2019-01-22",
+      "raw": null,
+      "rolling7": -0.429,
+      "rolling30": 0.1,
+      "publication": false
+    },
+    {
+      "date": "2019-01-23",
+      "raw": 2,
+      "rolling7": -0.143,
+      "rolling30": 0.167,
+      "publication": true
+    },
+    {
+      "date": "2019-01-24",
+      "raw": 0,
+      "rolling7": 0.286,
+      "rolling30": 0.167,
+      "publication": true
+    },
+    {
+      "date": "2019-01-25",
+      "raw": 0,
+      "rolling7": 0.286,
+      "rolling30": 0.167,
+      "publication": true
+    },
+    {
+      "date": "2019-01-26",
+      "raw": 0,
+      "rolling7": 0.286,
+      "rolling30": 0.167,
+      "publication": true
+    },
+    {
+      "date": "2019-01-27",
+      "raw": -3,
+      "rolling7": -0.143,
+      "rolling30": 0.067,
+      "publication": true
+    },
+    {
+      "date": "2019-01-28",
+      "raw": 0,
+      "rolling7": -0.143,
+      "rolling30": 0.067,
+      "publication": true
+    },
+    {
+      "date": "2019-01-29",
+      "raw": 0,
+      "rolling7": -0.143,
+      "rolling30": 0.067,
+      "publication": true
+    },
+    {
+      "date": "2019-01-30",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": 0.067,
+      "publication": true
+    },
+    {
+      "date": "2019-01-31",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": 0.067,
+      "publication": true
+    },
+    {
+      "date": "2019-02-01",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": 0.067,
+      "publication": true
+    },
+    {
+      "date": "2019-02-02",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": 0.0,
+      "publication": true
+    },
+    {
+      "date": "2019-02-03",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.067,
+      "publication": true
+    },
+    {
+      "date": "2019-02-04",
+      "raw": 2,
+      "rolling7": 0.286,
+      "rolling30": -0.067,
+      "publication": true
+    },
+    {
+      "date": "2019-02-05",
+      "raw": 0,
+      "rolling7": 0.286,
+      "rolling30": -0.133,
+      "publication": true
+    },
+    {
+      "date": "2019-02-06",
+      "raw": 0,
+      "rolling7": 0.286,
+      "rolling30": -0.2,
+      "publication": true
+    },
+    {
+      "date": "2019-02-07",
+      "raw": 0,
+      "rolling7": 0.286,
+      "rolling30": -0.267,
+      "publication": true
+    },
+    {
+      "date": "2019-02-08",
+      "raw": 0,
+      "rolling7": 0.286,
+      "rolling30": -0.267,
+      "publication": true
+    },
+    {
+      "date": "2019-02-09",
+      "raw": null,
+      "rolling7": 0.286,
+      "rolling30": -0.167,
+      "publication": false
+    },
+    {
+      "date": "2019-02-10",
+      "raw": null,
+      "rolling7": 0.286,
+      "rolling30": -0.067,
+      "publication": false
+    },
+    {
+      "date": "2019-02-11",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.067,
+      "publication": true
+    },
+    {
+      "date": "2019-02-12",
+      "raw": -3,
+      "rolling7": -0.429,
+      "rolling30": -0.167,
+      "publication": true
+    },
+    {
+      "date": "2019-02-13",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -0.167,
+      "publication": true
+    },
+    {
+      "date": "2019-02-14",
+      "raw": -3,
+      "rolling7": -0.857,
+      "rolling30": -0.267,
+      "publication": true
+    },
+    {
+      "date": "2019-02-15",
+      "raw": 0,
+      "rolling7": -0.857,
+      "rolling30": -0.267,
+      "publication": true
+    },
+    {
+      "date": "2019-02-16",
+      "raw": null,
+      "rolling7": -0.857,
+      "rolling30": -0.167,
+      "publication": false
+    },
+    {
+      "date": "2019-02-17",
+      "raw": null,
+      "rolling7": -0.857,
+      "rolling30": -0.167,
+      "publication": false
+    },
+    {
+      "date": "2019-02-18",
+      "raw": null,
+      "rolling7": -0.857,
+      "rolling30": -0.167,
+      "publication": false
+    },
+    {
+      "date": "2019-02-19",
+      "raw": null,
+      "rolling7": -0.429,
+      "rolling30": -0.167,
+      "publication": false
+    },
+    {
+      "date": "2019-02-20",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -0.167,
+      "publication": true
+    },
+    {
+      "date": "2019-02-21",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.167,
+      "publication": true
+    },
+    {
+      "date": "2019-02-22",
+      "raw": 2,
+      "rolling7": 0.286,
+      "rolling30": -0.167,
+      "publication": true
+    },
+    {
+      "date": "2019-02-23",
+      "raw": -3,
+      "rolling7": -0.143,
+      "rolling30": -0.267,
+      "publication": true
+    },
+    {
+      "date": "2019-02-24",
+      "raw": 0,
+      "rolling7": -0.143,
+      "rolling30": -0.267,
+      "publication": true
+    },
+    {
+      "date": "2019-02-25",
+      "raw": -3,
+      "rolling7": -0.571,
+      "rolling30": -0.367,
+      "publication": true
+    },
+    {
+      "date": "2019-02-26",
+      "raw": 0,
+      "rolling7": -0.571,
+      "rolling30": -0.267,
+      "publication": true
+    },
+    {
+      "date": "2019-02-27",
+      "raw": -2,
+      "rolling7": -0.857,
+      "rolling30": -0.333,
+      "publication": true
+    },
+    {
+      "date": "2019-02-28",
+      "raw": 0,
+      "rolling7": -0.857,
+      "rolling30": -0.333,
+      "publication": true
+    },
+    {
+      "date": "2019-03-01",
+      "raw": 0,
+      "rolling7": -1.143,
+      "rolling30": -0.333,
+      "publication": true
+    },
+    {
+      "date": "2019-03-02",
+      "raw": null,
+      "rolling7": -0.714,
+      "rolling30": -0.333,
+      "publication": false
+    },
+    {
+      "date": "2019-03-03",
+      "raw": null,
+      "rolling7": -0.714,
+      "rolling30": -0.333,
+      "publication": false
+    },
+    {
+      "date": "2019-03-04",
+      "raw": 0,
+      "rolling7": -0.286,
+      "rolling30": -0.333,
+      "publication": true
+    },
+    {
+      "date": "2019-03-05",
+      "raw": 0,
+      "rolling7": -0.286,
+      "rolling30": -0.333,
+      "publication": true
+    },
+    {
+      "date": "2019-03-06",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": -0.4,
+      "publication": false
+    },
+    {
+      "date": "2019-03-07",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.4,
+      "publication": true
+    },
+    {
+      "date": "2019-03-08",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.4,
+      "publication": true
+    },
+    {
+      "date": "2019-03-09",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": -0.4,
+      "publication": false
+    },
+    {
+      "date": "2019-03-10",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.4,
+      "publication": true
+    },
+    {
+      "date": "2019-03-11",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.4,
+      "publication": true
+    },
+    {
+      "date": "2019-03-12",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.4,
+      "publication": true
+    },
+    {
+      "date": "2019-03-13",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.4,
+      "publication": true
+    },
+    {
+      "date": "2019-03-14",
+      "raw": 2,
+      "rolling7": 0.286,
+      "rolling30": -0.233,
+      "publication": true
+    },
+    {
+      "date": "2019-03-15",
+      "raw": -3,
+      "rolling7": -0.143,
+      "rolling30": -0.333,
+      "publication": true
+    },
+    {
+      "date": "2019-03-16",
+      "raw": -3,
+      "rolling7": -0.571,
+      "rolling30": -0.333,
+      "publication": true
+    },
+    {
+      "date": "2019-03-17",
+      "raw": 0,
+      "rolling7": -0.571,
+      "rolling30": -0.333,
+      "publication": true
+    },
+    {
+      "date": "2019-03-18",
+      "raw": -2,
+      "rolling7": -0.857,
+      "rolling30": -0.4,
+      "publication": true
+    },
+    {
+      "date": "2019-03-19",
+      "raw": null,
+      "rolling7": -1.143,
+      "rolling30": -0.467,
+      "publication": false
+    },
+    {
+      "date": "2019-03-20",
+      "raw": 0,
+      "rolling7": -1.143,
+      "rolling30": -0.467,
+      "publication": true
+    },
+    {
+      "date": "2019-03-21",
+      "raw": 0,
+      "rolling7": -1.429,
+      "rolling30": -0.467,
+      "publication": true
+    },
+    {
+      "date": "2019-03-22",
+      "raw": 0,
+      "rolling7": -1.0,
+      "rolling30": -0.467,
+      "publication": true
+    },
+    {
+      "date": "2019-03-23",
+      "raw": 0,
+      "rolling7": -0.571,
+      "rolling30": -0.467,
+      "publication": true
+    },
+    {
+      "date": "2019-03-24",
+      "raw": 0,
+      "rolling7": -0.571,
+      "rolling30": -0.533,
+      "publication": true
+    },
+    {
+      "date": "2019-03-25",
+      "raw": -2,
+      "rolling7": -0.571,
+      "rolling30": -0.5,
+      "publication": true
+    },
+    {
+      "date": "2019-03-26",
+      "raw": 0,
+      "rolling7": -0.286,
+      "rolling30": -0.5,
+      "publication": true
+    },
+    {
+      "date": "2019-03-27",
+      "raw": 0,
+      "rolling7": -0.286,
+      "rolling30": -0.4,
+      "publication": true
+    },
+    {
+      "date": "2019-03-28",
+      "raw": 0,
+      "rolling7": -0.286,
+      "rolling30": -0.4,
+      "publication": true
+    },
+    {
+      "date": "2019-03-29",
+      "raw": null,
+      "rolling7": -0.286,
+      "rolling30": -0.333,
+      "publication": false
+    },
+    {
+      "date": "2019-03-30",
+      "raw": -3,
+      "rolling7": -0.714,
+      "rolling30": -0.433,
+      "publication": true
+    },
+    {
+      "date": "2019-03-31",
+      "raw": 0,
+      "rolling7": -0.714,
+      "rolling30": -0.433,
+      "publication": true
+    },
+    {
+      "date": "2019-04-01",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -0.433,
+      "publication": true
+    },
+    {
+      "date": "2019-04-02",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -0.433,
+      "publication": true
+    },
+    {
+      "date": "2019-04-03",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -0.433,
+      "publication": true
+    },
+    {
+      "date": "2019-04-04",
+      "raw": -3,
+      "rolling7": -0.857,
+      "rolling30": -0.533,
+      "publication": true
+    },
+    {
+      "date": "2019-04-05",
+      "raw": 0,
+      "rolling7": -0.857,
+      "rolling30": -0.533,
+      "publication": true
+    },
+    {
+      "date": "2019-04-06",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -0.533,
+      "publication": true
+    },
+    {
+      "date": "2019-04-07",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -0.533,
+      "publication": true
+    },
+    {
+      "date": "2019-04-08",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -0.533,
+      "publication": true
+    },
+    {
+      "date": "2019-04-09",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -0.533,
+      "publication": true
+    },
+    {
+      "date": "2019-04-10",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -0.533,
+      "publication": true
+    },
+    {
+      "date": "2019-04-11",
+      "raw": -3,
+      "rolling7": -0.429,
+      "rolling30": -0.633,
+      "publication": true
+    },
+    {
+      "date": "2019-04-12",
+      "raw": -2,
+      "rolling7": -0.714,
+      "rolling30": -0.7,
+      "publication": true
+    },
+    {
+      "date": "2019-04-13",
+      "raw": -3,
+      "rolling7": -1.143,
+      "rolling30": -0.867,
+      "publication": true
+    },
+    {
+      "date": "2019-04-14",
+      "raw": 0,
+      "rolling7": -1.143,
+      "rolling30": -0.767,
+      "publication": true
+    },
+    {
+      "date": "2019-04-15",
+      "raw": -3,
+      "rolling7": -1.571,
+      "rolling30": -0.767,
+      "publication": true
+    },
+    {
+      "date": "2019-04-16",
+      "raw": null,
+      "rolling7": -2.0,
+      "rolling30": -0.867,
+      "publication": false
+    },
+    {
+      "date": "2019-04-17",
+      "raw": 0,
+      "rolling7": -2.0,
+      "rolling30": -0.8,
+      "publication": true
+    },
+    {
+      "date": "2019-04-18",
+      "raw": 0,
+      "rolling7": -1.571,
+      "rolling30": -0.733,
+      "publication": true
+    },
+    {
+      "date": "2019-04-19",
+      "raw": null,
+      "rolling7": -1.286,
+      "rolling30": -0.733,
+      "publication": false
+    },
+    {
+      "date": "2019-04-20",
+      "raw": null,
+      "rolling7": -0.857,
+      "rolling30": -0.733,
+      "publication": false
+    },
+    {
+      "date": "2019-04-21",
+      "raw": null,
+      "rolling7": -0.857,
+      "rolling30": -0.733,
+      "publication": false
+    },
+    {
+      "date": "2019-04-22",
+      "raw": null,
+      "rolling7": -0.429,
+      "rolling30": -0.733,
+      "publication": false
+    },
+    {
+      "date": "2019-04-23",
+      "raw": -3,
+      "rolling7": -0.429,
+      "rolling30": -0.833,
+      "publication": true
+    },
+    {
+      "date": "2019-04-24",
+      "raw": null,
+      "rolling7": -0.857,
+      "rolling30": -0.867,
+      "publication": false
+    },
+    {
+      "date": "2019-04-25",
+      "raw": 0,
+      "rolling7": -0.857,
+      "rolling30": -0.867,
+      "publication": true
+    },
+    {
+      "date": "2019-04-26",
+      "raw": 0,
+      "rolling7": -0.857,
+      "rolling30": -0.867,
+      "publication": true
+    },
+    {
+      "date": "2019-04-27",
+      "raw": null,
+      "rolling7": -0.857,
+      "rolling30": -0.867,
+      "publication": false
+    },
+    {
+      "date": "2019-04-28",
+      "raw": null,
+      "rolling7": -0.857,
+      "rolling30": -0.867,
+      "publication": false
+    },
+    {
+      "date": "2019-04-29",
+      "raw": 0,
+      "rolling7": -0.857,
+      "rolling30": -0.767,
+      "publication": true
+    },
+    {
+      "date": "2019-04-30",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -0.767,
+      "publication": true
+    },
+    {
+      "date": "2019-05-01",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.767,
+      "publication": true
+    },
+    {
+      "date": "2019-05-02",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.767,
+      "publication": true
+    },
+    {
+      "date": "2019-05-03",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.767,
+      "publication": true
+    },
+    {
+      "date": "2019-05-04",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": -0.667,
+      "publication": false
+    },
+    {
+      "date": "2019-05-05",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": -0.667,
+      "publication": false
+    },
+    {
+      "date": "2019-05-06",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.667,
+      "publication": true
+    },
+    {
+      "date": "2019-05-07",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.667,
+      "publication": true
+    },
+    {
+      "date": "2019-05-08",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.667,
+      "publication": true
+    },
+    {
+      "date": "2019-05-09",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.667,
+      "publication": true
+    },
+    {
+      "date": "2019-05-10",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.667,
+      "publication": true
+    },
+    {
+      "date": "2019-05-11",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.567,
+      "publication": true
+    },
+    {
+      "date": "2019-05-12",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": -0.5,
+      "publication": false
+    },
+    {
+      "date": "2019-05-13",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.4,
+      "publication": true
+    },
+    {
+      "date": "2019-05-14",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.4,
+      "publication": true
+    },
+    {
+      "date": "2019-05-15",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.3,
+      "publication": true
+    },
+    {
+      "date": "2019-05-16",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": -0.2,
+      "publication": false
+    },
+    {
+      "date": "2019-05-17",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.2,
+      "publication": true
+    },
+    {
+      "date": "2019-05-18",
+      "raw": -3,
+      "rolling7": -0.429,
+      "rolling30": -0.3,
+      "publication": true
+    },
+    {
+      "date": "2019-05-19",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -0.3,
+      "publication": true
+    },
+    {
+      "date": "2019-05-20",
+      "raw": null,
+      "rolling7": -0.429,
+      "rolling30": -0.3,
+      "publication": false
+    },
+    {
+      "date": "2019-05-21",
+      "raw": -2,
+      "rolling7": -0.714,
+      "rolling30": -0.367,
+      "publication": true
+    },
+    {
+      "date": "2019-05-22",
+      "raw": 0,
+      "rolling7": -0.714,
+      "rolling30": -0.367,
+      "publication": true
+    },
+    {
+      "date": "2019-05-23",
+      "raw": 0,
+      "rolling7": -0.714,
+      "rolling30": -0.267,
+      "publication": true
+    },
+    {
+      "date": "2019-05-24",
+      "raw": -2,
+      "rolling7": -1.0,
+      "rolling30": -0.233,
+      "publication": true
+    },
+    {
+      "date": "2019-05-25",
+      "raw": null,
+      "rolling7": -0.857,
+      "rolling30": -0.3,
+      "publication": false
+    },
+    {
+      "date": "2019-05-26",
+      "raw": null,
+      "rolling7": -1.143,
+      "rolling30": -0.367,
+      "publication": false
+    },
+    {
+      "date": "2019-05-27",
+      "raw": 0,
+      "rolling7": -1.143,
+      "rolling30": -0.367,
+      "publication": true
+    },
+    {
+      "date": "2019-05-28",
+      "raw": 0,
+      "rolling7": -0.857,
+      "rolling30": -0.367,
+      "publication": true
+    },
+    {
+      "date": "2019-05-29",
+      "raw": 0,
+      "rolling7": -0.857,
+      "rolling30": -0.367,
+      "publication": true
+    },
+    {
+      "date": "2019-05-30",
+      "raw": 0,
+      "rolling7": -0.857,
+      "rolling30": -0.367,
+      "publication": true
+    },
+    {
+      "date": "2019-05-31",
+      "raw": 0,
+      "rolling7": -0.571,
+      "rolling30": -0.367,
+      "publication": true
+    },
+    {
+      "date": "2019-06-01",
+      "raw": null,
+      "rolling7": -0.286,
+      "rolling30": -0.367,
+      "publication": false
+    },
+    {
+      "date": "2019-06-02",
+      "raw": -2,
+      "rolling7": -0.286,
+      "rolling30": -0.433,
+      "publication": true
+    },
+    {
+      "date": "2019-06-03",
+      "raw": 0,
+      "rolling7": -0.286,
+      "rolling30": -0.433,
+      "publication": true
+    },
+    {
+      "date": "2019-06-04",
+      "raw": 0,
+      "rolling7": -0.286,
+      "rolling30": -0.433,
+      "publication": true
+    },
+    {
+      "date": "2019-06-05",
+      "raw": 0,
+      "rolling7": -0.286,
+      "rolling30": -0.433,
+      "publication": true
+    },
+    {
+      "date": "2019-06-06",
+      "raw": -3,
+      "rolling7": -0.714,
+      "rolling30": -0.533,
+      "publication": true
+    },
+    {
+      "date": "2019-06-07",
+      "raw": 0,
+      "rolling7": -0.714,
+      "rolling30": -0.533,
+      "publication": true
+    },
+    {
+      "date": "2019-06-08",
+      "raw": null,
+      "rolling7": -0.714,
+      "rolling30": -0.533,
+      "publication": false
+    },
+    {
+      "date": "2019-06-09",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -0.533,
+      "publication": true
+    },
+    {
+      "date": "2019-06-10",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -0.533,
+      "publication": true
+    },
+    {
+      "date": "2019-06-11",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -0.533,
+      "publication": true
+    },
+    {
+      "date": "2019-06-12",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -0.533,
+      "publication": true
+    },
+    {
+      "date": "2019-06-13",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.533,
+      "publication": true
+    },
+    {
+      "date": "2019-06-14",
+      "raw": -2,
+      "rolling7": -0.286,
+      "rolling30": -0.6,
+      "publication": true
+    },
+    {
+      "date": "2019-06-15",
+      "raw": null,
+      "rolling7": -0.571,
+      "rolling30": -0.667,
+      "publication": false
+    },
+    {
+      "date": "2019-06-16",
+      "raw": 0,
+      "rolling7": -0.571,
+      "rolling30": -0.667,
+      "publication": true
+    },
+    {
+      "date": "2019-06-17",
+      "raw": 0,
+      "rolling7": -0.571,
+      "rolling30": -0.567,
+      "publication": true
+    },
+    {
+      "date": "2019-06-18",
+      "raw": null,
+      "rolling7": -0.571,
+      "rolling30": -0.567,
+      "publication": false
+    },
+    {
+      "date": "2019-06-19",
+      "raw": -2,
+      "rolling7": -0.857,
+      "rolling30": -0.633,
+      "publication": true
+    },
+    {
+      "date": "2019-06-20",
+      "raw": 0,
+      "rolling7": -0.857,
+      "rolling30": -0.567,
+      "publication": true
+    },
+    {
+      "date": "2019-06-21",
+      "raw": -3,
+      "rolling7": -1.0,
+      "rolling30": -0.667,
+      "publication": true
+    },
+    {
+      "date": "2019-06-22",
+      "raw": null,
+      "rolling7": -1.143,
+      "rolling30": -0.767,
+      "publication": false
+    },
+    {
+      "date": "2019-06-23",
+      "raw": null,
+      "rolling7": -1.571,
+      "rolling30": -0.8,
+      "publication": false
+    },
+    {
+      "date": "2019-06-24",
+      "raw": -2,
+      "rolling7": -1.857,
+      "rolling30": -0.8,
+      "publication": true
+    },
+    {
+      "date": "2019-06-25",
+      "raw": null,
+      "rolling7": -2.143,
+      "rolling30": -0.8,
+      "publication": false
+    },
+    {
+      "date": "2019-06-26",
+      "raw": 0,
+      "rolling7": -1.857,
+      "rolling30": -0.8,
+      "publication": true
+    },
+    {
+      "date": "2019-06-27",
+      "raw": 0,
+      "rolling7": -1.857,
+      "rolling30": -0.8,
+      "publication": true
+    },
+    {
+      "date": "2019-06-28",
+      "raw": 2,
+      "rolling7": -1.143,
+      "rolling30": -0.733,
+      "publication": true
+    },
+    {
+      "date": "2019-06-29",
+      "raw": null,
+      "rolling7": -0.429,
+      "rolling30": -0.667,
+      "publication": false
+    },
+    {
+      "date": "2019-06-30",
+      "raw": null,
+      "rolling7": 0.286,
+      "rolling30": -0.6,
+      "publication": false
+    },
+    {
+      "date": "2019-07-01",
+      "raw": 2,
+      "rolling7": 0.857,
+      "rolling30": -0.533,
+      "publication": true
+    },
+    {
+      "date": "2019-07-02",
+      "raw": -3,
+      "rolling7": 0.714,
+      "rolling30": -0.567,
+      "publication": true
+    },
+    {
+      "date": "2019-07-03",
+      "raw": -3,
+      "rolling7": 0.286,
+      "rolling30": -0.667,
+      "publication": true
+    },
+    {
+      "date": "2019-07-04",
+      "raw": 0,
+      "rolling7": 0.286,
+      "rolling30": -0.667,
+      "publication": true
+    },
+    {
+      "date": "2019-07-05",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.667,
+      "publication": true
+    },
+    {
+      "date": "2019-07-06",
+      "raw": 2,
+      "rolling7": 0.0,
+      "rolling30": -0.5,
+      "publication": true
+    },
+    {
+      "date": "2019-07-07",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": -0.433,
+      "publication": false
+    },
+    {
+      "date": "2019-07-08",
+      "raw": 0,
+      "rolling7": -0.286,
+      "rolling30": -0.433,
+      "publication": true
+    },
+    {
+      "date": "2019-07-09",
+      "raw": 0,
+      "rolling7": 0.143,
+      "rolling30": -0.433,
+      "publication": true
+    },
+    {
+      "date": "2019-07-10",
+      "raw": 0,
+      "rolling7": 0.571,
+      "rolling30": -0.433,
+      "publication": true
+    },
+    {
+      "date": "2019-07-11",
+      "raw": 0,
+      "rolling7": 0.571,
+      "rolling30": -0.433,
+      "publication": true
+    },
+    {
+      "date": "2019-07-12",
+      "raw": 0,
+      "rolling7": 0.571,
+      "rolling30": -0.433,
+      "publication": true
+    },
+    {
+      "date": "2019-07-13",
+      "raw": null,
+      "rolling7": 0.286,
+      "rolling30": -0.433,
+      "publication": false
+    },
+    {
+      "date": "2019-07-14",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": -0.367,
+      "publication": false
+    },
+    {
+      "date": "2019-07-15",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.3,
+      "publication": true
+    },
+    {
+      "date": "2019-07-16",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": -0.3,
+      "publication": false
+    },
+    {
+      "date": "2019-07-17",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.3,
+      "publication": true
+    },
+    {
+      "date": "2019-07-18",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.3,
+      "publication": true
+    },
+    {
+      "date": "2019-07-19",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": -0.233,
+      "publication": false
+    },
+    {
+      "date": "2019-07-20",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": -0.233,
+      "publication": false
+    },
+    {
+      "date": "2019-07-21",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": -0.133,
+      "publication": false
+    },
+    {
+      "date": "2019-07-22",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": -0.033,
+      "publication": false
+    },
+    {
+      "date": "2019-07-23",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": 0.067,
+      "publication": false
+    },
+    {
+      "date": "2019-07-24",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": 0.133,
+      "publication": true
+    },
+    {
+      "date": "2019-07-25",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": 0.2,
+      "publication": true
+    },
+    {
+      "date": "2019-07-26",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": 0.2,
+      "publication": false
+    },
+    {
+      "date": "2019-07-27",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": 0.2,
+      "publication": false
+    },
+    {
+      "date": "2019-07-28",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": 0.133,
+      "publication": false
+    },
+    {
+      "date": "2019-07-29",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": 0.067,
+      "publication": false
+    },
+    {
+      "date": "2019-07-30",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": 0.0,
+      "publication": true
+    },
+    {
+      "date": "2019-07-31",
+      "raw": -3,
+      "rolling7": -0.429,
+      "rolling30": -0.167,
+      "publication": true
+    },
+    {
+      "date": "2019-08-01",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -0.067,
+      "publication": true
+    },
+    {
+      "date": "2019-08-02",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": 0.033,
+      "publication": true
+    },
+    {
+      "date": "2019-08-03",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": 0.033,
+      "publication": true
+    },
+    {
+      "date": "2019-08-04",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": 0.033,
+      "publication": true
+    },
+    {
+      "date": "2019-08-05",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -0.033,
+      "publication": true
+    },
+    {
+      "date": "2019-08-06",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -0.1,
+      "publication": true
+    },
+    {
+      "date": "2019-08-07",
+      "raw": 3,
+      "rolling7": 0.429,
+      "rolling30": 0.0,
+      "publication": true
+    },
+    {
+      "date": "2019-08-08",
+      "raw": 0,
+      "rolling7": 0.429,
+      "rolling30": 0.0,
+      "publication": true
+    },
+    {
+      "date": "2019-08-09",
+      "raw": null,
+      "rolling7": 0.429,
+      "rolling30": 0.0,
+      "publication": false
+    },
+    {
+      "date": "2019-08-10",
+      "raw": null,
+      "rolling7": 0.429,
+      "rolling30": 0.0,
+      "publication": false
+    },
+    {
+      "date": "2019-08-11",
+      "raw": null,
+      "rolling7": 0.429,
+      "rolling30": 0.0,
+      "publication": false
+    },
+    {
+      "date": "2019-08-12",
+      "raw": 0,
+      "rolling7": 0.429,
+      "rolling30": 0.0,
+      "publication": true
+    },
+    {
+      "date": "2019-08-13",
+      "raw": -2,
+      "rolling7": 0.143,
+      "rolling30": -0.067,
+      "publication": true
+    },
+    {
+      "date": "2019-08-14",
+      "raw": 0,
+      "rolling7": -0.286,
+      "rolling30": -0.067,
+      "publication": true
+    },
+    {
+      "date": "2019-08-15",
+      "raw": null,
+      "rolling7": -0.286,
+      "rolling30": -0.067,
+      "publication": false
+    },
+    {
+      "date": "2019-08-16",
+      "raw": null,
+      "rolling7": -0.286,
+      "rolling30": -0.067,
+      "publication": false
+    },
+    {
+      "date": "2019-08-17",
+      "raw": 0,
+      "rolling7": -0.286,
+      "rolling30": -0.067,
+      "publication": true
+    },
+    {
+      "date": "2019-08-18",
+      "raw": null,
+      "rolling7": -0.286,
+      "rolling30": -0.067,
+      "publication": false
+    },
+    {
+      "date": "2019-08-19",
+      "raw": 0,
+      "rolling7": -0.286,
+      "rolling30": -0.067,
+      "publication": true
+    },
+    {
+      "date": "2019-08-20",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.067,
+      "publication": true
+    },
+    {
+      "date": "2019-08-21",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.067,
+      "publication": true
+    },
+    {
+      "date": "2019-08-22",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.067,
+      "publication": true
+    },
+    {
+      "date": "2019-08-23",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.067,
+      "publication": true
+    },
+    {
+      "date": "2019-08-24",
+      "raw": 2,
+      "rolling7": 0.286,
+      "rolling30": 0.0,
+      "publication": true
+    },
+    {
+      "date": "2019-08-25",
+      "raw": null,
+      "rolling7": 0.571,
+      "rolling30": 0.067,
+      "publication": false
+    },
+    {
       "date": "2019-08-26",
       "raw": -2,
       "rolling7": 0.286,
-      "rolling30": null,
+      "rolling30": 0.0,
       "publication": true
     },
     {
       "date": "2019-08-27",
       "raw": 1,
       "rolling7": 0.429,
-      "rolling30": null,
+      "rolling30": 0.033,
       "publication": true
     },
     {
       "date": "2019-08-28",
       "raw": 0,
       "rolling7": 0.429,
-      "rolling30": null,
+      "rolling30": 0.033,
       "publication": true
     },
     {
       "date": "2019-08-29",
       "raw": 0,
       "rolling7": 0.429,
-      "rolling30": null,
+      "rolling30": 0.033,
       "publication": true
     },
     {
       "date": "2019-08-30",
       "raw": null,
       "rolling7": 0.429,
-      "rolling30": null,
+      "rolling30": 0.133,
       "publication": false
     },
     {
       "date": "2019-08-31",
       "raw": null,
       "rolling7": 0.143,
-      "rolling30": null,
+      "rolling30": 0.133,
       "publication": false
     },
     {
       "date": "2019-09-01",
       "raw": 0,
       "rolling7": -0.143,
-      "rolling30": null,
+      "rolling30": 0.133,
       "publication": true
     },
     {
       "date": "2019-09-02",
       "raw": null,
       "rolling7": 0.143,
-      "rolling30": null,
+      "rolling30": 0.133,
       "publication": false
     },
     {
       "date": "2019-09-03",
       "raw": 0,
       "rolling7": 0.0,
-      "rolling30": null,
+      "rolling30": 0.133,
       "publication": true
     },
     {
       "date": "2019-09-04",
       "raw": 0,
       "rolling7": 0.0,
-      "rolling30": null,
+      "rolling30": 0.133,
       "publication": true
     },
     {
       "date": "2019-09-05",
       "raw": 0,
       "rolling7": 0.0,
-      "rolling30": null,
+      "rolling30": 0.133,
       "publication": true
     },
     {
       "date": "2019-09-06",
       "raw": 0,
       "rolling7": 0.0,
-      "rolling30": null,
+      "rolling30": 0.033,
       "publication": true
     },
     {
       "date": "2019-09-07",
       "raw": 0,
       "rolling7": 0.0,
-      "rolling30": null,
+      "rolling30": 0.033,
       "publication": true
     },
     {
       "date": "2019-09-08",
       "raw": 0,
       "rolling7": 0.0,
-      "rolling30": null,
+      "rolling30": 0.033,
       "publication": true
     },
     {
       "date": "2019-09-09",
       "raw": 0,
       "rolling7": 0.0,
-      "rolling30": null,
+      "rolling30": 0.033,
       "publication": true
     },
     {
       "date": "2019-09-10",
       "raw": null,
       "rolling7": 0.0,
-      "rolling30": null,
+      "rolling30": 0.033,
       "publication": false
     },
     {
       "date": "2019-09-11",
       "raw": null,
       "rolling7": 0.0,
-      "rolling30": null,
+      "rolling30": 0.033,
       "publication": false
     },
     {
       "date": "2019-09-12",
       "raw": null,
       "rolling7": 0.0,
-      "rolling30": null,
+      "rolling30": 0.1,
       "publication": false
     },
     {
       "date": "2019-09-13",
       "raw": null,
       "rolling7": 0.0,
-      "rolling30": null,
+      "rolling30": 0.1,
       "publication": false
     },
     {
       "date": "2019-09-14",
       "raw": null,
       "rolling7": 0.0,
-      "rolling30": null,
+      "rolling30": 0.1,
       "publication": false
     },
     {
       "date": "2019-09-15",
       "raw": null,
       "rolling7": 0.0,
-      "rolling30": null,
+      "rolling30": 0.1,
       "publication": false
     },
     {
       "date": "2019-09-16",
       "raw": null,
       "rolling7": 0.0,
-      "rolling30": null,
+      "rolling30": 0.1,
       "publication": false
     },
     {
@@ -16836,30 +18544,30 @@
     },
     {
       "date": "2026-03-19",
-      "raw": 0,
-      "rolling7": 0.0,
-      "rolling30": -0.467,
+      "raw": 1,
+      "rolling7": 0.143,
+      "rolling30": -0.433,
       "publication": true
     },
     {
       "date": "2026-03-20",
       "raw": 0,
-      "rolling7": 0.0,
-      "rolling30": -0.367,
+      "rolling7": 0.143,
+      "rolling30": -0.333,
       "publication": true
     },
     {
       "date": "2026-03-21",
-      "raw": null,
-      "rolling7": 0.0,
-      "rolling30": -0.367,
-      "publication": false
+      "raw": -3,
+      "rolling7": -0.286,
+      "rolling30": -0.433,
+      "publication": true
     },
     {
       "date": "2026-03-22",
       "raw": null,
-      "rolling7": 0.0,
-      "rolling30": -0.367,
+      "rolling7": -0.714,
+      "rolling30": -0.533,
       "publication": false
     }
   ]
