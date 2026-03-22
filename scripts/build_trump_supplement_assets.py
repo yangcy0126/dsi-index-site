@@ -12,7 +12,6 @@ WORKSPACE_ROOT = SITE_ROOT.parent
 SOURCE_DAILY_CSV = WORKSPACE_ROOT / "data" / "trump_index" / "daily" / "trump_daily_indices_llm.csv"
 SOURCE_SUMMARY_JSON = WORKSPACE_ROOT / "data" / "trump_index" / "daily" / "trump_index_summary_llm.json"
 SITE_DATA_DIR = SITE_ROOT / "data"
-SITE_CSV = SITE_DATA_DIR / "trump_daily_indices_llm.csv"
 SITE_JSON = SITE_DATA_DIR / "trump_indices.json"
 SITE_XLSX = SITE_DATA_DIR / "trump_indices_workbook.xlsx"
 
@@ -413,12 +412,13 @@ def main() -> None:
     daily = pd.read_csv(SOURCE_DAILY_CSV, low_memory=False)
     summary = json.loads(SOURCE_SUMMARY_JSON.read_text(encoding="utf-8"))
 
-    daily.to_csv(SITE_CSV, index=False, encoding="utf-8-sig")
+    legacy_csv = SITE_DATA_DIR / "trump_daily_indices_llm.csv"
+    if legacy_csv.exists():
+        legacy_csv.unlink()
     compact_payload = build_compact_json(daily, summary)
     SITE_JSON.write_text(json.dumps(compact_payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     write_workbook(daily, summary)
 
-    print(f"[OK] saved: {SITE_CSV}")
     print(f"[OK] saved: {SITE_JSON}")
     print(f"[OK] saved: {SITE_XLSX}")
 
