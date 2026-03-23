@@ -75,6 +75,7 @@ MASTER_EXTRA_VARIABLE_DEFINITIONS = [
 VISITOR_COUNTER_ID = "DVgZ"
 VISITOR_OVERVIEW_URL = f"https://s01.flagcounter.com/more/{VISITOR_COUNTER_ID}/"
 VISITOR_COUNTRIES_URL = f"https://s01.flagcounter.com/countries/{VISITOR_COUNTER_ID}/"
+VISITOR_HISTORY_URL = f"https://s01.flagcounter.com/more30/{VISITOR_COUNTER_ID}/"
 VISITOR_COUNTRY_ROLLOVER = {
     "TW": {"code": "CN", "country": "China"},
     "HK": {"code": "CN", "country": "China"},
@@ -312,6 +313,19 @@ def parse_visitor_overview(overview_html: str) -> dict[str, object]:
     }
 
 
+def parse_visitor_history(history_html: str) -> dict[str, int]:
+    text = strip_html_text(history_html)
+    totals_match = extract_required_match(
+        text,
+        r"This counter has been viewed\s+(\d+)\s+times by\s+(\d+)\s+visitors!",
+        "total visitor history",
+    )
+    return {
+        "total_views": int(totals_match.group(1)),
+        "total_visitors": int(totals_match.group(2)),
+    }
+
+
 def parse_visitor_countries(countries_html: str) -> list[dict[str, object]]:
     countries: list[dict[str, object]] = []
     for row_html in re.findall(r"<tr>(.*?)</tr>", countries_html, flags=re.IGNORECASE | re.DOTALL):
@@ -368,7 +382,9 @@ def roll_up_visitor_countries(countries: list[dict[str, object]]) -> list[dict[s
 def build_visitor_snapshot() -> dict[str, object]:
     overview_html = fetch_url_text(VISITOR_OVERVIEW_URL)
     countries_html = fetch_url_text(VISITOR_COUNTRIES_URL)
+    history_html = fetch_url_text(VISITOR_HISTORY_URL)
     overview = parse_visitor_overview(overview_html)
+    totals = parse_visitor_history(history_html)
     countries = roll_up_visitor_countries(parse_visitor_countries(countries_html))
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -378,6 +394,8 @@ def build_visitor_snapshot() -> dict[str, object]:
         "rolled_into_china": ["Hong Kong", "Macau", "Taiwan"],
         "total_countries": overview["total_countries"],
         "flags_collected": overview["flags_collected"],
+        "total_views": totals["total_views"],
+        "total_visitors": totals["total_visitors"],
         "visitors_yesterday": overview["visitors_yesterday"],
         "visitors_30d_average": overview["visitors_30d_average"],
         "visitors_record": overview["visitors_record"],
@@ -723,6 +741,8 @@ def main() -> None:
             "counter_id": VISITOR_COUNTER_ID,
             "source": "Flag Counter public overview",
             "rolled_into_china": ["Hong Kong", "Macau", "Taiwan"],
+            "total_views": None,
+            "total_visitors": None,
             "countries": [],
             "top_countries": [],
         }
