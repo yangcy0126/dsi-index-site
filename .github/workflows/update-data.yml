@@ -466,6 +466,15 @@ jobs:
           WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
 
+      - name: Upload India checkpoint after extra 4
+        if: matrix.country == 'IN'
+        uses: actions/upload-artifact@v4
+        with:
+          name: records-IN
+          path: records/IN.csv
+          if-no-files-found: error
+          overwrite: true
+
       - name: Update records (headed browser for RU)
         if: matrix.country == 'RU'
         run: xvfb-run -a python -u scripts/update_wdsi_records.py --countries ${{ matrix.country }} --lookback-days 200 --max-pages 90 --history-backfill-rounds 2 --skip-build
