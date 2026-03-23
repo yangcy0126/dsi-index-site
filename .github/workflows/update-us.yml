@@ -1,34 +1,28 @@
-name: Update WDSI Data
+name: Update US WDSI Data
 
 on:
   push:
     branches:
       - main
     paths:
-      - ".github/workflows/update-data.yml"
+      - ".github/workflows/update-us.yml"
       - "scripts/**"
       - "requirements.txt"
   schedule:
-    - cron: "20 15 * * *"
+    - cron: "35 15 * * *"
   workflow_dispatch:
 
 concurrency:
-  group: update-wdsi-${{ github.ref }}
+  group: update-wdsi-us-${{ github.ref }}
   cancel-in-progress: false
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 jobs:
-  update-country:
+  update-us:
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ matrix.country == 'RU' && 60 || matrix.country == 'IT' && 180 || matrix.country == 'CA' && 210 || matrix.country == 'BR' && 150 || matrix.country == 'MX' && 150 || matrix.country == 'IN' && 360 || matrix.country == 'AU' && 120 || matrix.country == 'ES' && 90 || matrix.country == 'DE' && 90 || matrix.country == 'FR' && 90 || 70 }}
-    strategy:
-      fail-fast: false
-      matrix:
-        country: [CN, UK, JP, KR, DE, IN, IT, CA, BR, FR, RU, AU, MX, ES]
+    timeout-minutes: 360
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,7 +38,6 @@ jobs:
         run: python -m pip install -r requirements.txt
 
       - name: Install browser fallback
-        if: matrix.country == 'JP' || matrix.country == 'UK' || matrix.country == 'RU' || matrix.country == 'IT'
         run: |
           python -m pip install playwright
           python -m playwright install chromium
@@ -60,13 +53,12 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Update records (standard)
-        if: matrix.country != 'RU' && matrix.country != 'IN'
         run: |
           python -u scripts/update_wdsi_records.py \
-            --countries ${{ matrix.country }} \
-            --lookback-days ${{ matrix.country == 'CA' && 90 || matrix.country == 'IT' && 90 || matrix.country == 'BR' && 90 || matrix.country == 'MX' && 90 || 200 }} \
-            --max-pages 90 \
-            --history-backfill-rounds ${{ matrix.country == 'CA' && '0' || '1' }} \
+            --countries US \
+            --lookback-days 90 \
+            --max-pages 40 \
+            --history-backfill-rounds 0 \
             --skip-build
         env:
           WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
@@ -78,20 +70,18 @@ jobs:
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
 
       - name: Upload country record checkpoint
-        if: matrix.country == 'CA' || matrix.country == 'IT' || matrix.country == 'BR' || matrix.country == 'MX' || matrix.country == 'AU'
         uses: actions/upload-artifact@v4
         with:
-          name: records-${{ matrix.country }}
-          path: records/${{ matrix.country }}.csv
+          name: records-US
+          path: records/US.csv
           if-no-files-found: error
           overwrite: true
 
       - name: Update records (extra history backfill)
-        if: matrix.country == 'CA' || matrix.country == 'IT' || matrix.country == 'BR' || matrix.country == 'MX' || matrix.country == 'AU'
         continue-on-error: true
         run: |
           python -u scripts/update_wdsi_records.py \
-            --countries ${{ matrix.country }} \
+            --countries US \
             --lookback-days 1 \
             --max-pages 90 \
             --history-backfill-rounds 1 \
@@ -107,20 +97,18 @@ jobs:
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
 
       - name: Upload post-extra checkpoint
-        if: matrix.country == 'CA' || matrix.country == 'MX'
         uses: actions/upload-artifact@v4
         with:
-          name: records-${{ matrix.country }}
-          path: records/${{ matrix.country }}.csv
+          name: records-US
+          path: records/US.csv
           if-no-files-found: error
           overwrite: true
 
       - name: Update records (second extra history backfill)
-        if: matrix.country == 'CA' || matrix.country == 'MX'
         continue-on-error: true
         run: |
           python -u scripts/update_wdsi_records.py \
-            --countries ${{ matrix.country }} \
+            --countries US \
             --lookback-days 1 \
             --max-pages 90 \
             --history-backfill-rounds 1 \
@@ -136,20 +124,18 @@ jobs:
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
 
       - name: Upload post-second-extra checkpoint
-        if: matrix.country == 'CA'
         uses: actions/upload-artifact@v4
         with:
-          name: records-${{ matrix.country }}
-          path: records/${{ matrix.country }}.csv
+          name: records-US
+          path: records/US.csv
           if-no-files-found: error
           overwrite: true
 
       - name: Update records (third extra history backfill)
-        if: matrix.country == 'CA'
         continue-on-error: true
         run: |
           python -u scripts/update_wdsi_records.py \
-            --countries ${{ matrix.country }} \
+            --countries US \
             --lookback-days 1 \
             --max-pages 90 \
             --history-backfill-rounds 1 \
@@ -164,35 +150,21 @@ jobs:
           WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
 
-      - name: Update records (India recent bootstrap)
-        if: matrix.country == 'IN'
-        run: python -u scripts/update_wdsi_records.py --countries IN --lookback-days 20 --max-pages 30 --history-backfill-rounds 0 --skip-build
-        env:
-          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
-          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
-          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
-          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
-          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
-
-      - name: Upload India checkpoint
-        if: matrix.country == 'IN'
+      - name: Upload post-third-extra checkpoint
         uses: actions/upload-artifact@v4
         with:
-          name: records-IN
-          path: records/IN.csv
+          name: records-US
+          path: records/US.csv
           if-no-files-found: error
           overwrite: true
 
-      - name: Update records (India extra history backfill 1)
-        if: matrix.country == 'IN'
+      - name: Update records (fourth extra history backfill)
         continue-on-error: true
         run: |
           python -u scripts/update_wdsi_records.py \
-            --countries IN \
+            --countries US \
             --lookback-days 1 \
-            --max-pages 30 \
+            --max-pages 90 \
             --history-backfill-rounds 1 \
             --history-only \
             --skip-build
@@ -205,23 +177,21 @@ jobs:
           WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
 
-      - name: Upload India checkpoint after extra 1
-        if: matrix.country == 'IN'
+      - name: Upload post-fourth-extra checkpoint
         uses: actions/upload-artifact@v4
         with:
-          name: records-IN
-          path: records/IN.csv
+          name: records-US
+          path: records/US.csv
           if-no-files-found: error
           overwrite: true
 
-      - name: Update records (India extra history backfill 2)
-        if: matrix.country == 'IN'
+      - name: Update records (fifth extra history backfill)
         continue-on-error: true
         run: |
           python -u scripts/update_wdsi_records.py \
-            --countries IN \
+            --countries US \
             --lookback-days 1 \
-            --max-pages 30 \
+            --max-pages 90 \
             --history-backfill-rounds 1 \
             --history-only \
             --skip-build
@@ -234,23 +204,21 @@ jobs:
           WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
 
-      - name: Upload India checkpoint after extra 2
-        if: matrix.country == 'IN'
+      - name: Upload post-fifth-extra checkpoint
         uses: actions/upload-artifact@v4
         with:
-          name: records-IN
-          path: records/IN.csv
+          name: records-US
+          path: records/US.csv
           if-no-files-found: error
           overwrite: true
 
-      - name: Update records (India extra history backfill 3)
-        if: matrix.country == 'IN'
+      - name: Update records (sixth extra history backfill)
         continue-on-error: true
         run: |
           python -u scripts/update_wdsi_records.py \
-            --countries IN \
+            --countries US \
             --lookback-days 1 \
-            --max-pages 30 \
+            --max-pages 90 \
             --history-backfill-rounds 1 \
             --history-only \
             --skip-build
@@ -263,23 +231,21 @@ jobs:
           WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
 
-      - name: Upload India checkpoint after extra 3
-        if: matrix.country == 'IN'
+      - name: Upload post-sixth-extra checkpoint
         uses: actions/upload-artifact@v4
         with:
-          name: records-IN
-          path: records/IN.csv
+          name: records-US
+          path: records/US.csv
           if-no-files-found: error
           overwrite: true
 
-      - name: Update records (India extra history backfill 4)
-        if: matrix.country == 'IN'
+      - name: Update records (seventh extra history backfill)
         continue-on-error: true
         run: |
           python -u scripts/update_wdsi_records.py \
-            --countries IN \
+            --countries US \
             --lookback-days 1 \
-            --max-pages 30 \
+            --max-pages 90 \
             --history-backfill-rounds 1 \
             --history-only \
             --skip-build
@@ -292,18 +258,24 @@ jobs:
           WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
 
-      - name: Upload India checkpoint after extra 4
-        if: matrix.country == 'IN'
+      - name: Upload post-seventh-extra checkpoint
         uses: actions/upload-artifact@v4
         with:
-          name: records-IN
-          path: records/IN.csv
+          name: records-US
+          path: records/US.csv
           if-no-files-found: error
           overwrite: true
 
-      - name: Update records (headed browser for RU)
-        if: matrix.country == 'RU'
-        run: xvfb-run -a python -u scripts/update_wdsi_records.py --countries ${{ matrix.country }} --lookback-days 200 --max-pages 90 --history-backfill-rounds 2 --skip-build
+      - name: Update records (eighth extra history backfill)
+        continue-on-error: true
+        run: |
+          python -u scripts/update_wdsi_records.py \
+            --countries US \
+            --lookback-days 1 \
+            --max-pages 90 \
+            --history-backfill-rounds 1 \
+            --history-only \
+            --skip-build
         env:
           WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -312,20 +284,46 @@ jobs:
           WDSI_MODEL: ${{ vars.WDSI_MODEL }}
           WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
-          WDSI_PLAYWRIGHT_HEADLESS: "0"
+
+      - name: Upload post-eighth-extra checkpoint
+        uses: actions/upload-artifact@v4
+        with:
+          name: records-US
+          path: records/US.csv
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Update records (ninth extra history backfill)
+        continue-on-error: true
+        run: |
+          python -u scripts/update_wdsi_records.py \
+            --countries US \
+            --lookback-days 1 \
+            --max-pages 90 \
+            --history-backfill-rounds 1 \
+            --history-only \
+            --skip-build
+        env:
+          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
+          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
+          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
 
       - name: Upload country record
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: records-${{ matrix.country }}
-          path: records/${{ matrix.country }}.csv
+          name: records-US
+          path: records/US.csv
           if-no-files-found: error
           overwrite: true
 
   finalize:
     runs-on: ubuntu-latest
-    needs: update-country
+    needs: update-us
     if: always()
     steps:
       - name: Checkout
@@ -341,102 +339,11 @@ jobs:
       - name: Install dependencies
         run: python -m pip install -r requirements.txt
 
-      - name: Download CN record
+      - name: Download US record
         continue-on-error: true
         uses: actions/download-artifact@v4
         with:
-          name: records-CN
-          path: records
-
-      - name: Download UK record
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: records-UK
-          path: records
-
-      - name: Download JP record
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: records-JP
-          path: records
-
-      - name: Download KR record
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: records-KR
-          path: records
-
-      - name: Download DE record
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: records-DE
-          path: records
-
-      - name: Download IN record
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: records-IN
-          path: records
-
-      - name: Download IT record
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: records-IT
-          path: records
-
-      - name: Download FR record
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: records-FR
-          path: records
-
-      - name: Download RU record
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: records-RU
-          path: records
-
-      - name: Download AU record
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: records-AU
-          path: records
-
-      - name: Download MX record
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: records-MX
-          path: records
-
-      - name: Download ES record
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: records-ES
-          path: records
-
-      - name: Download CA record
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: records-CA
-          path: records
-
-      - name: Download BR record
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: records-BR
+          name: records-US
           path: records
 
       - name: Rebuild site data
@@ -448,12 +355,12 @@ jobs:
       - name: Commit and push
         run: |
           if git diff --quiet; then
-            echo "No data changes detected."
+            echo "No US data changes detected."
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add records data
-            git commit -m "Update WDSI data"
+            git add records/US.csv data
+            git commit -m "Update US WDSI data"
             for attempt in 1 2 3; do
               if git pull --rebase origin main && git push; then
                 exit 0
@@ -462,18 +369,6 @@ jobs:
               echo "Push attempt ${attempt} failed; retrying..."
               sleep 5
             done
-            echo "Failed to push rebuilt data after 3 attempts."
+            echo "Failed to push rebuilt US data after 3 attempts."
             exit 1
           fi
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
