@@ -13,7 +13,10 @@ const summaryPath = "data/summary.json";
 const eventsPath = "data/events.json";
 const trumpPath = "data/trump_indices.json";
 const visitorsPath = "data/visitor_stats.json";
-const assetVersion = "20260322-visitors-card-5";
+const assetVersion = "20260323-visitors-live-1";
+const VISITORS_REFRESH_INTERVAL_MS = 120000;
+let visitorsRefreshTimer = null;
+let visitorsRefreshInFlight = false;
 const TRUMP_POLITICAL_EVENTS = [
   { date: "2015-06-16", label: "Campaign launch", chartLabel: "Campaign launch", chartY: 2.95, chartAnchor: "bottom" },
   { date: "2016-11-08", label: "Wins 2016 election", chartLabel: "2016 win", chartY: 2.55, chartAnchor: "bottom" },
@@ -27,9 +30,9 @@ const TRUMP_POLITICAL_EVENTS = [
   { date: "2025-01-20", label: "Second inauguration", chartLabel: "2nd inauguration", chartY: -2.15, chartAnchor: "top" },
 ];
 
-function versionedPath(path) {
+function versionedPath(path, version = assetVersion) {
   const separator = path.includes("?") ? "&" : "?";
-  return `${path}${separator}v=${assetVersion}`;
+  return `${path}${separator}v=${encodeURIComponent(version)}`;
 }
 
 function formatDate(dateText) {
@@ -209,12 +212,43 @@ function getCountryByCode(code) {
   return state.summary.countries.find((country) => country.code === code);
 }
 
-async function fetchJson(path) {
-  const response = await fetch(versionedPath(path), { cache: "no-cache" });
+async function fetchJson(path, version = assetVersion) {
+  const response = await fetch(versionedPath(path, version), { cache: "no-cache" });
   if (!response.ok) {
     throw new Error(`Failed to fetch ${path}`);
   }
   return response.json();
+}
+
+async function refreshVisitorsCardLive() {
+  if (visitorsRefreshInFlight) {
+    return;
+  }
+  if (document.hidden) {
+    return;
+  }
+
+  visitorsRefreshInFlight = true;
+  try {
+    state.visitors = await fetchJson(
+      visitorsPath,
+      `${assetVersion}-live-${Math.floor(Date.now() / VISITORS_REFRESH_INTERVAL_MS)}`,
+    );
+    renderVisitorsCard();
+  } catch (error) {
+    console.warn("Visitor card refresh failed", error);
+  } finally {
+    visitorsRefreshInFlight = false;
+  }
+}
+
+function startVisitorsAutoRefresh() {
+  if (visitorsRefreshTimer !== null) {
+    return;
+  }
+  visitorsRefreshTimer = window.setInterval(() => {
+    void refreshVisitorsCardLive();
+  }, VISITORS_REFRESH_INTERVAL_MS);
 }
 
 async function loadCountryData(code) {
@@ -969,6 +1003,7 @@ async function init() {
 
     renderGlobalMeta();
     renderVisitorsCard();
+    startVisitorsAutoRefresh();
     renderCountryBoard();
     renderCountryTabs();
     renderCsvOnlyDownloadList();

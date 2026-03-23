@@ -1,0 +1,61 @@
+name: Update Visitor Snapshot
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "scripts/update_visitor_snapshot.py"
+      - "scripts/build_wdsi_data.py"
+      - ".github/workflows/update-visitors.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: visitor-snapshot
+  cancel-in-progress: true
+
+jobs:
+  refresh-visitors:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Refresh visitor snapshot
+        run: python scripts/update_visitor_snapshot.py
+
+      - name: Commit and push
+        run: |
+          if git diff --quiet -- data/visitor_stats.json; then
+            echo "No visitor snapshot changes detected."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/visitor_stats.json
+            git commit -m "Update visitor snapshot"
+            for attempt in 1 2 3; do
+              if git pull --rebase origin main && git push; then
+                exit 0
+              fi
+              git rebase --abort || true
+              echo "Push attempt ${attempt} failed; retrying..."
+              sleep 5
+            done
+            echo "Failed to push visitor snapshot after 3 attempts."
+            exit 1
+          fi
