@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-23T12:49:08.318858+00:00",
+  "generated_at": "2026-03-23T14:04:30.608028+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -10,8 +10,8 @@
   ],
   "total_countries": 13,
   "flags_collected": 15,
-  "total_views": 354,
-  "total_visitors": 49,
+  "total_views": 359,
+  "total_visitors": 50,
   "visitors_yesterday": 23,
   "visitors_30d_average": 11,
   "visitors_record": 23,
@@ -33,7 +33,7 @@
     {
       "code": "GB",
       "country": "United Kingdom",
-      "visitors": 13,
+      "visitors": 14,
       "members": [
         "United Kingdom"
       ]
@@ -132,7 +132,7 @@
     {
       "code": "GB",
       "country": "United Kingdom",
-      "visitors": 13,
+      "visitors": 14,
       "members": [
         "United Kingdom"
       ]
