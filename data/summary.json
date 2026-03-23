@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-23T05:41:14.711203+00:00",
+  "generated_at": "2026-03-23T19:22:23.890618+00:00",
   "method_note": "Locked to DSI-ICF/code/data_integration.executed.ipynb: publication-day raw score = same-day minimum, then forward-fill missing days, then compute rolling means on the filled daily path.",
   "overall": {
     "country_count": 15,
@@ -21,12 +21,12 @@
       "publication_days": 5417,
       "calendar_days": 5926,
       "latest_raw": 0,
-      "latest_7d": -0.286,
+      "latest_7d": -0.571,
       "latest_30d": -1.1,
-      "change_7d": 0.143,
-      "change_30d": 1.571,
+      "change_7d": 0.286,
+      "change_30d": 1.0,
       "current_year": 2026,
-      "current_year_mean": -1.01,
+      "current_year_mean": -0.969,
       "latest_title": "Namibia National Day",
       "latest_url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/03/namibia-national-day/",
       "data_source": "records",
