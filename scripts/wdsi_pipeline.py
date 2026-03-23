@@ -93,6 +93,10 @@ STATE_BRIEFING_SPEAKER_RE = re.compile(
     r"^(?:MR|MS|MRS|MODERATOR|QUESTION|SECRETARY|DEPUTY SECRETARY|ASSISTANT SECRETARY|AMBASSADOR|SENIOR ADMINISTRATION OFFICIAL)\b.*:?$",
     re.I,
 )
+STATE_BODY_START_RE = re.compile(
+    r"^(?:the following is attributable|the below is attributable|statement by|readout of|mr\b|ms\b|mrs\b|moderator\b|question\b|secretary\b|deputy secretary\b|assistant secretary\b|ambassador\b)",
+    re.I,
+)
 ES_LISTING_ENTRY_RE = re.compile(
     r"^\*\s+(?P<date>\d{1,2}\s+[A-Za-z]{3}\s+\d{2})\s+##\s+\[(?P<title>.+?)\]\((?P<url>https://www\.exteriores\.gob\.es/en/Comunicacion/Comunicados/Paginas/[^\s)]+)\)"
 )
@@ -1171,18 +1175,22 @@ class UsStateDepartmentSource:
             for node in content_node.select(selector):
                 node.decompose()
 
-        content = clean_text(content_node.get_text("\n"))
-        if not content:
+        lines = [clean_text(line) for line in content_node.get_text("\n").splitlines() if clean_text(line)]
+        if not lines:
             raise ValueError(f"Missing parsed content for {url}")
-        if source_hint == "department_press_briefing":
-            content = self._trim_state_briefing_content(content)
-            if not content:
-                raise ValueError(f"Missing parsed briefing transcript for {url}")
 
-        doc_type = self._infer_doc_type_from_html(soup, title, source_hint)
         resolved_title = self._clean_state_title(title)
         if (resolved_title.startswith("http://") or resolved_title.startswith("https://")) and source_hint == "department_press_briefing":
             resolved_title = self._infer_briefing_title(url) or resolved_title
+        doc_type = self._infer_doc_type_from_html(soup, resolved_title, source_hint)
+        line_doc_type = self._extract_state_doc_type(lines, resolved_title, source_hint)
+        if not doc_type or (doc_type == "Press Release" and line_doc_type != "Press Release"):
+            doc_type = line_doc_type
+        content = self._extract_state_content(lines, resolved_title, published_at, doc_type, source_hint)
+        if source_hint == "department_press_briefing":
+            content = self._trim_state_briefing_content(content)
+        if not content:
+            raise ValueError(f"Missing parsed content for {url}")
 
         return ScrapedRecord(
             country_code=self.country_code,
@@ -1225,10 +1233,17 @@ class UsStateDepartmentSource:
         content = self._extract_state_content(lines, title, published_at, doc_type, source_hint)
         if not content:
             raise ValueError(f"Missing state content for {url}")
+        lowered_title = title.casefold()
+        if lowered_title in {"2017-2021.state.gov", "2021-2025.state.gov", "www.state.gov", "state.gov"}:
+            raise ValueError(f"Blocked or malformed state title for {url}")
+        malformed_prefixes = (
+            "content in this archive site is",
+            "an official website of the united states government here's how you know",
+            "an official website of the united states government",
+        )
+        if content.casefold().startswith(malformed_prefixes):
+            raise ValueError(f"Blocked or malformed state content for {url}")
         if source_hint == "department_press_briefing":
-            lowered_title = title.casefold()
-            if lowered_title in {"2017-2021.state.gov", "2021-2025.state.gov", "www.state.gov", "state.gov"}:
-                raise ValueError(f"Blocked or malformed briefing title for {url}")
             if len(content) < 400:
                 raise ValueError(f"Suspiciously short briefing content for {url}")
 
@@ -1270,6 +1285,19 @@ class UsStateDepartmentSource:
                 return canonical
 
         lowered_title = clean_text(title).casefold()
+        if "remarks to the press" in lowered_title:
+            return "Remarks to the Press"
+        if lowered_title.startswith("readout") or " readout " in lowered_title:
+            return "Readout"
+        if "joint press availability" in lowered_title or "press availability" in lowered_title:
+            return "Press Conference"
+        if " remarks " in lowered_title or lowered_title.startswith("remarks "):
+            return "Remarks"
+        if (
+            source_hint == "archived_press_release"
+            and any(needle in lowered_title for needle in ("meeting with", "call with"))
+        ):
+            return "Readout"
         if lowered_title.startswith("public schedule"):
             return "Public Schedule"
         if lowered_title.startswith("department press briefing"):
@@ -1324,6 +1352,15 @@ class UsStateDepartmentSource:
                     break
             if date_line_index is not None:
                 start_index = date_line_index + 1
+            else:
+                normalized_title = clean_text(title)
+                for index, line in enumerate(lines[:200]):
+                    text = clean_text(line)
+                    if text == normalized_title or text == "hide":
+                        continue
+                    if STATE_BODY_START_RE.match(text):
+                        start_index = index
+                        break
         else:
             for index, line in enumerate(lines[:200]):
                 text = clean_text(line)
