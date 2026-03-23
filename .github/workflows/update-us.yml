@@ -354,6 +354,7 @@ jobs:
 
       - name: Commit and push
         run: |
+          git restore --source=HEAD -- data/visitor_stats.json || true
           if git diff --quiet; then
             echo "No US data changes detected."
           else
