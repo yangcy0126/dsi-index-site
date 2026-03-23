@@ -782,7 +782,7 @@ h3 {
 
 .visitor-row {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 10px;
   min-height: 34px;
@@ -813,6 +813,12 @@ h3 {
   font-size: 0.86rem;
   font-weight: 500;
   line-height: 1.2;
+}
+
+.visitor-count {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--warm);
 }
 
 .visitors-empty {

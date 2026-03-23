@@ -13,7 +13,7 @@ const summaryPath = "data/summary.json";
 const eventsPath = "data/events.json";
 const trumpPath = "data/trump_indices.json";
 const visitorsPath = "data/visitor_stats.json";
-const assetVersion = "20260322-visitors-card-2";
+const assetVersion = "20260322-visitors-card-3";
 const TRUMP_POLITICAL_EVENTS = [
   { date: "2015-06-16", label: "Campaign launch", chartLabel: "Campaign launch", chartY: 2.95, chartAnchor: "bottom" },
   { date: "2016-11-08", label: "Wins 2016 election", chartLabel: "2016 win", chartY: 2.55, chartAnchor: "bottom" },
@@ -262,15 +262,15 @@ function renderVisitorsCard() {
     return;
   }
 
-  title.textContent = "Visitor view snapshot";
+  title.textContent = `${formatWholeNumber((snapshot.countries || []).length)} countries recorded`;
   stats.innerHTML = `
     <div class="visitor-stat">
-      <span class="visitor-stat-label">Views yesterday</span>
-      <span class="visitor-stat-value">${formatWholeNumber(snapshot.views_yesterday)}</span>
+      <span class="visitor-stat-label">Yesterday</span>
+      <span class="visitor-stat-value">${formatWholeNumber(snapshot.visitors_yesterday)}</span>
     </div>
     <div class="visitor-stat">
-      <span class="visitor-stat-label">View record</span>
-      <span class="visitor-stat-value">${formatWholeNumber(snapshot.views_record)}</span>
+      <span class="visitor-stat-label">Views</span>
+      <span class="visitor-stat-value">${formatWholeNumber(snapshot.views_yesterday)}</span>
     </div>
   `;
 
@@ -280,6 +280,7 @@ function renderVisitorsCard() {
       <div class="visitor-row">
         <span class="visitor-code">${escapeHtml(country.code)}</span>
         <span class="visitor-country">${escapeHtml(country.country)}</span>
+        <span class="visitor-count">${formatWholeNumber(country.visitors)}</span>
       </div>
     `).join("")
     : `
