@@ -831,6 +831,13 @@ h3 {
   line-height: 1.5;
 }
 
+@media (max-width: 820px) {
+  .site-credit,
+  .site-visitors {
+    display: none;
+  }
+}
+
 .tone-negative {
   color: #a03e2a;
 }
