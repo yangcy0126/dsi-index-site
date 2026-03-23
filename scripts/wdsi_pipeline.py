@@ -1180,7 +1180,7 @@ class UsStateDepartmentSource:
             raise ValueError(f"Missing parsed content for {url}")
 
         resolved_title = self._clean_state_title(title)
-        if (resolved_title.startswith("http://") or resolved_title.startswith("https://")) and source_hint == "department_press_briefing":
+        if self._is_placeholder_state_title(resolved_title):
             resolved_title = self._infer_briefing_title(url) or resolved_title
         doc_type = self._infer_doc_type_from_html(soup, resolved_title, source_hint)
         line_doc_type = self._extract_state_doc_type(lines, resolved_title, source_hint)
@@ -1221,9 +1221,8 @@ class UsStateDepartmentSource:
             raise ValueError(f"Empty markdown body for {url}")
 
         title = self._clean_state_title(self._extract_state_title(lines, fallback_title))
-        if title.startswith("http://") or title.startswith("https://"):
-            if source_hint == "department_press_briefing":
-                title = self._infer_briefing_title(url) or title
+        if self._is_placeholder_state_title(title):
+            title = self._infer_briefing_title(url) or title
         published_at = published_at_hint or self._extract_state_date(lines, title, url, source_hint)
         if not title or not published_at:
             raise ValueError(f"Missing state title/date for {url}")
@@ -1285,19 +1284,16 @@ class UsStateDepartmentSource:
                 return canonical
 
         lowered_title = clean_text(title).casefold()
-        if "remarks to the press" in lowered_title:
+        if "remarks to the press" in lowered_title or "remarks to press" in lowered_title:
             return "Remarks to the Press"
         if lowered_title.startswith("readout") or " readout " in lowered_title:
+            return "Readout"
+        if "meeting with" in lowered_title or "call with" in lowered_title:
             return "Readout"
         if "joint press availability" in lowered_title or "press availability" in lowered_title:
             return "Press Conference"
         if " remarks " in lowered_title or lowered_title.startswith("remarks "):
             return "Remarks"
-        if (
-            source_hint == "archived_press_release"
-            and any(needle in lowered_title for needle in ("meeting with", "call with"))
-        ):
-            return "Readout"
         if lowered_title.startswith("public schedule"):
             return "Public Schedule"
         if lowered_title.startswith("department press briefing"):
@@ -1632,6 +1628,17 @@ class UsStateDepartmentSource:
         cleaned = self.state_title_suffix_re.sub("", cleaned)
         cleaned = cleaned.rstrip("- ").strip()
         return cleaned
+
+    @staticmethod
+    def _is_placeholder_state_title(title: str) -> bool:
+        lowered = clean_text(title).casefold()
+        return lowered in {
+            "",
+            "2017-2021.state.gov",
+            "2021-2025.state.gov",
+            "www.state.gov",
+            "state.gov",
+        } or lowered.startswith("http://") or lowered.startswith("https://")
 
     @staticmethod
     def _extract_collection_date(item: BeautifulSoup) -> str:
