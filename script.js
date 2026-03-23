@@ -2,6 +2,7 @@ const state = {
   summary: null,
   events: [],
   trump: null,
+  visitors: null,
   selectedCode: null,
   seriesMode: "rolling7",
   trumpSeriesMode: "7d",
@@ -11,7 +12,8 @@ const state = {
 const summaryPath = "data/summary.json";
 const eventsPath = "data/events.json";
 const trumpPath = "data/trump_indices.json";
-const assetVersion = "20260322-trump-label-layout-1";
+const visitorsPath = "data/visitor_stats.json";
+const assetVersion = "20260322-visitors-card-1";
 const TRUMP_POLITICAL_EVENTS = [
   { date: "2015-06-16", label: "Campaign launch", chartLabel: "Campaign launch", chartY: 2.95, chartAnchor: "bottom" },
   { date: "2016-11-08", label: "Wins 2016 election", chartLabel: "2016 win", chartY: 2.55, chartAnchor: "bottom" },
@@ -220,6 +222,80 @@ async function loadCountryData(code) {
     state.cache.set(code, fetchJson(`data/${code}.json`));
   }
   return state.cache.get(code);
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => {
+    const entities = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    };
+    return entities[character] || character;
+  });
+}
+
+function renderVisitorsCard() {
+  const title = document.querySelector("#visitors-card .visitors-title");
+  const stats = document.getElementById("visitors-stats");
+  const list = document.getElementById("visitors-list");
+  if (!title || !stats || !list) {
+    return;
+  }
+
+  const snapshot = state.visitors;
+  if (!snapshot?.available) {
+    title.textContent = "Visitor snapshot unavailable";
+    stats.innerHTML = `
+      <div class="visitor-stat">
+        <span class="visitor-stat-label">Status</span>
+        <span class="visitor-stat-value">Retry next build</span>
+      </div>
+    `;
+    list.innerHTML = `
+      <div class="visitors-empty">
+        The custom visitor card will refresh automatically once the public counter snapshot is reachable again.
+      </div>
+    `;
+    return;
+  }
+
+  title.textContent = `${formatWholeNumber(snapshot.total_countries)} countries visited`;
+  stats.innerHTML = `
+    <div class="visitor-stat">
+      <span class="visitor-stat-label">Yesterday</span>
+      <span class="visitor-stat-value">${formatWholeNumber(snapshot.visitors_yesterday)}</span>
+    </div>
+    <div class="visitor-stat">
+      <span class="visitor-stat-label">30d avg</span>
+      <span class="visitor-stat-value">${formatWholeNumber(snapshot.visitors_30d_average)}</span>
+    </div>
+    <div class="visitor-stat">
+      <span class="visitor-stat-label">Flags</span>
+      <span class="visitor-stat-value">${formatWholeNumber(snapshot.flags_collected)}</span>
+    </div>
+    <div class="visitor-stat">
+      <span class="visitor-stat-label">Views</span>
+      <span class="visitor-stat-value">${formatWholeNumber(snapshot.views_yesterday)}</span>
+    </div>
+  `;
+
+  const topCountries = snapshot.top_countries || [];
+  list.innerHTML = topCountries.length
+    ? topCountries.map((country) => `
+      <div class="visitor-row">
+        <span class="visitor-code">${escapeHtml(country.code)}</span>
+        <span class="visitor-country">${escapeHtml(country.country)}</span>
+        <span class="visitor-count">${formatWholeNumber(country.visitors)}</span>
+      </div>
+    `).join("")
+    : `
+      <div class="visitors-empty">
+        No visitor rows are available for display in the current snapshot.
+      </div>
+    `;
 }
 
 function renderGlobalMeta() {
@@ -882,20 +958,23 @@ function bindTrumpSeriesToggle() {
 
 async function init() {
   try {
-    const [summary, events, trump] = await Promise.all([
+    const [summary, events, trump, visitors] = await Promise.all([
       fetchJson(summaryPath),
       fetchJson(eventsPath),
       fetchJson(trumpPath).catch(() => null),
+      fetchJson(visitorsPath).catch(() => null),
     ]);
     state.summary = summary;
     state.events = events.events || [];
     state.trump = trump;
+    state.visitors = visitors;
     state.selectedCode =
       state.selectedCode && getCountryByCode(state.selectedCode)
         ? state.selectedCode
         : state.summary.countries[0]?.code ?? null;
 
     renderGlobalMeta();
+    renderVisitorsCard();
     renderCountryBoard();
     renderCountryTabs();
     renderCsvOnlyDownloadList();

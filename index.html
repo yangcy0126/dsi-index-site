@@ -15,9 +15,9 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;700&display=swap"
       rel="stylesheet"
     >
-    <link rel="stylesheet" href="styles.css?v=20260322-trump-label-layout-1">
+    <link rel="stylesheet" href="styles.css?v=20260322-visitors-card-1">
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
-    <script src="script.js?v=20260322-trump-label-layout-1" defer></script>
+    <script src="script.js?v=20260322-visitors-card-1" defer></script>
   </head>
   <body>
     <div class="page-shell">
@@ -352,11 +352,12 @@
       </footer>
     </div>
     <div class="site-visitors" aria-label="Visitor locations">
-      <img
-        src="https://s01.flagcounter.com/count2/DVgZ/bg_FFFFFF/txt_000000/border_CCCCCC/columns_2/maxflags_10/viewers_0/labels_0/pageviews_0/flags_0/percent_0/"
-        alt="Visitor country and region counter"
-        loading="lazy"
-      >
+      <section class="visitors-card" id="visitors-card" aria-live="polite">
+        <p class="visitors-eyebrow">Visitors</p>
+        <h2 class="visitors-title">Loading visitor snapshot...</h2>
+        <div class="visitors-stats" id="visitors-stats"></div>
+        <div class="visitors-list" id="visitors-list"></div>
+      </section>
     </div>
     <div class="site-credit">designed by Cunyi Yang</div>
   </body>

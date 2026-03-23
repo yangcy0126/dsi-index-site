@@ -1,8 +1,14 @@
 from __future__ import annotations
 
 import json
+import re
+import shutil
+import subprocess
 from datetime import datetime, timezone
+from html import unescape
 from pathlib import Path
+from urllib.error import URLError
+from urllib.request import Request, urlopen
 
 import pandas as pd
 from openpyxl.styles import Font
@@ -66,6 +72,10 @@ MASTER_EXTRA_VARIABLE_DEFINITIONS = [
         "notes": "Human-readable display label.",
     },
 ]
+VISITOR_COUNTER_ID = "DVgZ"
+VISITOR_OVERVIEW_URL = f"https://s01.flagcounter.com/more/{VISITOR_COUNTER_ID}/"
+VISITOR_COUNTRIES_URL = f"https://s01.flagcounter.com/countries/{VISITOR_COUNTER_ID}/"
+VISITOR_HIDDEN_COUNTRIES = {"Taiwan"}
 
 COUNTRIES = [
     {
@@ -205,6 +215,154 @@ EVENTS = [
     {"date": "2022-02-24", "title_zh": "俄乌战争爆发", "title_en": "Russia-Ukraine war"},
     {"date": "2023-10-07", "title_zh": "新一轮巴以冲突升级", "title_en": "Israel-Hamas war escalation"},
 ]
+
+
+def strip_html_text(html: str) -> str:
+    text = re.sub(r"<script\b[^>]*>.*?</script>", " ", html, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r"<style\b[^>]*>.*?</style>", " ", text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r"<[^>]+>", " ", text)
+    return re.sub(r"\s+", " ", unescape(text)).strip()
+
+
+def fetch_url_text_with_curl(url: str) -> str:
+    curl_bin = shutil.which("curl") or shutil.which("curl.exe")
+    if not curl_bin:
+        raise FileNotFoundError("curl is not available")
+    result = subprocess.run(
+        [
+            curl_bin,
+            "-fsSL",
+            "--http1.1",
+            "--retry",
+            "2",
+            "--retry-delay",
+            "1",
+            "--connect-timeout",
+            "15",
+            "--max-time",
+            "40",
+            "-A",
+            "Mozilla/5.0",
+            url,
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="latin-1",
+    )
+    return result.stdout
+
+
+def fetch_url_text_with_urllib(url: str) -> str:
+    request = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urlopen(request, timeout=40) as response:
+        charset = response.headers.get_content_charset() or "latin-1"
+        return response.read().decode(charset, errors="replace")
+
+
+def fetch_url_text(url: str) -> str:
+    errors: list[str] = []
+    for fetcher in (fetch_url_text_with_curl, fetch_url_text_with_urllib):
+        try:
+            return fetcher(url)
+        except (FileNotFoundError, subprocess.CalledProcessError, TimeoutError, OSError, URLError) as exc:
+            errors.append(f"{fetcher.__name__}: {exc}")
+    raise RuntimeError(f"Failed to fetch {url}: {'; '.join(errors)}")
+
+
+def extract_required_match(text: str, pattern: str, label: str) -> re.Match[str]:
+    match = re.search(pattern, text, flags=re.IGNORECASE | re.DOTALL)
+    if not match:
+        raise ValueError(f"Could not parse {label} from visitor counter snapshot.")
+    return match
+
+
+def parse_visitor_overview(overview_html: str) -> dict[str, object]:
+    text = strip_html_text(overview_html)
+    country_match = extract_required_match(
+        text,
+        r"(\d+)\s+different countries have visited this site\.\s+(\d+)\s+flags collected\.",
+        "visitor coverage",
+    )
+    visitors_match = extract_required_match(
+        text,
+        r"Visitors\s+Yesterday:\s*(\d+)\s+30 day average:\s*(\d+)\s+Record:\s*(\d+)\s+on\s+([A-Za-z]+\s+\d{1,2},\s+\d{4})",
+        "visitor totals",
+    )
+    views_match = extract_required_match(
+        text,
+        r"Flag Counter Views\s+Yesterday:\s*(\d+)\s+30 day average:\s*(\d+)\s+Record:\s*(\d+)\s+on\s+([A-Za-z]+\s+\d{1,2},\s+\d{4})",
+        "counter views",
+    )
+    return {
+        "total_countries": int(country_match.group(1)),
+        "flags_collected": int(country_match.group(2)),
+        "visitors_yesterday": int(visitors_match.group(1)),
+        "visitors_30d_average": int(visitors_match.group(2)),
+        "visitors_record": int(visitors_match.group(3)),
+        "visitors_record_date": visitors_match.group(4),
+        "views_yesterday": int(views_match.group(1)),
+        "views_30d_average": int(views_match.group(2)),
+        "views_record": int(views_match.group(3)),
+        "views_record_date": views_match.group(4),
+    }
+
+
+def parse_visitor_countries(countries_html: str) -> list[dict[str, object]]:
+    countries: list[dict[str, object]] = []
+    for row_html in re.findall(r"<tr>(.*?)</tr>", countries_html, flags=re.IGNORECASE | re.DOTALL):
+        if "style=\"display:none;\"" in row_html.lower():
+            continue
+        if "/flag_details/" not in row_html or "/factbook/" not in row_html:
+            continue
+        code_match = re.search(r"/factbook/([a-z]{2})/DVgZ", row_html, flags=re.IGNORECASE)
+        country_match = re.search(r"/factbook/[a-z]{2}/DVgZ[^>]*><u>([^<]+)</u></a>", row_html, flags=re.IGNORECASE)
+        visitors_match = re.search(
+            r"</a></font></td>\s*<td[^>]*><font[^>]*>(\d+)</font></td>",
+            row_html,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        last_seen_match = re.search(r"<td>([^<]+)</td>\s*$", row_html, flags=re.IGNORECASE | re.DOTALL)
+        if not code_match or not country_match or not visitors_match or not last_seen_match:
+            continue
+        countries.append(
+            {
+                "code": code_match.group(1).upper(),
+                "country": unescape(country_match.group(1)).strip(),
+                "visitors": int(visitors_match.group(1)),
+                "last_seen": strip_html_text(last_seen_match.group(1)),
+            }
+        )
+    return countries
+
+
+def build_visitor_snapshot() -> dict[str, object]:
+    overview_html = fetch_url_text(VISITOR_OVERVIEW_URL)
+    countries_html = fetch_url_text(VISITOR_COUNTRIES_URL)
+    overview = parse_visitor_overview(overview_html)
+    countries = parse_visitor_countries(countries_html)
+    visible_countries = [
+        country for country in countries if country["country"] not in VISITOR_HIDDEN_COUNTRIES
+    ]
+    return {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "available": True,
+        "counter_id": VISITOR_COUNTER_ID,
+        "source": "Flag Counter public overview",
+        "hidden_countries": sorted(VISITOR_HIDDEN_COUNTRIES),
+        "total_countries": overview["total_countries"],
+        "flags_collected": overview["flags_collected"],
+        "visitors_yesterday": overview["visitors_yesterday"],
+        "visitors_30d_average": overview["visitors_30d_average"],
+        "visitors_record": overview["visitors_record"],
+        "visitors_record_date": overview["visitors_record_date"],
+        "views_yesterday": overview["views_yesterday"],
+        "views_30d_average": overview["views_30d_average"],
+        "views_record": overview["views_record"],
+        "views_record_date": overview["views_record_date"],
+        "countries": visible_countries,
+        "top_countries": visible_countries[:5],
+    }
 
 
 def round_or_none(value: float | None, digits: int = 3) -> float | None:
@@ -527,6 +685,23 @@ def main() -> None:
     )
     (OUTPUT_DIR / "events.json").write_text(
         json.dumps({"events": EVENTS}, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    try:
+        visitor_payload = build_visitor_snapshot()
+    except Exception as exc:
+        print(f"Visitor snapshot unavailable: {exc}")
+        visitor_payload = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "available": False,
+            "counter_id": VISITOR_COUNTER_ID,
+            "source": "Flag Counter public overview",
+            "hidden_countries": sorted(VISITOR_HIDDEN_COUNTRIES),
+            "countries": [],
+            "top_countries": [],
+        }
+    (OUTPUT_DIR / "visitor_stats.json").write_text(
+        json.dumps(visitor_payload, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
 
