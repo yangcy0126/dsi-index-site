@@ -2,7 +2,7 @@
   "code": "AU",
   "label": "Australia",
   "label_zh": "Australia",
-  "generated_at": "2026-03-22T17:28:29.235016+00:00",
+  "generated_at": "2026-03-23T05:41:08.937469+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -9790,6 +9790,13 @@
       "raw": null,
       "rolling7": 0.0,
       "rolling30": 0.133,
+      "publication": false
+    },
+    {
+      "date": "2026-03-23",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": 0.067,
       "publication": false
     }
   ]
