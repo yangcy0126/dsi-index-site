@@ -75,7 +75,11 @@ MASTER_EXTRA_VARIABLE_DEFINITIONS = [
 VISITOR_COUNTER_ID = "DVgZ"
 VISITOR_OVERVIEW_URL = f"https://s01.flagcounter.com/more/{VISITOR_COUNTER_ID}/"
 VISITOR_COUNTRIES_URL = f"https://s01.flagcounter.com/countries/{VISITOR_COUNTER_ID}/"
-VISITOR_HIDDEN_COUNTRIES = {"Taiwan"}
+VISITOR_COUNTRY_ROLLOVER = {
+    "TW": {"code": "CN", "country": "China"},
+    "HK": {"code": "CN", "country": "China"},
+    "MO": {"code": "CN", "country": "China"},
+}
 
 COUNTRIES = [
     {
@@ -336,20 +340,42 @@ def parse_visitor_countries(countries_html: str) -> list[dict[str, object]]:
     return countries
 
 
+def roll_up_visitor_countries(countries: list[dict[str, object]]) -> list[dict[str, object]]:
+    rolled: dict[str, dict[str, object]] = {}
+    for country in countries:
+        target = VISITOR_COUNTRY_ROLLOVER.get(
+            str(country["code"]),
+            {"code": country["code"], "country": country["country"]},
+        )
+        key = str(target["code"])
+        if key not in rolled:
+            rolled[key] = {
+                "code": target["code"],
+                "country": target["country"],
+                "visitors": 0,
+                "members": [],
+            }
+        rolled[key]["visitors"] = int(rolled[key]["visitors"]) + int(country["visitors"])
+        members = rolled[key]["members"]
+        if str(country["country"]) not in members:
+            members.append(str(country["country"]))
+    return sorted(
+        rolled.values(),
+        key=lambda item: (-int(item["visitors"]), str(item["country"])),
+    )
+
+
 def build_visitor_snapshot() -> dict[str, object]:
     overview_html = fetch_url_text(VISITOR_OVERVIEW_URL)
     countries_html = fetch_url_text(VISITOR_COUNTRIES_URL)
     overview = parse_visitor_overview(overview_html)
-    countries = parse_visitor_countries(countries_html)
-    visible_countries = [
-        country for country in countries if country["country"] not in VISITOR_HIDDEN_COUNTRIES
-    ]
+    countries = roll_up_visitor_countries(parse_visitor_countries(countries_html))
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "available": True,
         "counter_id": VISITOR_COUNTER_ID,
         "source": "Flag Counter public overview",
-        "hidden_countries": sorted(VISITOR_HIDDEN_COUNTRIES),
+        "rolled_into_china": ["Hong Kong", "Macau", "Taiwan"],
         "total_countries": overview["total_countries"],
         "flags_collected": overview["flags_collected"],
         "visitors_yesterday": overview["visitors_yesterday"],
@@ -360,8 +386,8 @@ def build_visitor_snapshot() -> dict[str, object]:
         "views_30d_average": overview["views_30d_average"],
         "views_record": overview["views_record"],
         "views_record_date": overview["views_record_date"],
-        "countries": visible_countries,
-        "top_countries": visible_countries[:5],
+        "countries": countries,
+        "top_countries": countries[:5],
     }
 
 
@@ -696,7 +722,7 @@ def main() -> None:
             "available": False,
             "counter_id": VISITOR_COUNTER_ID,
             "source": "Flag Counter public overview",
-            "hidden_countries": sorted(VISITOR_HIDDEN_COUNTRIES),
+            "rolled_into_china": ["Hong Kong", "Macau", "Taiwan"],
             "countries": [],
             "top_countries": [],
         }
