@@ -104,14 +104,14 @@ jobs:
           if-no-files-found: error
           overwrite: true
 
-      - name: Refresh records (modern archive 2024-2025 reparse)
+      - name: Refresh records (modern archive late-2024 reparse)
         continue-on-error: true
         run: |
           python -u scripts/update_wdsi_records.py \
             --countries US \
-            --start-date 2024-01-01 \
+            --start-date 2024-08-01 \
             --end-date 2025-01-19 \
-            --max-pages 120 \
+            --max-pages 140 \
             --history-backfill-rounds 0 \
             --skip-build
         env:
@@ -123,7 +123,7 @@ jobs:
           WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
 
-      - name: Upload post-modern-archive-2024-2025 checkpoint
+      - name: Upload post-modern-archive-late-2024 checkpoint
         uses: actions/upload-artifact@v4
         with:
           name: records-US
@@ -131,13 +131,121 @@ jobs:
           if-no-files-found: error
           overwrite: true
 
-      - name: Refresh records (modern archive 2023 reparse)
+      - name: Refresh records (modern archive early-2024 reparse)
+        continue-on-error: true
+        run: |
+          python -u scripts/update_wdsi_records.py \
+            --countries US \
+            --start-date 2024-01-01 \
+            --end-date 2024-07-31 \
+            --max-pages 140 \
+            --history-backfill-rounds 0 \
+            --skip-build
+        env:
+          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
+          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
+          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
+
+      - name: Upload post-modern-archive-early-2024 checkpoint
+        uses: actions/upload-artifact@v4
+        with:
+          name: records-US
+          path: records/US.csv
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Refresh records (modern archive late-2023 reparse)
+        continue-on-error: true
+        run: |
+          python -u scripts/update_wdsi_records.py \
+            --countries US \
+            --start-date 2023-07-01 \
+            --end-date 2023-12-31 \
+            --max-pages 140 \
+            --history-backfill-rounds 0 \
+            --skip-build
+        env:
+          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
+          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
+          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
+
+      - name: Upload post-modern-archive-late-2023 checkpoint
+        uses: actions/upload-artifact@v4
+        with:
+          name: records-US
+          path: records/US.csv
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Refresh records (modern archive early-2023 reparse)
         continue-on-error: true
         run: |
           python -u scripts/update_wdsi_records.py \
             --countries US \
             --start-date 2023-01-01 \
-            --end-date 2023-12-31 \
+            --end-date 2023-06-30 \
+            --max-pages 140 \
+            --history-backfill-rounds 0 \
+            --skip-build
+        env:
+          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
+          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
+          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
+
+      - name: Upload post-modern-archive-early-2023 checkpoint
+        uses: actions/upload-artifact@v4
+        with:
+          name: records-US
+          path: records/US.csv
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Refresh records (modern archive late-2022 reparse)
+        continue-on-error: true
+        run: |
+          python -u scripts/update_wdsi_records.py \
+            --countries US \
+            --start-date 2022-07-01 \
+            --end-date 2022-12-31 \
+            --max-pages 160 \
+            --history-backfill-rounds 0 \
+            --skip-build
+        env:
+          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
+          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
+          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
+
+      - name: Upload post-modern-archive-late-2022 checkpoint
+        uses: actions/upload-artifact@v4
+        with:
+          name: records-US
+          path: records/US.csv
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Refresh records (modern archive early-2022 reparse)
+        continue-on-error: true
+        run: |
+          python -u scripts/update_wdsi_records.py \
+            --countries US \
+            --start-date 2022-03-01 \
+            --end-date 2022-06-30 \
             --max-pages 120 \
             --history-backfill-rounds 0 \
             --skip-build
@@ -150,7 +258,7 @@ jobs:
           WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
 
-      - name: Upload post-modern-archive-2023 checkpoint
+      - name: Upload post-modern-archive-early-2022 checkpoint
         uses: actions/upload-artifact@v4
         with:
           name: records-US
