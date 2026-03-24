@@ -1612,9 +1612,9 @@ class UsStateDepartmentSource:
                 start_page = 1020
             else:
                 start_page = 1040
-            band_start = min(start_page, page_limit)
-            band_end = min(page_limit, band_start + 60)
-            return range(band_start, band_end + 1)
+            max_page = int(self.archived_press_page_limits.get(era_label, page_limit))
+            band_end = min(max_page, start_page + max(page_limit, 1) - 1)
+            return range(start_page, band_end + 1)
 
         if era_label != "2017-2021":
             return range(1, page_limit + 1)
@@ -1634,7 +1634,9 @@ class UsStateDepartmentSource:
         else:
             start_page = 730
 
-        return range(min(start_page, page_limit), page_limit + 1)
+        max_page = int(self.archived_press_page_limits.get(era_label, page_limit))
+        band_end = min(max_page, start_page + max(page_limit, 1) - 1)
+        return range(start_page, band_end + 1)
 
     @staticmethod
     def _parse_legacy_listing_date(value: str) -> str:
