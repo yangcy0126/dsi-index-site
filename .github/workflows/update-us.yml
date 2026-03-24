@@ -77,14 +77,14 @@ jobs:
           if-no-files-found: error
           overwrite: true
 
-      - name: Refresh records (modern current reparse)
+      - name: Refresh records (modern current 2026 reparse)
         continue-on-error: true
         run: |
           python -u scripts/update_wdsi_records.py \
             --countries US \
-            --start-date 2025-01-20 \
+            --start-date 2026-01-01 \
             --end-date "$(date -u +%F)" \
-            --max-pages 120 \
+            --max-pages 30 \
             --history-backfill-rounds 0 \
             --skip-build
         env:
@@ -96,7 +96,34 @@ jobs:
           WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
           WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
 
-      - name: Upload post-modern-current checkpoint
+      - name: Upload post-modern-current-2026 checkpoint
+        uses: actions/upload-artifact@v4
+        with:
+          name: records-US
+          path: records/US.csv
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Refresh records (modern current late-2025 reparse)
+        continue-on-error: true
+        run: |
+          python -u scripts/update_wdsi_records.py \
+            --countries US \
+            --start-date 2025-09-01 \
+            --end-date 2025-12-31 \
+            --max-pages 80 \
+            --history-backfill-rounds 0 \
+            --skip-build
+        env:
+          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
+          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
+          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
+
+      - name: Upload post-modern-current-late-2025 checkpoint
         uses: actions/upload-artifact@v4
         with:
           name: records-US
@@ -211,295 +238,6 @@ jobs:
           path: records/US.csv
           if-no-files-found: error
           overwrite: true
-
-      - name: Refresh records (modern archive late-2022 reparse)
-        continue-on-error: true
-        run: |
-          python -u scripts/update_wdsi_records.py \
-            --countries US \
-            --start-date 2022-07-01 \
-            --end-date 2022-12-31 \
-            --max-pages 160 \
-            --history-backfill-rounds 0 \
-            --skip-build
-        env:
-          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
-          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
-          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
-          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
-          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
-
-      - name: Upload post-modern-archive-late-2022 checkpoint
-        uses: actions/upload-artifact@v4
-        with:
-          name: records-US
-          path: records/US.csv
-          if-no-files-found: error
-          overwrite: true
-
-      - name: Refresh records (modern archive early-2022 reparse)
-        continue-on-error: true
-        run: |
-          python -u scripts/update_wdsi_records.py \
-            --countries US \
-            --start-date 2022-03-01 \
-            --end-date 2022-06-30 \
-            --max-pages 120 \
-            --history-backfill-rounds 0 \
-            --skip-build
-        env:
-          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
-          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
-          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
-          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
-          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
-
-      - name: Upload post-modern-archive-early-2022 checkpoint
-        uses: actions/upload-artifact@v4
-        with:
-          name: records-US
-          path: records/US.csv
-          if-no-files-found: error
-          overwrite: true
-
-      - name: Update records (extra history backfill)
-        continue-on-error: true
-        run: |
-          python -u scripts/update_wdsi_records.py \
-            --countries US \
-            --lookback-days 1 \
-            --max-pages 90 \
-            --history-backfill-rounds 1 \
-            --history-only \
-            --skip-build
-        env:
-          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
-          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
-          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
-          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
-          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
-
-      - name: Upload post-extra checkpoint
-        uses: actions/upload-artifact@v4
-        with:
-          name: records-US
-          path: records/US.csv
-          if-no-files-found: error
-          overwrite: true
-
-      - name: Update records (second extra history backfill)
-        continue-on-error: true
-        run: |
-          python -u scripts/update_wdsi_records.py \
-            --countries US \
-            --lookback-days 1 \
-            --max-pages 90 \
-            --history-backfill-rounds 1 \
-            --history-only \
-            --skip-build
-        env:
-          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
-          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
-          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
-          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
-          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
-
-      - name: Upload post-second-extra checkpoint
-        uses: actions/upload-artifact@v4
-        with:
-          name: records-US
-          path: records/US.csv
-          if-no-files-found: error
-          overwrite: true
-
-      - name: Update records (third extra history backfill)
-        continue-on-error: true
-        run: |
-          python -u scripts/update_wdsi_records.py \
-            --countries US \
-            --lookback-days 1 \
-            --max-pages 90 \
-            --history-backfill-rounds 1 \
-            --history-only \
-            --skip-build
-        env:
-          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
-          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
-          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
-          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
-          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
-
-      - name: Upload post-third-extra checkpoint
-        uses: actions/upload-artifact@v4
-        with:
-          name: records-US
-          path: records/US.csv
-          if-no-files-found: error
-          overwrite: true
-
-      - name: Update records (fourth extra history backfill)
-        continue-on-error: true
-        run: |
-          python -u scripts/update_wdsi_records.py \
-            --countries US \
-            --lookback-days 1 \
-            --max-pages 90 \
-            --history-backfill-rounds 1 \
-            --history-only \
-            --skip-build
-        env:
-          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
-          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
-          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
-          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
-          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
-
-      - name: Upload post-fourth-extra checkpoint
-        uses: actions/upload-artifact@v4
-        with:
-          name: records-US
-          path: records/US.csv
-          if-no-files-found: error
-          overwrite: true
-
-      - name: Update records (fifth extra history backfill)
-        continue-on-error: true
-        run: |
-          python -u scripts/update_wdsi_records.py \
-            --countries US \
-            --lookback-days 1 \
-            --max-pages 90 \
-            --history-backfill-rounds 1 \
-            --history-only \
-            --skip-build
-        env:
-          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
-          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
-          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
-          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
-          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
-
-      - name: Upload post-fifth-extra checkpoint
-        uses: actions/upload-artifact@v4
-        with:
-          name: records-US
-          path: records/US.csv
-          if-no-files-found: error
-          overwrite: true
-
-      - name: Update records (sixth extra history backfill)
-        continue-on-error: true
-        run: |
-          python -u scripts/update_wdsi_records.py \
-            --countries US \
-            --lookback-days 1 \
-            --max-pages 90 \
-            --history-backfill-rounds 1 \
-            --history-only \
-            --skip-build
-        env:
-          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
-          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
-          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
-          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
-          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
-
-      - name: Upload post-sixth-extra checkpoint
-        uses: actions/upload-artifact@v4
-        with:
-          name: records-US
-          path: records/US.csv
-          if-no-files-found: error
-          overwrite: true
-
-      - name: Update records (seventh extra history backfill)
-        continue-on-error: true
-        run: |
-          python -u scripts/update_wdsi_records.py \
-            --countries US \
-            --lookback-days 1 \
-            --max-pages 90 \
-            --history-backfill-rounds 1 \
-            --history-only \
-            --skip-build
-        env:
-          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
-          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
-          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
-          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
-          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
-
-      - name: Upload post-seventh-extra checkpoint
-        uses: actions/upload-artifact@v4
-        with:
-          name: records-US
-          path: records/US.csv
-          if-no-files-found: error
-          overwrite: true
-
-      - name: Update records (eighth extra history backfill)
-        continue-on-error: true
-        run: |
-          python -u scripts/update_wdsi_records.py \
-            --countries US \
-            --lookback-days 1 \
-            --max-pages 90 \
-            --history-backfill-rounds 1 \
-            --history-only \
-            --skip-build
-        env:
-          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
-          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
-          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
-          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
-          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
-
-      - name: Upload post-eighth-extra checkpoint
-        uses: actions/upload-artifact@v4
-        with:
-          name: records-US
-          path: records/US.csv
-          if-no-files-found: error
-          overwrite: true
-
-      - name: Update records (ninth extra history backfill)
-        continue-on-error: true
-        run: |
-          python -u scripts/update_wdsi_records.py \
-            --countries US \
-            --lookback-days 1 \
-            --max-pages 90 \
-            --history-backfill-rounds 1 \
-            --history-only \
-            --skip-build
-        env:
-          WDSI_API_KEY: ${{ secrets.WDSI_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          WDSI_API_BASE_URL: ${{ vars.WDSI_API_BASE_URL }}
-          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
-          WDSI_MODEL: ${{ vars.WDSI_MODEL }}
-          WDSI_OPENAI_MODEL: ${{ vars.WDSI_OPENAI_MODEL }}
-          WDSI_REASONING_EFFORT: ${{ vars.WDSI_REASONING_EFFORT }}
 
       - name: Upload country record
         if: always()
