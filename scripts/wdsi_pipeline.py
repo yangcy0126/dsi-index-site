@@ -1180,7 +1180,9 @@ class UsStateDepartmentSource:
             raise ValueError(f"Missing parsed content for {url}")
 
         resolved_title = self._clean_state_title(title)
-        if self._is_placeholder_state_title(resolved_title):
+        if source_hint == "department_press_briefing":
+            resolved_title = self._infer_briefing_title(url) or resolved_title
+        elif self._is_placeholder_state_title(resolved_title):
             resolved_title = self._infer_briefing_title(url) or resolved_title
         doc_type = self._infer_doc_type_from_html(soup, resolved_title, source_hint)
         line_doc_type = self._extract_state_doc_type(lines, resolved_title, source_hint)
@@ -1221,7 +1223,9 @@ class UsStateDepartmentSource:
             raise ValueError(f"Empty markdown body for {url}")
 
         title = self._clean_state_title(self._extract_state_title(lines, fallback_title))
-        if self._is_placeholder_state_title(title):
+        if source_hint == "department_press_briefing":
+            title = self._infer_briefing_title(url) or title
+        elif self._is_placeholder_state_title(title):
             title = self._infer_briefing_title(url) or title
         published_at = published_at_hint or self._extract_state_date(lines, title, url, source_hint)
         if not title or not published_at:
@@ -1340,29 +1344,45 @@ class UsStateDepartmentSource:
         if lines and lines[0].startswith("# "):
             start_index = 1
 
+        repeated_title_index = self._find_state_article_anchor(lines, title)
         if source_hint != "department_press_briefing":
             date_line_index = None
-            for index, line in enumerate(lines[:80]):
+            scan_start = repeated_title_index or 0
+            scan_end = min(len(lines), scan_start + 120)
+            for index in range(scan_start, scan_end):
+                line = lines[index]
                 if self.state_listing_date_re.search(line):
                     date_line_index = index
                     break
             if date_line_index is not None:
                 start_index = date_line_index + 1
             else:
-                normalized_title = clean_text(title)
-                for index, line in enumerate(lines[:200]):
+                normalized_title = clean_text(title).casefold()
+                body_scan_end = min(len(lines), max(scan_end + 80, 240))
+                for index in range(scan_start, body_scan_end):
+                    line = lines[index]
                     text = clean_text(line)
-                    if text == normalized_title or text == "hide":
+                    stripped = clean_text(re.sub(r"^#+\s*", "", text)).casefold()
+                    if stripped == normalized_title or text == "hide":
                         continue
-                    if STATE_BODY_START_RE.match(text):
+                    if STATE_BODY_START_RE.match(text) or STATE_BODY_START_RE.match(clean_text(re.sub(r"^#+\s*", "", text))):
                         start_index = index
                         break
+                else:
+                    if repeated_title_index is not None:
+                        start_index = repeated_title_index + 1
         else:
-            for index, line in enumerate(lines[:200]):
+            briefing_scan_start = repeated_title_index or 0
+            briefing_scan_end = min(len(lines), briefing_scan_start + 180)
+            for index in range(briefing_scan_start, briefing_scan_end):
+                line = lines[index]
                 text = clean_text(line)
                 if STATE_BRIEFING_TIME_RE.fullmatch(text) or STATE_BRIEFING_SPEAKER_RE.match(text):
                     start_index = index
                     break
+            else:
+                if repeated_title_index is not None:
+                    start_index = repeated_title_index + 1
 
         while start_index < len(lines) and self._looks_like_state_metadata_line(lines[start_index], doc_type):
             start_index += 1
@@ -1371,6 +1391,16 @@ class UsStateDepartmentSource:
         if source_hint == "department_press_briefing" and not content:
             content = clean_text("\n".join(lines[1 if lines and lines[0].startswith("# ") else 0 :]))
         return content
+
+    def _find_state_article_anchor(self, lines: list[str], title: str) -> int | None:
+        normalized_title = clean_text(title).casefold()
+        if not normalized_title:
+            return None
+        for index, line in enumerate(lines[1:400], start=1):
+            candidate = clean_text(re.sub(r"^#+\s*", "", line)).casefold()
+            if candidate == normalized_title:
+                return index
+        return None
 
     def _trim_state_briefing_content(self, content: str) -> str:
         lines = [clean_text(line) for line in content.splitlines() if clean_text(line)]
