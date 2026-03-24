@@ -2,7 +2,7 @@
   "code": "BR",
   "label": "Brazil",
   "label_zh": "Brazil",
-  "generated_at": "2026-03-23T20:43:40.828741+00:00",
+  "generated_at": "2026-03-24T03:43:43.357301+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -10804,6 +10804,13 @@
       "date": "2026-03-23",
       "raw": null,
       "rolling7": -0.286,
+      "rolling30": -0.7,
+      "publication": false
+    },
+    {
+      "date": "2026-03-24",
+      "raw": null,
+      "rolling7": 0.0,
       "rolling30": -0.7,
       "publication": false
     }
