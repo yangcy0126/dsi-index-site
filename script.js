@@ -2,18 +2,24 @@ const state = {
   summary: null,
   events: [],
   trump: null,
+  trumpDirected: null,
   visitors: null,
   selectedCode: null,
   seriesMode: "rolling7",
   trumpSeriesMode: "7d",
+  trumpDirectedSeriesMode: "7d",
+  trumpDirectedSelectedCode: null,
   cache: new Map(),
+  trumpDirectedCache: new Map(),
 };
 
 const summaryPath = "data/summary.json";
 const eventsPath = "data/events.json";
 const trumpPath = "data/trump_indices.json";
+const trumpDirectedSummaryPath = "data/trump_directed_summary.json";
+const trumpDirectedBasePath = "data/trump_directed";
 const visitorsPath = "data/visitor_stats.json";
-const assetVersion = "20260323-visitors-live-1";
+const assetVersion = "20260325-trump-directed-1";
 const VISITORS_REFRESH_INTERVAL_MS = 120000;
 let visitorsRefreshTimer = null;
 let visitorsRefreshInFlight = false;
@@ -104,6 +110,40 @@ function getTrumpSeriesKey(baseKey) {
 function getLatestTrumpRecord() {
   const records = state.trump?.records || [];
   return records.length ? records[records.length - 1] : null;
+}
+
+function getTrumpDirectedCountryMeta(code) {
+  return (state.trumpDirected?.countries || []).find((country) => country.code === code) || null;
+}
+
+function getLatestTrumpDirectedRecord(records) {
+  return records.length ? records[records.length - 1] : null;
+}
+
+function getTrumpDirectedSeriesKey(baseKey) {
+  if (state.trumpDirectedSeriesMode === "daily") {
+    return baseKey;
+  }
+  if (state.trumpDirectedSeriesMode === "30d") {
+    return `${baseKey}_30d`;
+  }
+  return `${baseKey}_7d`;
+}
+
+function directedAttentionMeta(score) {
+  if (!hasNumericValue(score)) {
+    return { label: "unavailable", className: "tone-muted" };
+  }
+  if (score >= 1) {
+    return { label: "very active", className: "signal-hot" };
+  }
+  if (score >= 0.35) {
+    return { label: "active", className: "signal-hot" };
+  }
+  if (score > 0) {
+    return { label: "light attention", className: "tone-neutral" };
+  }
+  return { label: "quiet", className: "signal-cool" };
 }
 
 function getVisibleTrumpPoliticalEvents(records) {
@@ -256,6 +296,13 @@ async function loadCountryData(code) {
     state.cache.set(code, fetchJson(`data/${code}.json`));
   }
   return state.cache.get(code);
+}
+
+async function loadTrumpDirectedCountryData(code) {
+  if (!state.trumpDirectedCache.has(code)) {
+    state.trumpDirectedCache.set(code, fetchJson(`${trumpDirectedBasePath}/${code}.json`));
+  }
+  return state.trumpDirectedCache.get(code);
 }
 
 function escapeHtml(value) {
@@ -750,6 +797,319 @@ function renderTrumpSupplement() {
   renderTrumpChart();
 }
 
+function orderedTrumpDirectedCountries() {
+  const summaryCountries = state.summary?.countries || [];
+  const directedCountries = state.trumpDirected?.countries || [];
+  const directedMap = new Map(directedCountries.map((country) => [country.code, country]));
+  const ordered = summaryCountries
+    .map((country) => directedMap.get(country.code))
+    .filter(Boolean);
+  const leftovers = directedCountries.filter((country) => !ordered.some((item) => item.code === country.code));
+  return [...ordered, ...leftovers];
+}
+
+function renderTrumpDirectedMeta() {
+  const shell = document.getElementById("trump-directed-shell");
+  if (!shell) {
+    return;
+  }
+  if (!state.trumpDirected || !(state.trumpDirected.countries || []).length) {
+    shell.hidden = true;
+    return;
+  }
+
+  shell.hidden = false;
+  document.getElementById("trump-directed-coverage-range").textContent =
+    `${formatDate(state.trumpDirected.coverage_start)} to ${formatDate(state.trumpDirected.coverage_end)}`;
+  document.getElementById("trump-directed-country-count").textContent =
+    formatWholeNumber((state.trumpDirected.countries || []).length);
+  document.getElementById("trump-directed-candidate-texts").textContent =
+    `${formatWholeNumber(state.trumpDirected.accepted_candidate_texts)} / ${formatWholeNumber(state.trumpDirected.candidate_texts_scored)}`;
+  document.getElementById("trump-directed-post-country-rows").textContent =
+    formatWholeNumber(state.trumpDirected.post_country_rows);
+  document.getElementById("trump-directed-mode-note").textContent =
+    `Current view: ${trumpSeriesLabel(state.trumpDirectedSeriesMode)}. Tone and geopolitical series stay blank when the selected country is not materially mentioned in the current window.`;
+}
+
+function renderTrumpDirectedBoard() {
+  const board = document.getElementById("trump-directed-board");
+  if (!board || !state.trumpDirected) {
+    return;
+  }
+  board.innerHTML = "";
+
+  orderedTrumpDirectedCountries().forEach((country) => {
+    const wdsiCountry = getCountryByCode(country.code) || {};
+    const tone = hasNumericValue(country.latest_tone_7d)
+      ? trumpToneMeta(country.latest_tone_7d)
+      : { label: "no recent 7-day signal", className: "tone-muted" };
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `directed-country-card ${country.code === state.trumpDirectedSelectedCode ? "is-active" : ""}`;
+    button.style.setProperty("--country-color", wdsiCountry.color || "#0f6c74");
+    button.innerHTML = `
+      <h3>${country.label}</h3>
+      <div class="directed-country-meta">
+        <span>${formatWholeNumber(country.directed_posts_total)} directed posts</span>
+        <span>Last mention ${formatDate(country.last_mention_date)}</span>
+      </div>
+      <div class="directed-country-score ${tone.className}">
+        ${hasNumericValue(country.latest_tone_7d) ? formatScore(country.latest_tone_7d) : "--"}
+      </div>
+      <div class="directed-country-tone">${tone.label}</div>
+    `;
+    button.addEventListener("click", () => {
+      void setSelectedTrumpDirectedCountry(country.code);
+    });
+    board.appendChild(button);
+  });
+}
+
+function renderTrumpDirectedMetricCards(countryMeta, countryData) {
+  const latest = getLatestTrumpDirectedRecord(countryData.records || []);
+  if (!latest) {
+    return;
+  }
+
+  const toneKey = getTrumpDirectedSeriesKey("directed_tone_index");
+  const geoKey = getTrumpDirectedSeriesKey("directed_geopolitical_index");
+  const attentionKey = state.trumpDirectedSeriesMode === "daily"
+    ? "directed_posts"
+    : getTrumpDirectedSeriesKey("directed_attention_index");
+
+  const toneValue = latest[toneKey];
+  const geoValue = latest[geoKey];
+  const attentionValue = latest[attentionKey];
+  const tone = trumpToneMeta(toneValue);
+  const geo = trumpGeopoliticalMeta(geoValue);
+  const attention = directedAttentionMeta(attentionValue);
+  const modeLabel = trumpSeriesLabel(state.trumpDirectedSeriesMode);
+  const lastMention = formatDate(countryMeta.last_mention_date);
+
+  const toneEl = document.getElementById("trump-directed-tone-latest");
+  toneEl.textContent = hasNumericValue(toneValue) ? formatScore(toneValue) : "--";
+  toneEl.className = `metric-value ${hasNumericValue(toneValue) ? tone.className : "tone-muted"}`;
+  document.getElementById("trump-directed-tone-caption").textContent = hasNumericValue(toneValue)
+    ? `${countryMeta.label}'s ${modeLabel} directed tone currently reads ${tone.label}.`
+    : `${countryMeta.label} has no material mention in the current ${modeLabel} tone window. Last mention: ${lastMention}.`;
+
+  const geoEl = document.getElementById("trump-directed-geo-latest");
+  geoEl.textContent = hasNumericValue(geoValue) ? formatScore(geoValue) : "--";
+  geoEl.className = `metric-value ${hasNumericValue(geoValue) ? geo.className : "tone-muted"}`;
+  document.getElementById("trump-directed-geo-caption").textContent = hasNumericValue(geoValue)
+    ? `${countryMeta.label}'s ${modeLabel} geopolitical stance is currently ${geo.label}.`
+    : `${countryMeta.label} has no material mention in the current ${modeLabel} geopolitical window. Last mention: ${lastMention}.`;
+
+  const attentionEl = document.getElementById("trump-directed-attention-latest");
+  attentionEl.textContent = state.trumpDirectedSeriesMode === "daily"
+    ? formatWholeNumber(attentionValue)
+    : formatScore(attentionValue);
+  attentionEl.className = `metric-value ${attention.className}`;
+  document.getElementById("trump-directed-attention-caption").textContent = state.trumpDirectedSeriesMode === "daily"
+    ? `Material directed posts mentioning ${countryMeta.label} on the latest date.`
+    : `${modeLabel} log attention intensity is currently ${attention.label}.`;
+
+  document.getElementById("trump-directed-country-name").textContent = countryMeta.label;
+  document.getElementById("trump-directed-country-name").className = "metric-value tone-neutral";
+  document.getElementById("trump-directed-country-caption").textContent =
+    `Total directed posts: ${formatWholeNumber(countryMeta.directed_posts_total)}. Last material mention: ${lastMention}.`;
+}
+
+function buildTrumpDirectedChartLayout(countryMeta) {
+  return {
+    margin: { l: 46, r: 56, t: 36, b: 44 },
+    paper_bgcolor: "rgba(0,0,0,0)",
+    plot_bgcolor: "rgba(255,255,255,0)",
+    hovermode: "x unified",
+    font: {
+      family: '"Space Grotesk", sans-serif',
+      color: "#213132",
+    },
+    xaxis: {
+      showgrid: true,
+      gridcolor: "rgba(20, 38, 40, 0.08)",
+      zeroline: false,
+      tickfont: { color: "#5b6968" },
+    },
+    yaxis: {
+      title: `${countryMeta.label} directed tone / geopolitics`,
+      range: [-3.2, 3.2],
+      showgrid: true,
+      gridcolor: "rgba(20, 38, 40, 0.08)",
+      zeroline: true,
+      zerolinecolor: "rgba(20, 38, 40, 0.18)",
+      tickfont: { color: "#5b6968" },
+    },
+    yaxis2: {
+      title: state.trumpDirectedSeriesMode === "daily" ? "Directed posts" : "Attention (log mentions)",
+      overlaying: "y",
+      side: "right",
+      rangemode: "tozero",
+      showgrid: false,
+      tickfont: { color: "#5b6968" },
+    },
+    legend: {
+      orientation: "h",
+      yanchor: "bottom",
+      y: 1.02,
+      xanchor: "left",
+      x: 0,
+    },
+    shapes: [
+      {
+        type: "rect",
+        x0: "2021-01-09",
+        x1: "2022-02-13",
+        y0: -3.2,
+        y1: 3.2,
+        line: { width: 0 },
+        fillcolor: "rgba(20, 38, 40, 0.06)",
+      },
+      ...getVisibleTrumpPoliticalEvents(state.trump?.records || []).map((event) => ({
+        type: "line",
+        x0: event.date,
+        x1: event.date,
+        y0: -3.2,
+        y1: 3.2,
+        line: {
+          color: "rgba(184, 95, 53, 0.22)",
+          width: 1.1,
+          dash: "dot",
+        },
+      })),
+    ],
+    annotations: [
+      {
+        x: "2021-07-15",
+        y: 2.75,
+        xref: "x",
+        yref: "y",
+        text: "platform gap",
+        showarrow: false,
+        font: { size: 11, color: "#5b6968" },
+      },
+    ],
+  };
+}
+
+function renderTrumpDirectedChart(countryMeta, countryData) {
+  const records = countryData.records || [];
+  if (!records.length) {
+    return;
+  }
+
+  const dates = records.map((record) => record.date);
+  const toneKey = getTrumpDirectedSeriesKey("directed_tone_index");
+  const geoKey = getTrumpDirectedSeriesKey("directed_geopolitical_index");
+  const attentionKey = state.trumpDirectedSeriesMode === "daily"
+    ? "directed_posts"
+    : getTrumpDirectedSeriesKey("directed_attention_index");
+
+  const traces = [
+    {
+      x: dates,
+      y: records.map((record) => record[toneKey]),
+      type: "scatter",
+      mode: "lines",
+      name: "Directed tone",
+      line: {
+        color: "#b85f35",
+        width: 2.4,
+      },
+      hovertemplate: "%{x}<br>Directed tone: %{y:.3f}<extra></extra>",
+    },
+    {
+      x: dates,
+      y: records.map((record) => record[geoKey]),
+      type: "scatter",
+      mode: "lines",
+      name: "Directed geopolitical",
+      line: {
+        color: "#0f6c74",
+        width: 2.2,
+      },
+      hovertemplate: "%{x}<br>Directed geopolitical: %{y:.3f}<extra></extra>",
+    },
+    state.trumpDirectedSeriesMode === "daily"
+      ? {
+          x: dates,
+          y: records.map((record) => record[attentionKey]),
+          type: "bar",
+          name: "Directed posts",
+          yaxis: "y2",
+          marker: {
+            color: "rgba(33, 49, 50, 0.38)",
+          },
+          hovertemplate: "%{x}<br>Directed posts: %{y:.0f}<extra></extra>",
+        }
+      : {
+          x: dates,
+          y: records.map((record) => record[attentionKey]),
+          type: "scatter",
+          mode: "lines",
+          name: "Directed attention",
+          yaxis: "y2",
+          line: {
+            color: "#213132",
+            width: 2,
+            dash: "dot",
+          },
+          hovertemplate: "%{x}<br>Directed attention: %{y:.3f}<extra></extra>",
+        },
+  ];
+
+  Plotly.react("trump-directed-chart", traces, buildTrumpDirectedChartLayout(countryMeta), {
+    displayModeBar: true,
+    responsive: true,
+    displaylogo: false,
+    modeBarButtonsToRemove: ["select2d", "lasso2d", "autoScale2d"],
+  });
+
+  document.getElementById("trump-directed-chart-caption").textContent =
+    `${countryMeta.label} is shown here through Trump's directed tone, directed geopolitical stance, and directed attention. Tone and geopolitical values are blank on windows with no material mention of this country; attention remains available to show whether Trump is talking about it at all.`;
+}
+
+async function setSelectedTrumpDirectedCountry(code) {
+  state.trumpDirectedSelectedCode = code;
+  renderTrumpDirectedBoard();
+
+  const countryMeta = getTrumpDirectedCountryMeta(code);
+  if (!countryMeta) {
+    return;
+  }
+  const countryData = await loadTrumpDirectedCountryData(code);
+  renderTrumpDirectedMetricCards(countryMeta, countryData);
+  renderTrumpDirectedChart(countryMeta, countryData);
+}
+
+function bindTrumpDirectedSeriesToggle() {
+  const container = document.getElementById("trump-directed-series-toggle");
+  if (!container) {
+    return;
+  }
+  container.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-trump-directed-series]");
+    if (!button || !state.trumpDirected) {
+      return;
+    }
+
+    state.trumpDirectedSeriesMode = button.dataset.trumpDirectedSeries;
+    container.querySelectorAll("button").forEach((node) => {
+      node.classList.toggle("is-active", node === button);
+    });
+
+    renderTrumpDirectedMeta();
+    if (state.trumpDirectedSelectedCode) {
+      void setSelectedTrumpDirectedCountry(state.trumpDirectedSelectedCode);
+    }
+  });
+}
+
+function renderTrumpDirectedSupplement() {
+  renderTrumpDirectedMeta();
+  renderTrumpDirectedBoard();
+}
+
 function updateEventChips(countryData) {
   const chips = document.getElementById("event-chips");
   chips.innerHTML = "";
@@ -986,20 +1346,27 @@ function bindTrumpSeriesToggle() {
 
 async function init() {
   try {
-    const [summary, events, trump, visitors] = await Promise.all([
+    const [summary, events, trump, trumpDirected, visitors] = await Promise.all([
       fetchJson(summaryPath),
       fetchJson(eventsPath),
       fetchJson(trumpPath).catch(() => null),
+      fetchJson(trumpDirectedSummaryPath).catch(() => null),
       fetchJson(visitorsPath).catch(() => null),
     ]);
     state.summary = summary;
     state.events = events.events || [];
     state.trump = trump;
+    state.trumpDirected = trumpDirected;
     state.visitors = visitors;
     state.selectedCode =
       state.selectedCode && getCountryByCode(state.selectedCode)
         ? state.selectedCode
         : state.summary.countries[0]?.code ?? null;
+    const directedCountries = orderedTrumpDirectedCountries();
+    state.trumpDirectedSelectedCode =
+      state.trumpDirectedSelectedCode && getTrumpDirectedCountryMeta(state.trumpDirectedSelectedCode)
+        ? state.trumpDirectedSelectedCode
+        : directedCountries[0]?.code ?? null;
 
     renderGlobalMeta();
     renderVisitorsCard();
@@ -1010,9 +1377,14 @@ async function init() {
     bindSeriesToggle();
     bindTrumpSeriesToggle();
     renderTrumpSupplement();
+    bindTrumpDirectedSeriesToggle();
+    renderTrumpDirectedSupplement();
 
     if (state.selectedCode) {
       await setSelectedCountry(state.selectedCode);
+    }
+    if (state.trumpDirectedSelectedCode) {
+      await setSelectedTrumpDirectedCountry(state.trumpDirectedSelectedCode);
     }
   } catch (error) {
     document.getElementById("chart-caption").textContent =

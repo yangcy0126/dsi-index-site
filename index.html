@@ -15,9 +15,9 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;700&display=swap"
       rel="stylesheet"
     >
-    <link rel="stylesheet" href="styles.css?v=20260323-visitors-live-1">
+    <link rel="stylesheet" href="styles.css?v=20260325-trump-directed-1">
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
-    <script src="script.js?v=20260323-visitors-live-1" defer></script>
+    <script src="script.js?v=20260325-trump-directed-1" defer></script>
   </head>
   <body>
     <div class="page-shell">
@@ -338,6 +338,92 @@
               </p>
               <div class="supplement-actions">
                 <a class="download-link" href="data/trump_indices_workbook.xlsx" target="_blank" rel="noreferrer">
+                  Download
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="supplement-subheading">
+            <p class="eyebrow">Directed Signals</p>
+            <h3>Trump Directed Sentiment by Country</h3>
+            <p>
+              This extension isolates Trump's country-targeted rhetoric across the same fourteen-country universe used
+              elsewhere on the site. Country-directed tone and geopolitical stance are only defined on dates with a
+              material mention of that country, while attention tracks how intensely the country is being referenced.
+            </p>
+          </div>
+
+          <div class="supplement-shell directed-shell" id="trump-directed-shell">
+            <div class="supplement-band directed-band">
+              <div>
+                <span>Coverage</span>
+                <strong id="trump-directed-coverage-range">--</strong>
+              </div>
+              <div>
+                <span>Countries</span>
+                <strong id="trump-directed-country-count">--</strong>
+              </div>
+              <div>
+                <span>Candidate texts</span>
+                <strong id="trump-directed-candidate-texts">--</strong>
+              </div>
+              <div>
+                <span>Directed rows</span>
+                <strong id="trump-directed-post-country-rows">--</strong>
+              </div>
+            </div>
+
+            <div class="directed-country-board" id="trump-directed-board"></div>
+
+            <div class="supplement-toolbar">
+              <div class="series-toggle" id="trump-directed-series-toggle" aria-label="Trump directed series selector">
+                <button class="toggle-button is-active" data-trump-directed-series="7d" type="button">
+                  7-day smoothed
+                </button>
+                <button class="toggle-button" data-trump-directed-series="30d" type="button">
+                  30-day smoothed
+                </button>
+                <button class="toggle-button" data-trump-directed-series="daily" type="button">
+                  Mention-day value
+                </button>
+              </div>
+              <p class="supplement-note" id="trump-directed-mode-note">Loading directed-country supplement...</p>
+            </div>
+
+            <div class="directed-metric-grid">
+              <article class="supplement-card supplement-card-tone">
+                <p class="metric-label">Directed Tone</p>
+                <p class="metric-value" id="trump-directed-tone-latest">--</p>
+                <p class="metric-detail" id="trump-directed-tone-caption">Loading latest directed tone...</p>
+              </article>
+              <article class="supplement-card supplement-card-geo">
+                <p class="metric-label">Directed Geopolitical</p>
+                <p class="metric-value" id="trump-directed-geo-latest">--</p>
+                <p class="metric-detail" id="trump-directed-geo-caption">Loading latest directed geopolitical score...</p>
+              </article>
+              <article class="supplement-card supplement-card-shock">
+                <p class="metric-label">Directed Attention</p>
+                <p class="metric-value" id="trump-directed-attention-latest">--</p>
+                <p class="metric-detail" id="trump-directed-attention-caption">Loading latest directed attention...</p>
+              </article>
+              <article class="supplement-card supplement-card-meta">
+                <p class="metric-label">Selected Country</p>
+                <p class="metric-value" id="trump-directed-country-name">--</p>
+                <p class="metric-detail" id="trump-directed-country-caption">Loading selected country...</p>
+              </article>
+            </div>
+
+            <div class="chart-frame supplement-chart-frame">
+              <div id="trump-directed-chart" class="chart chart-compact"></div>
+            </div>
+
+            <div class="chart-foot">
+              <p id="trump-directed-chart-caption">
+                Loading directed-country chart...
+              </p>
+              <div class="supplement-actions">
+                <a class="download-link" href="data/trump_directed_workbook.xlsx" target="_blank" rel="noreferrer">
                   Download
                 </a>
               </div>

@@ -6,6 +6,8 @@ from pathlib import Path
 import pandas as pd
 from openpyxl.styles import Font
 
+from build_trump_directed_assets import build_directed_assets
+
 
 SITE_ROOT = Path(__file__).resolve().parents[1]
 WORKSPACE_ROOT = SITE_ROOT.parent
@@ -418,6 +420,7 @@ def main() -> None:
     compact_payload = build_compact_json(daily, summary)
     SITE_JSON.write_text(json.dumps(compact_payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     write_workbook(daily, summary)
+    build_directed_assets()
 
     print(f"[OK] saved: {SITE_JSON}")
     print(f"[OK] saved: {SITE_XLSX}")
