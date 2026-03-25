@@ -2,7 +2,7 @@
   "code": "IT",
   "label": "Italy",
   "label_zh": "Italy",
-  "generated_at": "2026-03-25T09:58:35.800109+00:00",
+  "generated_at": "2026-03-25T21:58:00.981798+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -10760,10 +10760,10 @@
     },
     {
       "date": "2026-03-20",
-      "raw": null,
+      "raw": 0,
       "rolling7": -0.143,
       "rolling30": -0.167,
-      "publication": false
+      "publication": true
     },
     {
       "date": "2026-03-21",
@@ -10788,17 +10788,17 @@
     },
     {
       "date": "2026-03-24",
-      "raw": null,
-      "rolling7": -2.143,
-      "rolling30": -0.633,
-      "publication": false
+      "raw": 0,
+      "rolling7": -1.714,
+      "rolling30": -0.533,
+      "publication": true
     },
     {
       "date": "2026-03-25",
-      "raw": null,
-      "rolling7": -2.143,
-      "rolling30": -0.667,
-      "publication": false
+      "raw": 0,
+      "rolling7": -1.286,
+      "rolling30": -0.467,
+      "publication": true
     }
   ]
 }

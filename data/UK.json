@@ -2,7 +2,7 @@
   "code": "UK",
   "label": "United Kingdom",
   "label_zh": "英国",
-  "generated_at": "2026-03-25T09:58:35.099544+00:00",
+  "generated_at": "2026-03-25T21:58:00.278412+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -40566,24 +40566,24 @@
     },
     {
       "date": "2026-03-23",
-      "raw": null,
-      "rolling7": -2.429,
-      "rolling30": -2.033,
-      "publication": false
+      "raw": -2,
+      "rolling7": -2.286,
+      "rolling30": -2.0,
+      "publication": true
     },
     {
       "date": "2026-03-24",
-      "raw": null,
-      "rolling7": -2.571,
-      "rolling30": -2.133,
-      "publication": false
+      "raw": 2,
+      "rolling7": -1.714,
+      "rolling30": -1.933,
+      "publication": true
     },
     {
       "date": "2026-03-25",
-      "raw": null,
-      "rolling7": -3.0,
-      "rolling30": -2.233,
-      "publication": false
+      "raw": -3,
+      "rolling7": -2.143,
+      "rolling30": -2.033,
+      "publication": true
     }
   ]
 }
