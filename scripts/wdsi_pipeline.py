@@ -805,6 +805,10 @@ class UsStateDepartmentSource:
     history_max_pages = 760
 
     press_archive_url = "https://www.state.gov/press-releases/"
+    current_press_release_sitemaps = (
+        "https://www.state.gov/state_press_release-sitemap.xml",
+        "https://www.state.gov/state_press_release-sitemap2.xml",
+    )
     archived_press_archive_urls = (
         ("2017-2021", "https://2017-2021.state.gov/press-releases/", "2017-01-20", "2021-01-19"),
         ("2021-2025", "https://2021-2025.state.gov/press-releases/", "2021-01-20", "2025-01-19"),
@@ -930,38 +934,63 @@ class UsStateDepartmentSource:
 
         candidates: list[tuple[str, str, str, str]] = []
         seen_urls: set[str] = set()
-        oldest_on_page: str | None = None
-        for page in range(1, max_pages + 1):
-            url = self.press_archive_url if page == 1 else f"{self.press_archive_url}page/{page}/"
-            soup = BeautifulSoup(request_html(self.session, url), "html.parser")
-            items = soup.select("li.collection-result")
-            if not items:
-                break
-
-            oldest_on_page = None
-            for item in items:
-                link_node = item.select_one("a.collection-result__link[href]")
-                if link_node is None:
+        for sitemap_url in self.current_press_release_sitemaps:
+            try:
+                markdown = request_markdown_via_jina(sitemap_url)
+            except Exception:
+                continue
+            body = extract_jina_markdown_body(markdown)
+            for line in body.splitlines():
+                links = markdown_links(line)
+                if not links:
                     continue
-
-                link = clean_text(str(link_node.get("href", "")))
+                title, link = links[0]
                 if not self._looks_like_press_listing_article(link):
                     continue
-
-                published_at = self._extract_collection_date(item)
-                if not published_at:
+                date_match = re.search(r"(20\d{2}-\d{2}-\d{2})T", line)
+                if not date_match:
                     continue
-                if oldest_on_page is None or published_at < oldest_on_page:
-                    oldest_on_page = published_at
+                published_at = date_match.group(1)
                 if not (overlap_start <= published_at <= overlap_end):
                     continue
                 if link in seen_urls:
                     continue
                 seen_urls.add(link)
-                candidates.append((link, clean_text(link_node.get_text(" ", strip=True)), published_at, ""))
+                candidates.append((link, title, published_at, ""))
 
-            if oldest_on_page is not None and oldest_on_page < overlap_start:
-                break
+        if not candidates:
+            oldest_on_page: str | None = None
+            for page in range(1, max_pages + 1):
+                url = self.press_archive_url if page == 1 else f"{self.press_archive_url}page/{page}/"
+                soup = BeautifulSoup(request_html(self.session, url), "html.parser")
+                items = soup.select("li.collection-result")
+                if not items:
+                    break
+
+                oldest_on_page = None
+                for item in items:
+                    link_node = item.select_one("a.collection-result__link[href]")
+                    if link_node is None:
+                        continue
+
+                    link = clean_text(str(link_node.get("href", "")))
+                    if not self._looks_like_press_listing_article(link):
+                        continue
+
+                    published_at = self._extract_collection_date(item)
+                    if not published_at:
+                        continue
+                    if oldest_on_page is None or published_at < oldest_on_page:
+                        oldest_on_page = published_at
+                    if not (overlap_start <= published_at <= overlap_end):
+                        continue
+                    if link in seen_urls:
+                        continue
+                    seen_urls.add(link)
+                    candidates.append((link, clean_text(link_node.get_text(" ", strip=True)), published_at, ""))
+
+                if oldest_on_page is not None and oldest_on_page < overlap_start:
+                    break
 
         if not candidates:
             return []
@@ -1180,6 +1209,8 @@ class UsStateDepartmentSource:
             raise ValueError(f"Missing parsed content for {url}")
 
         resolved_title = self._clean_state_title(title)
+        if self._is_placeholder_state_title(resolved_title):
+            resolved_title = self._extract_state_title_from_html(soup) or resolved_title
         if source_hint == "department_press_briefing":
             resolved_title = self._infer_briefing_title(url) or resolved_title
         elif self._is_placeholder_state_title(resolved_title):
@@ -1265,6 +1296,16 @@ class UsStateDepartmentSource:
         if lines and lines[0].startswith("# "):
             return clean_text(lines[0].lstrip("# ").strip())
         return fallback_title
+
+    def _extract_state_title_from_html(self, soup: BeautifulSoup) -> str:
+        for selector in ("h1", ".featured-content__headline", "title"):
+            node = soup.select_one(selector)
+            if node is None:
+                continue
+            text = clean_text(node.get_text(" ", strip=True))
+            if text:
+                return self._clean_state_title(text)
+        return ""
 
     def _extract_state_date(self, lines: list[str], title: str, url: str, source_hint: str) -> str:
         for line in lines[:60]:
