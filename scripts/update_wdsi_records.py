@@ -116,6 +116,61 @@ def pending_records(
     return additions, replaced_urls
 
 
+def reuse_scored_rows(
+    existing: pd.DataFrame,
+    additions: list[dict[str, object]],
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    if existing.empty or not additions:
+        return [], additions
+
+    existing_by_url = {
+        str(row.get("url", "")): row
+        for row in existing.to_dict(orient="records")
+        if str(row.get("url", "")).strip()
+    }
+
+    reused_rows: list[dict[str, object]] = []
+    needs_scoring: list[dict[str, object]] = []
+
+    score_fields = (
+        "score",
+        "score_reasoning",
+        "war_related",
+        "confidence",
+        "model",
+        "pipeline_version",
+        "response_id",
+        "scored_at",
+    )
+
+    for item in additions:
+        current = existing_by_url.get(str(item.get("url", "")))
+        if current is None:
+            needs_scoring.append(item)
+            continue
+
+        score_value = current.get("score")
+        if pd.isna(score_value):
+            needs_scoring.append(item)
+            continue
+
+        # Safe reuse path: identical content and title/date, only metadata like source_kind or speaker changed.
+        if (
+            str(current.get("content_hash", "")) == str(item.get("content_hash", ""))
+            and str(current.get("published_at", "")) == str(item.get("published_at", ""))
+            and str(current.get("title", "")) == str(item.get("title", ""))
+        ):
+            reused = {**item}
+            for field in score_fields:
+                reused[field] = current.get(field, "")
+            reused_rows.append(reused)
+            continue
+
+        needs_scoring.append(item)
+
+    return reused_rows, needs_scoring
+
+
 def effective_legacy_mask(existing: pd.DataFrame, source: object | None = None) -> pd.Series:
     if existing.empty:
         return pd.Series(dtype=bool)
@@ -510,8 +565,8 @@ def main() -> None:
     session = requests.Session()
     sources = make_sources(session, countries)
 
-    scorer = None if args.dry_run else OpenAIWDSIScorer()
-    pipeline_version = OpenAIWDSIScorer.pipeline_version if scorer is None else scorer.pipeline_version
+    scorer = None
+    pipeline_version = OpenAIWDSIScorer.pipeline_version
     changed = False
 
     for code in countries:
@@ -565,7 +620,17 @@ def main() -> None:
             if not additions:
                 continue
 
-            scored_rows = score_pending_rows(code, additions, scorer)  # type: ignore[arg-type]
+            reused_rows, additions_to_score = reuse_scored_rows(existing, additions)
+            if reused_rows:
+                print(f"{code} [{window_label}]: reused scores for {len(reused_rows)} metadata-only replacements.")
+
+            scored_rows = list(reused_rows)
+            if additions_to_score:
+                if scorer is None:
+                    scorer = OpenAIWDSIScorer()
+                    pipeline_version = scorer.pipeline_version
+                scored_rows.extend(score_pending_rows(code, additions_to_score, scorer))
+
             for row in scored_rows:
                 row.pop("content", None)
 
