@@ -2,7 +2,7 @@
   "code": "US",
   "label": "United States",
   "label_zh": "美国",
-  "generated_at": "2026-03-26T04:08:14.603051+00:00",
+  "generated_at": "2026-03-26T04:42:07.970427+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -38375,289 +38375,289 @@
     },
     {
       "date": "2025-01-03",
-      "raw": -2,
-      "rolling7": -0.429,
-      "rolling30": -1.533,
+      "raw": -1,
+      "rolling7": -0.286,
+      "rolling30": -1.5,
       "publication": true
     },
     {
       "date": "2025-01-04",
-      "raw": -1,
-      "rolling7": -0.714,
-      "rolling30": -1.467,
-      "publication": true
-    },
-    {
-      "date": "2025-01-05",
-      "raw": null,
-      "rolling7": -0.857,
-      "rolling30": -1.433,
-      "publication": false
-    },
-    {
-      "date": "2025-01-06",
-      "raw": -3,
-      "rolling7": -1.286,
-      "rolling30": -1.533,
-      "publication": true
-    },
-    {
-      "date": "2025-01-07",
-      "raw": -3,
-      "rolling7": -1.429,
-      "rolling30": -1.567,
-      "publication": true
-    },
-    {
-      "date": "2025-01-08",
-      "raw": -2,
-      "rolling7": -1.714,
-      "rolling30": -1.567,
-      "publication": true
-    },
-    {
-      "date": "2025-01-09",
-      "raw": -1,
-      "rolling7": -1.857,
-      "rolling30": -1.533,
-      "publication": true
-    },
-    {
-      "date": "2025-01-10",
-      "raw": -3,
-      "rolling7": -2.0,
-      "rolling30": -1.533,
-      "publication": true
-    },
-    {
-      "date": "2025-01-11",
-      "raw": 1,
-      "rolling7": -1.714,
-      "rolling30": -1.433,
-      "publication": true
-    },
-    {
-      "date": "2025-01-12",
-      "raw": -2,
-      "rolling7": -1.857,
-      "rolling30": -1.5,
-      "publication": true
-    },
-    {
-      "date": "2025-01-13",
-      "raw": -2,
-      "rolling7": -1.714,
-      "rolling30": -1.533,
-      "publication": true
-    },
-    {
-      "date": "2025-01-14",
-      "raw": -2,
-      "rolling7": -1.571,
-      "rolling30": -1.533,
-      "publication": true
-    },
-    {
-      "date": "2025-01-15",
-      "raw": -3,
-      "rolling7": -1.714,
-      "rolling30": -1.533,
-      "publication": true
-    },
-    {
-      "date": "2025-01-16",
-      "raw": -3,
-      "rolling7": -2.0,
-      "rolling30": -1.567,
-      "publication": true
-    },
-    {
-      "date": "2025-01-17",
-      "raw": -2,
-      "rolling7": -1.857,
-      "rolling30": -1.533,
-      "publication": true
-    },
-    {
-      "date": "2025-01-18",
-      "raw": 1,
-      "rolling7": -1.857,
-      "rolling30": -1.433,
-      "publication": true
-    },
-    {
-      "date": "2025-01-19",
-      "raw": 0,
-      "rolling7": -1.571,
-      "rolling30": -1.367,
-      "publication": true
-    },
-    {
-      "date": "2025-01-20",
-      "raw": null,
-      "rolling7": -1.286,
-      "rolling30": -1.3,
-      "publication": false
-    },
-    {
-      "date": "2025-01-21",
-      "raw": -2,
-      "rolling7": -1.286,
-      "rolling30": -1.3,
-      "publication": true
-    },
-    {
-      "date": "2025-01-22",
-      "raw": -2,
-      "rolling7": -1.143,
-      "rolling30": -1.3,
-      "publication": true
-    },
-    {
-      "date": "2025-01-23",
-      "raw": -3,
-      "rolling7": -1.143,
-      "rolling30": -1.333,
-      "publication": true
-    },
-    {
-      "date": "2025-01-24",
-      "raw": -3,
-      "rolling7": -1.286,
-      "rolling30": -1.367,
-      "publication": true
-    },
-    {
-      "date": "2025-01-25",
-      "raw": -3,
-      "rolling7": -1.857,
-      "rolling30": -1.467,
-      "publication": true
-    },
-    {
-      "date": "2025-01-26",
-      "raw": -3,
-      "rolling7": -2.286,
-      "rolling30": -1.5,
-      "publication": true
-    },
-    {
-      "date": "2025-01-27",
-      "raw": -2,
-      "rolling7": -2.571,
-      "rolling30": -1.6,
-      "publication": true
-    },
-    {
-      "date": "2025-01-28",
-      "raw": -2,
-      "rolling7": -2.571,
-      "rolling30": -1.667,
-      "publication": true
-    },
-    {
-      "date": "2025-01-29",
-      "raw": 0,
-      "rolling7": -2.286,
-      "rolling30": -1.667,
-      "publication": true
-    },
-    {
-      "date": "2025-01-30",
-      "raw": 0,
-      "rolling7": -1.857,
-      "rolling30": -1.6,
-      "publication": true
-    },
-    {
-      "date": "2025-01-31",
-      "raw": -3,
-      "rolling7": -1.857,
-      "rolling30": -1.7,
-      "publication": true
-    },
-    {
-      "date": "2025-02-01",
-      "raw": 3,
-      "rolling7": -1.0,
-      "rolling30": -1.6,
-      "publication": true
-    },
-    {
-      "date": "2025-02-02",
-      "raw": 0,
-      "rolling7": -0.571,
-      "rolling30": -1.533,
-      "publication": true
-    },
-    {
-      "date": "2025-02-03",
-      "raw": -3,
-      "rolling7": -0.714,
-      "rolling30": -1.6,
-      "publication": true
-    },
-    {
-      "date": "2025-02-04",
-      "raw": 0,
-      "rolling7": -0.429,
-      "rolling30": -1.567,
-      "publication": true
-    },
-    {
-      "date": "2025-02-05",
-      "raw": 0,
-      "rolling7": -0.429,
-      "rolling30": -1.467,
-      "publication": true
-    },
-    {
-      "date": "2025-02-06",
-      "raw": -3,
-      "rolling7": -0.857,
-      "rolling30": -1.467,
-      "publication": true
-    },
-    {
-      "date": "2025-02-07",
       "raw": 0,
       "rolling7": -0.429,
       "rolling30": -1.4,
       "publication": true
     },
     {
+      "date": "2025-01-05",
+      "raw": null,
+      "rolling7": -0.429,
+      "rolling30": -1.333,
+      "publication": false
+    },
+    {
+      "date": "2025-01-06",
+      "raw": -2,
+      "rolling7": -0.714,
+      "rolling30": -1.4,
+      "publication": true
+    },
+    {
+      "date": "2025-01-07",
+      "raw": -3,
+      "rolling7": -0.857,
+      "rolling30": -1.433,
+      "publication": true
+    },
+    {
+      "date": "2025-01-08",
+      "raw": 0,
+      "rolling7": -0.857,
+      "rolling30": -1.367,
+      "publication": true
+    },
+    {
+      "date": "2025-01-09",
+      "raw": -2,
+      "rolling7": -1.143,
+      "rolling30": -1.367,
+      "publication": true
+    },
+    {
+      "date": "2025-01-10",
+      "raw": -3,
+      "rolling7": -1.429,
+      "rolling30": -1.367,
+      "publication": true
+    },
+    {
+      "date": "2025-01-11",
+      "raw": 0,
+      "rolling7": -1.429,
+      "rolling30": -1.3,
+      "publication": true
+    },
+    {
+      "date": "2025-01-12",
+      "raw": 0,
+      "rolling7": -1.429,
+      "rolling30": -1.3,
+      "publication": true
+    },
+    {
+      "date": "2025-01-13",
+      "raw": -3,
+      "rolling7": -1.571,
+      "rolling30": -1.367,
+      "publication": true
+    },
+    {
+      "date": "2025-01-14",
+      "raw": 0,
+      "rolling7": -1.143,
+      "rolling30": -1.3,
+      "publication": true
+    },
+    {
+      "date": "2025-01-15",
+      "raw": -3,
+      "rolling7": -1.571,
+      "rolling30": -1.3,
+      "publication": true
+    },
+    {
+      "date": "2025-01-16",
+      "raw": -3,
+      "rolling7": -1.714,
+      "rolling30": -1.333,
+      "publication": true
+    },
+    {
+      "date": "2025-01-17",
+      "raw": -3,
+      "rolling7": -1.714,
+      "rolling30": -1.333,
+      "publication": true
+    },
+    {
+      "date": "2025-01-18",
+      "raw": 0,
+      "rolling7": -1.714,
+      "rolling30": -1.267,
+      "publication": true
+    },
+    {
+      "date": "2025-01-19",
+      "raw": 0,
+      "rolling7": -1.714,
+      "rolling30": -1.2,
+      "publication": true
+    },
+    {
+      "date": "2025-01-20",
+      "raw": null,
+      "rolling7": -1.286,
+      "rolling30": -1.133,
+      "publication": false
+    },
+    {
+      "date": "2025-01-21",
+      "raw": -2,
+      "rolling7": -1.571,
+      "rolling30": -1.133,
+      "publication": true
+    },
+    {
+      "date": "2025-01-22",
+      "raw": 0,
+      "rolling7": -1.143,
+      "rolling30": -1.067,
+      "publication": true
+    },
+    {
+      "date": "2025-01-23",
+      "raw": -3,
+      "rolling7": -1.143,
+      "rolling30": -1.1,
+      "publication": true
+    },
+    {
+      "date": "2025-01-24",
+      "raw": -3,
+      "rolling7": -1.143,
+      "rolling30": -1.133,
+      "publication": true
+    },
+    {
+      "date": "2025-01-25",
+      "raw": -3,
+      "rolling7": -1.571,
+      "rolling30": -1.233,
+      "publication": true
+    },
+    {
+      "date": "2025-01-26",
+      "raw": -3,
+      "rolling7": -2.0,
+      "rolling30": -1.267,
+      "publication": true
+    },
+    {
+      "date": "2025-01-27",
+      "raw": 0,
+      "rolling7": -2.0,
+      "rolling30": -1.3,
+      "publication": true
+    },
+    {
+      "date": "2025-01-28",
+      "raw": -2,
+      "rolling7": -2.0,
+      "rolling30": -1.367,
+      "publication": true
+    },
+    {
+      "date": "2025-01-29",
+      "raw": -2,
+      "rolling7": -2.286,
+      "rolling30": -1.433,
+      "publication": true
+    },
+    {
+      "date": "2025-01-30",
+      "raw": 0,
+      "rolling7": -1.857,
+      "rolling30": -1.367,
+      "publication": true
+    },
+    {
+      "date": "2025-01-31",
+      "raw": -3,
+      "rolling7": -1.857,
+      "rolling30": -1.467,
+      "publication": true
+    },
+    {
+      "date": "2025-02-01",
+      "raw": 3,
+      "rolling7": -1.0,
+      "rolling30": -1.367,
+      "publication": true
+    },
+    {
+      "date": "2025-02-02",
+      "raw": 0,
+      "rolling7": -0.571,
+      "rolling30": -1.333,
+      "publication": true
+    },
+    {
+      "date": "2025-02-03",
+      "raw": -3,
+      "rolling7": -1.0,
+      "rolling30": -1.433,
+      "publication": true
+    },
+    {
+      "date": "2025-02-04",
+      "raw": 0,
+      "rolling7": -0.714,
+      "rolling30": -1.433,
+      "publication": true
+    },
+    {
+      "date": "2025-02-05",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -1.367,
+      "publication": true
+    },
+    {
+      "date": "2025-02-06",
+      "raw": -3,
+      "rolling7": -0.857,
+      "rolling30": -1.367,
+      "publication": true
+    },
+    {
+      "date": "2025-02-07",
+      "raw": 0,
+      "rolling7": -0.429,
+      "rolling30": -1.367,
+      "publication": true
+    },
+    {
       "date": "2025-02-08",
       "raw": null,
       "rolling7": -0.857,
-      "rolling30": -1.367,
+      "rolling30": -1.3,
       "publication": false
     },
     {
       "date": "2025-02-09",
       "raw": null,
       "rolling7": -0.857,
-      "rolling30": -1.267,
+      "rolling30": -1.2,
       "publication": false
     },
     {
       "date": "2025-02-10",
       "raw": 0,
       "rolling7": -0.429,
-      "rolling30": -1.3,
+      "rolling30": -1.2,
       "publication": true
     },
     {
       "date": "2025-02-11",
       "raw": 0,
       "rolling7": -0.429,
-      "rolling30": -1.233,
+      "rolling30": -1.2,
       "publication": true
     },
     {
       "date": "2025-02-12",
       "raw": 0,
       "rolling7": -0.429,
-      "rolling30": -1.167,
+      "rolling30": -1.1,
       "publication": true
     },
     {
@@ -38685,35 +38685,35 @@
       "date": "2025-02-16",
       "raw": -3,
       "rolling7": -0.714,
-      "rolling30": -1.0,
+      "rolling30": -0.967,
       "publication": true
     },
     {
       "date": "2025-02-17",
       "raw": 0,
       "rolling7": -0.714,
-      "rolling30": -1.033,
+      "rolling30": -0.967,
       "publication": true
     },
     {
       "date": "2025-02-18",
       "raw": 0,
       "rolling7": -0.714,
-      "rolling30": -1.033,
+      "rolling30": -0.967,
       "publication": true
     },
     {
       "date": "2025-02-19",
       "raw": 0,
       "rolling7": -0.714,
-      "rolling30": -1.033,
+      "rolling30": -0.967,
       "publication": true
     },
     {
       "date": "2025-02-20",
       "raw": -3,
       "rolling7": -1.143,
-      "rolling30": -1.067,
+      "rolling30": -1.0,
       "publication": true
     },
     {
@@ -38755,14 +38755,14 @@
       "date": "2025-02-26",
       "raw": -3,
       "rolling7": -1.286,
-      "rolling30": -0.733,
+      "rolling30": -0.8,
       "publication": true
     },
     {
       "date": "2025-02-27",
       "raw": 0,
       "rolling7": -0.857,
-      "rolling30": -0.667,
+      "rolling30": -0.733,
       "publication": true
     },
     {
@@ -38823,575 +38823,575 @@
     },
     {
       "date": "2025-03-08",
-      "raw": null,
-      "rolling7": -0.571,
-      "rolling30": -0.733,
-      "publication": false
+      "raw": 1,
+      "rolling7": -0.429,
+      "rolling30": -0.7,
+      "publication": true
     },
     {
       "date": "2025-03-09",
       "raw": -2,
-      "rolling7": -1.143,
-      "rolling30": -0.8,
+      "rolling7": -1.0,
+      "rolling30": -0.767,
       "publication": true
     },
     {
       "date": "2025-03-10",
       "raw": 0,
-      "rolling7": -1.143,
-      "rolling30": -0.8,
+      "rolling7": -1.0,
+      "rolling30": -0.767,
       "publication": true
     },
     {
       "date": "2025-03-11",
       "raw": 0,
-      "rolling7": -0.714,
-      "rolling30": -0.8,
+      "rolling7": -0.571,
+      "rolling30": -0.767,
       "publication": true
     },
     {
       "date": "2025-03-12",
       "raw": -3,
-      "rolling7": -0.714,
-      "rolling30": -0.9,
+      "rolling7": -0.571,
+      "rolling30": -0.867,
       "publication": true
     },
     {
       "date": "2025-03-13",
       "raw": -3,
-      "rolling7": -1.143,
-      "rolling30": -1.0,
+      "rolling7": -1.0,
+      "rolling30": -0.967,
       "publication": true
     },
     {
       "date": "2025-03-14",
       "raw": 0,
-      "rolling7": -1.143,
-      "rolling30": -1.0,
+      "rolling7": -1.0,
+      "rolling30": -0.967,
       "publication": true
     },
     {
       "date": "2025-03-15",
-      "raw": 0,
+      "raw": null,
       "rolling7": -1.143,
-      "rolling30": -1.0,
-      "publication": true
+      "rolling30": -0.967,
+      "publication": false
     },
     {
       "date": "2025-03-16",
       "raw": -3,
       "rolling7": -1.286,
-      "rolling30": -1.033,
+      "rolling30": -1.0,
       "publication": true
     },
     {
       "date": "2025-03-17",
       "raw": -3,
       "rolling7": -1.714,
-      "rolling30": -1.133,
+      "rolling30": -1.1,
       "publication": true
     },
     {
       "date": "2025-03-18",
       "raw": 0,
       "rolling7": -1.714,
-      "rolling30": -1.033,
+      "rolling30": -1.0,
       "publication": true
     },
     {
       "date": "2025-03-19",
       "raw": -3,
       "rolling7": -1.714,
-      "rolling30": -1.133,
+      "rolling30": -1.1,
       "publication": true
     },
     {
       "date": "2025-03-20",
       "raw": -3,
       "rolling7": -1.714,
-      "rolling30": -1.233,
+      "rolling30": -1.2,
       "publication": true
     },
     {
       "date": "2025-03-21",
       "raw": 0,
       "rolling7": -1.714,
-      "rolling30": -1.233,
+      "rolling30": -1.2,
       "publication": true
     },
     {
       "date": "2025-03-22",
       "raw": null,
       "rolling7": -1.714,
-      "rolling30": -1.133,
+      "rolling30": -1.1,
       "publication": false
     },
     {
       "date": "2025-03-23",
       "raw": -2,
       "rolling7": -1.571,
-      "rolling30": -1.2,
+      "rolling30": -1.167,
       "publication": true
     },
     {
       "date": "2025-03-24",
       "raw": 0,
       "rolling7": -1.143,
-      "rolling30": -1.2,
+      "rolling30": -1.167,
       "publication": true
     },
     {
       "date": "2025-03-25",
       "raw": -3,
       "rolling7": -1.571,
-      "rolling30": -1.3,
+      "rolling30": -1.267,
       "publication": true
     },
     {
       "date": "2025-03-26",
       "raw": 0,
       "rolling7": -1.143,
-      "rolling30": -1.2,
+      "rolling30": -1.167,
       "publication": true
     },
     {
       "date": "2025-03-27",
       "raw": 0,
       "rolling7": -0.714,
-      "rolling30": -1.2,
+      "rolling30": -1.167,
       "publication": true
     },
     {
       "date": "2025-03-28",
-      "raw": -2,
-      "rolling7": -1.0,
+      "raw": -3,
+      "rolling7": -1.143,
       "rolling30": -1.167,
       "publication": true
     },
     {
       "date": "2025-03-29",
       "raw": null,
-      "rolling7": -1.286,
-      "rolling30": -1.233,
+      "rolling7": -1.571,
+      "rolling30": -1.267,
       "publication": false
     },
     {
       "date": "2025-03-30",
       "raw": null,
-      "rolling7": -1.286,
-      "rolling30": -1.233,
+      "rolling7": -1.714,
+      "rolling30": -1.3,
       "publication": false
     },
     {
       "date": "2025-03-31",
-      "raw": -2,
-      "rolling7": -1.571,
-      "rolling30": -1.233,
+      "raw": -3,
+      "rolling7": -2.143,
+      "rolling30": -1.333,
       "publication": true
     },
     {
       "date": "2025-04-01",
-      "raw": -3,
-      "rolling7": -1.571,
-      "rolling30": -1.4,
+      "raw": -2,
+      "rolling7": -2.0,
+      "rolling30": -1.467,
       "publication": true
     },
     {
       "date": "2025-04-02",
-      "raw": -3,
-      "rolling7": -2.0,
-      "rolling30": -1.5,
+      "raw": -2,
+      "rolling7": -2.286,
+      "rolling30": -1.533,
       "publication": true
     },
     {
       "date": "2025-04-03",
       "raw": 0,
-      "rolling7": -2.0,
-      "rolling30": -1.4,
+      "rolling7": -2.286,
+      "rolling30": -1.433,
       "publication": true
     },
     {
       "date": "2025-04-04",
       "raw": 0,
-      "rolling7": -1.714,
-      "rolling30": -1.3,
+      "rolling7": -1.857,
+      "rolling30": -1.333,
       "publication": true
     },
     {
       "date": "2025-04-05",
-      "raw": 0,
-      "rolling7": -1.429,
-      "rolling30": -1.3,
+      "raw": -3,
+      "rolling7": -1.857,
+      "rolling30": -1.433,
       "publication": true
     },
     {
       "date": "2025-04-06",
       "raw": -2,
-      "rolling7": -1.429,
-      "rolling30": -1.367,
+      "rolling7": -1.714,
+      "rolling30": -1.5,
       "publication": true
     },
     {
       "date": "2025-04-07",
       "raw": 0,
-      "rolling7": -1.143,
-      "rolling30": -1.367,
+      "rolling7": -1.286,
+      "rolling30": -1.533,
       "publication": true
     },
     {
       "date": "2025-04-08",
       "raw": 0,
-      "rolling7": -0.714,
-      "rolling30": -1.3,
+      "rolling7": -1.0,
+      "rolling30": -1.467,
       "publication": true
     },
     {
       "date": "2025-04-09",
       "raw": -3,
-      "rolling7": -0.714,
-      "rolling30": -1.4,
+      "rolling7": -1.143,
+      "rolling30": -1.567,
       "publication": true
     },
     {
       "date": "2025-04-10",
       "raw": -3,
-      "rolling7": -1.143,
-      "rolling30": -1.5,
+      "rolling7": -1.571,
+      "rolling30": -1.667,
       "publication": true
     },
     {
       "date": "2025-04-11",
       "raw": 0,
-      "rolling7": -1.143,
-      "rolling30": -1.4,
+      "rolling7": -1.571,
+      "rolling30": -1.567,
       "publication": true
     },
     {
       "date": "2025-04-12",
       "raw": 0,
       "rolling7": -1.143,
-      "rolling30": -1.3,
+      "rolling30": -1.467,
       "publication": true
     },
     {
       "date": "2025-04-13",
-      "raw": -3,
-      "rolling7": -1.286,
-      "rolling30": -1.4,
+      "raw": 0,
+      "rolling7": -0.857,
+      "rolling30": -1.467,
       "publication": true
     },
     {
       "date": "2025-04-14",
       "raw": 0,
-      "rolling7": -1.286,
-      "rolling30": -1.4,
+      "rolling7": -0.857,
+      "rolling30": -1.467,
       "publication": true
     },
     {
       "date": "2025-04-15",
       "raw": -3,
-      "rolling7": -1.714,
-      "rolling30": -1.4,
+      "rolling7": -1.286,
+      "rolling30": -1.467,
       "publication": true
     },
     {
       "date": "2025-04-16",
       "raw": -2,
-      "rolling7": -1.571,
-      "rolling30": -1.367,
+      "rolling7": -1.143,
+      "rolling30": -1.433,
       "publication": true
     },
     {
       "date": "2025-04-17",
       "raw": -2,
-      "rolling7": -1.429,
-      "rolling30": -1.433,
+      "rolling7": -1.0,
+      "rolling30": -1.5,
       "publication": true
     },
     {
       "date": "2025-04-18",
       "raw": 0,
-      "rolling7": -1.429,
-      "rolling30": -1.333,
+      "rolling7": -1.0,
+      "rolling30": -1.4,
       "publication": true
     },
     {
       "date": "2025-04-19",
       "raw": null,
-      "rolling7": -1.429,
-      "rolling30": -1.233,
+      "rolling7": -1.0,
+      "rolling30": -1.3,
       "publication": false
     },
     {
       "date": "2025-04-20",
       "raw": 2,
       "rolling7": -0.714,
-      "rolling30": -1.167,
+      "rolling30": -1.233,
       "publication": true
     },
     {
       "date": "2025-04-21",
-      "raw": -2,
-      "rolling7": -1.0,
+      "raw": 0,
+      "rolling7": -0.714,
       "rolling30": -1.233,
       "publication": true
     },
     {
       "date": "2025-04-22",
       "raw": -2,
-      "rolling7": -0.857,
+      "rolling7": -0.571,
       "rolling30": -1.233,
       "publication": true
     },
     {
       "date": "2025-04-23",
       "raw": 0,
-      "rolling7": -0.571,
+      "rolling7": -0.286,
       "rolling30": -1.233,
       "publication": true
     },
     {
       "date": "2025-04-24",
       "raw": -2,
-      "rolling7": -0.571,
+      "rolling7": -0.286,
       "rolling30": -1.2,
       "publication": true
     },
     {
       "date": "2025-04-25",
       "raw": 0,
-      "rolling7": -0.571,
+      "rolling7": -0.286,
       "rolling30": -1.2,
       "publication": true
     },
     {
       "date": "2025-04-26",
       "raw": 0,
-      "rolling7": -0.571,
+      "rolling7": -0.286,
       "rolling30": -1.2,
       "publication": true
     },
     {
       "date": "2025-04-27",
       "raw": 0,
-      "rolling7": -0.857,
-      "rolling30": -1.133,
+      "rolling7": -0.571,
+      "rolling30": -1.1,
       "publication": true
     },
     {
       "date": "2025-04-28",
       "raw": -3,
       "rolling7": -1.0,
-      "rolling30": -1.167,
+      "rolling30": -1.1,
       "publication": true
     },
     {
       "date": "2025-04-29",
       "raw": -2,
       "rolling7": -1.0,
-      "rolling30": -1.167,
+      "rolling30": -1.067,
       "publication": true
     },
     {
       "date": "2025-04-30",
       "raw": -2,
       "rolling7": -1.286,
-      "rolling30": -1.167,
+      "rolling30": -1.033,
       "publication": true
     },
     {
       "date": "2025-05-01",
       "raw": -3,
       "rolling7": -1.429,
-      "rolling30": -1.167,
+      "rolling30": -1.067,
       "publication": true
     },
     {
       "date": "2025-05-02",
       "raw": -3,
       "rolling7": -1.857,
-      "rolling30": -1.167,
+      "rolling30": -1.1,
       "publication": true
     },
     {
       "date": "2025-05-03",
       "raw": 0,
       "rolling7": -1.857,
-      "rolling30": -1.167,
+      "rolling30": -1.1,
       "publication": true
     },
     {
       "date": "2025-05-04",
       "raw": null,
       "rolling7": -1.857,
-      "rolling30": -1.167,
+      "rolling30": -1.1,
       "publication": false
     },
     {
       "date": "2025-05-05",
       "raw": -3,
       "rolling7": -1.857,
-      "rolling30": -1.267,
+      "rolling30": -1.1,
       "publication": true
     },
     {
       "date": "2025-05-06",
       "raw": 0,
       "rolling7": -1.571,
-      "rolling30": -1.2,
+      "rolling30": -1.033,
       "publication": true
     },
     {
       "date": "2025-05-07",
       "raw": 0,
       "rolling7": -1.286,
-      "rolling30": -1.2,
+      "rolling30": -1.033,
       "publication": true
     },
     {
       "date": "2025-05-08",
       "raw": -3,
       "rolling7": -1.286,
-      "rolling30": -1.3,
+      "rolling30": -1.133,
       "publication": true
     },
     {
       "date": "2025-05-09",
       "raw": 0,
       "rolling7": -0.857,
-      "rolling30": -1.2,
+      "rolling30": -1.033,
       "publication": true
     },
     {
       "date": "2025-05-10",
       "raw": 1,
       "rolling7": -0.714,
-      "rolling30": -1.067,
+      "rolling30": -0.9,
       "publication": true
     },
     {
       "date": "2025-05-11",
       "raw": null,
       "rolling7": -0.571,
-      "rolling30": -1.033,
+      "rolling30": -0.867,
       "publication": false
     },
     {
       "date": "2025-05-12",
       "raw": -3,
       "rolling7": -0.571,
-      "rolling30": -1.133,
+      "rolling30": -0.967,
       "publication": true
     },
     {
       "date": "2025-05-13",
       "raw": -3,
       "rolling7": -1.0,
-      "rolling30": -1.133,
+      "rolling30": -1.067,
       "publication": true
     },
     {
       "date": "2025-05-14",
-      "raw": -3,
-      "rolling7": -1.429,
-      "rolling30": -1.233,
+      "raw": -2,
+      "rolling7": -1.286,
+      "rolling30": -1.133,
       "publication": true
     },
     {
       "date": "2025-05-15",
       "raw": -2,
-      "rolling7": -1.286,
-      "rolling30": -1.2,
+      "rolling7": -1.143,
+      "rolling30": -1.1,
       "publication": true
     },
     {
       "date": "2025-05-16",
       "raw": 0,
-      "rolling7": -1.286,
-      "rolling30": -1.133,
+      "rolling7": -1.143,
+      "rolling30": -1.033,
       "publication": true
     },
     {
       "date": "2025-05-17",
       "raw": 0,
-      "rolling7": -1.429,
-      "rolling30": -1.067,
+      "rolling7": -1.286,
+      "rolling30": -0.967,
       "publication": true
     },
     {
       "date": "2025-05-18",
       "raw": 0,
-      "rolling7": -1.571,
-      "rolling30": -1.067,
+      "rolling7": -1.429,
+      "rolling30": -0.967,
       "publication": true
     },
     {
       "date": "2025-05-19",
       "raw": -3,
-      "rolling7": -1.571,
-      "rolling30": -1.167,
+      "rolling7": -1.429,
+      "rolling30": -1.067,
       "publication": true
     },
     {
       "date": "2025-05-20",
       "raw": 0,
-      "rolling7": -1.143,
-      "rolling30": -1.233,
+      "rolling7": -1.0,
+      "rolling30": -1.133,
       "publication": true
     },
     {
       "date": "2025-05-21",
       "raw": -3,
       "rolling7": -1.143,
-      "rolling30": -1.267,
+      "rolling30": -1.233,
       "publication": true
     },
     {
       "date": "2025-05-22",
-      "raw": -2,
-      "rolling7": -1.143,
+      "raw": -3,
+      "rolling7": -1.286,
       "rolling30": -1.267,
       "publication": true
     },
     {
       "date": "2025-05-23",
       "raw": -3,
-      "rolling7": -1.571,
+      "rolling7": -1.714,
       "rolling30": -1.367,
       "publication": true
     },
     {
       "date": "2025-05-24",
       "raw": 0,
-      "rolling7": -1.571,
+      "rolling7": -1.714,
       "rolling30": -1.3,
       "publication": true
     },
     {
       "date": "2025-05-25",
       "raw": 0,
-      "rolling7": -1.571,
+      "rolling7": -1.714,
       "rolling30": -1.3,
       "publication": true
     },
     {
       "date": "2025-05-26",
       "raw": 0,
-      "rolling7": -1.143,
+      "rolling7": -1.286,
       "rolling30": -1.3,
       "publication": true
     },
     {
       "date": "2025-05-27",
       "raw": -3,
-      "rolling7": -1.571,
+      "rolling7": -1.714,
       "rolling30": -1.4,
       "publication": true
     },
     {
       "date": "2025-05-28",
       "raw": 0,
-      "rolling7": -1.143,
+      "rolling7": -1.286,
       "rolling30": -1.3,
       "publication": true
     },
@@ -39418,254 +39418,254 @@
     },
     {
       "date": "2025-06-01",
-      "raw": 2,
-      "rolling7": -0.571,
-      "rolling30": -1.0,
-      "publication": true
-    },
-    {
-      "date": "2025-06-02",
-      "raw": 0,
-      "rolling7": -0.571,
-      "rolling30": -1.0,
-      "publication": true
-    },
-    {
-      "date": "2025-06-03",
-      "raw": 0,
-      "rolling7": -0.143,
-      "rolling30": -1.0,
-      "publication": true
-    },
-    {
-      "date": "2025-06-04",
-      "raw": 0,
-      "rolling7": -0.143,
-      "rolling30": -0.9,
-      "publication": true
-    },
-    {
-      "date": "2025-06-05",
-      "raw": -3,
-      "rolling7": -0.143,
-      "rolling30": -1.0,
-      "publication": true
-    },
-    {
-      "date": "2025-06-06",
-      "raw": -3,
-      "rolling7": -0.571,
-      "rolling30": -1.1,
-      "publication": true
-    },
-    {
-      "date": "2025-06-07",
-      "raw": -1,
+      "raw": 1,
       "rolling7": -0.714,
       "rolling30": -1.033,
       "publication": true
     },
     {
-      "date": "2025-06-08",
+      "date": "2025-06-02",
+      "raw": 0,
+      "rolling7": -0.714,
+      "rolling30": -1.033,
+      "publication": true
+    },
+    {
+      "date": "2025-06-03",
+      "raw": -2,
+      "rolling7": -0.571,
+      "rolling30": -1.1,
+      "publication": true
+    },
+    {
+      "date": "2025-06-04",
+      "raw": -3,
+      "rolling7": -1.0,
+      "rolling30": -1.1,
+      "publication": true
+    },
+    {
+      "date": "2025-06-05",
+      "raw": -3,
+      "rolling7": -1.0,
+      "rolling30": -1.2,
+      "publication": true
+    },
+    {
+      "date": "2025-06-06",
       "raw": -3,
       "rolling7": -1.429,
-      "rolling30": -1.133,
+      "rolling30": -1.3,
+      "publication": true
+    },
+    {
+      "date": "2025-06-07",
+      "raw": 0,
+      "rolling7": -1.429,
+      "rolling30": -1.2,
+      "publication": true
+    },
+    {
+      "date": "2025-06-08",
+      "raw": -3,
+      "rolling7": -2.0,
+      "rolling30": -1.3,
       "publication": true
     },
     {
       "date": "2025-06-09",
       "raw": 0,
-      "rolling7": -1.429,
-      "rolling30": -1.167,
+      "rolling7": -2.0,
+      "rolling30": -1.333,
       "publication": true
     },
     {
       "date": "2025-06-10",
       "raw": -3,
-      "rolling7": -1.857,
-      "rolling30": -1.3,
+      "rolling7": -2.143,
+      "rolling30": -1.467,
       "publication": true
     },
     {
       "date": "2025-06-11",
       "raw": -3,
-      "rolling7": -2.286,
-      "rolling30": -1.3,
+      "rolling7": -2.143,
+      "rolling30": -1.467,
       "publication": true
     },
     {
       "date": "2025-06-12",
       "raw": 0,
-      "rolling7": -1.857,
-      "rolling30": -1.2,
+      "rolling7": -1.714,
+      "rolling30": -1.367,
       "publication": true
     },
     {
       "date": "2025-06-13",
       "raw": 0,
-      "rolling7": -1.429,
-      "rolling30": -1.1,
+      "rolling7": -1.286,
+      "rolling30": -1.3,
       "publication": true
     },
     {
       "date": "2025-06-14",
       "raw": 0,
       "rolling7": -1.286,
-      "rolling30": -1.033,
+      "rolling30": -1.233,
       "publication": true
     },
     {
       "date": "2025-06-15",
       "raw": 0,
       "rolling7": -0.857,
-      "rolling30": -1.033,
+      "rolling30": -1.233,
       "publication": true
     },
     {
       "date": "2025-06-16",
       "raw": 0,
       "rolling7": -0.857,
-      "rolling30": -1.033,
+      "rolling30": -1.233,
       "publication": true
     },
     {
       "date": "2025-06-17",
       "raw": 0,
       "rolling7": -0.429,
-      "rolling30": -1.033,
+      "rolling30": -1.233,
       "publication": true
     },
     {
       "date": "2025-06-18",
       "raw": -3,
       "rolling7": -0.429,
-      "rolling30": -1.033,
+      "rolling30": -1.233,
       "publication": true
     },
     {
       "date": "2025-06-19",
       "raw": 0,
       "rolling7": -0.429,
-      "rolling30": -1.033,
+      "rolling30": -1.233,
       "publication": true
     },
     {
       "date": "2025-06-20",
       "raw": 0,
       "rolling7": -0.429,
-      "rolling30": -0.933,
+      "rolling30": -1.133,
       "publication": true
     },
     {
       "date": "2025-06-21",
       "raw": null,
       "rolling7": -0.429,
-      "rolling30": -0.867,
+      "rolling30": -1.033,
       "publication": false
     },
     {
       "date": "2025-06-22",
       "raw": 0,
       "rolling7": -0.429,
-      "rolling30": -0.767,
+      "rolling30": -0.933,
       "publication": true
     },
     {
       "date": "2025-06-23",
       "raw": -3,
       "rolling7": -0.857,
-      "rolling30": -0.867,
+      "rolling30": -1.033,
       "publication": true
     },
     {
       "date": "2025-06-24",
       "raw": -3,
       "rolling7": -1.286,
-      "rolling30": -0.967,
+      "rolling30": -1.133,
       "publication": true
     },
     {
       "date": "2025-06-25",
       "raw": 0,
       "rolling7": -0.857,
-      "rolling30": -0.967,
+      "rolling30": -1.133,
       "publication": true
     },
     {
       "date": "2025-06-26",
       "raw": 0,
       "rolling7": -0.857,
-      "rolling30": -0.867,
+      "rolling30": -1.033,
       "publication": true
     },
     {
       "date": "2025-06-27",
       "raw": 0,
       "rolling7": -0.857,
-      "rolling30": -0.867,
+      "rolling30": -1.033,
       "publication": true
     },
     {
       "date": "2025-06-28",
       "raw": null,
       "rolling7": -0.857,
-      "rolling30": -0.767,
+      "rolling30": -0.933,
       "publication": false
     },
     {
       "date": "2025-06-29",
       "raw": 0,
       "rolling7": -0.857,
-      "rolling30": -0.767,
+      "rolling30": -0.933,
       "publication": true
     },
     {
       "date": "2025-06-30",
       "raw": 0,
       "rolling7": -0.429,
-      "rolling30": -0.767,
+      "rolling30": -0.933,
       "publication": true
     },
     {
       "date": "2025-07-01",
       "raw": 0,
       "rolling7": 0.0,
-      "rolling30": -0.833,
+      "rolling30": -0.967,
       "publication": true
     },
     {
       "date": "2025-07-02",
       "raw": 0,
       "rolling7": 0.0,
-      "rolling30": -0.833,
+      "rolling30": -0.967,
       "publication": true
     },
     {
       "date": "2025-07-03",
       "raw": -3,
       "rolling7": -0.429,
-      "rolling30": -0.933,
+      "rolling30": -1.0,
       "publication": true
     },
     {
       "date": "2025-07-04",
       "raw": 0,
       "rolling7": -0.429,
-      "rolling30": -0.933,
+      "rolling30": -0.9,
       "publication": true
     },
     {
       "date": "2025-07-05",
       "raw": 0,
       "rolling7": -0.429,
-      "rolling30": -0.833,
+      "rolling30": -0.8,
       "publication": true
     },
     {
       "date": "2025-07-06",
       "raw": 0,
       "rolling7": -0.429,
-      "rolling30": -0.733,
+      "rolling30": -0.7,
       "publication": true
     },
     {

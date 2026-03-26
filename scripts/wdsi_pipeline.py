@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from typing import Iterable
-from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
+from urllib.parse import unquote, urlencode, urljoin, urlsplit, urlunsplit
 
 import requests
 from bs4 import BeautifulSoup
@@ -668,6 +668,7 @@ class ChinaMfaRegularPressSource:
 
     def __init__(self, session: requests.Session) -> None:
         self.session = session
+        self.known_url_dates: dict[str, str] = {}
 
     def fetch_recent(self, max_pages: int = 4) -> list[ScrapedRecord]:
         end_date = datetime.now(timezone.utc).date()
@@ -809,6 +810,7 @@ class UsStateDepartmentSource:
         "https://www.state.gov/state_press_release-sitemap.xml",
         "https://www.state.gov/state_press_release-sitemap2.xml",
     )
+    current_root_page_sitemaps = tuple(f"https://www.state.gov/page-sitemap{i}.xml" for i in range(6, 12))
     archived_press_archive_urls = (
         ("2017-2021", "https://2017-2021.state.gov/press-releases/", "2017-01-20", "2021-01-19"),
         ("2021-2025", "https://2021-2025.state.gov/press-releases/", "2021-01-20", "2025-01-19"),
@@ -958,6 +960,31 @@ class UsStateDepartmentSource:
                 seen_urls.add(link)
                 candidates.append((link, title, published_at, ""))
 
+        for sitemap_url in self.current_root_page_sitemaps:
+            try:
+                markdown = request_markdown_via_jina(sitemap_url)
+            except Exception:
+                continue
+            body = extract_jina_markdown_body(markdown)
+            for line in body.splitlines():
+                links = markdown_links(line)
+                if not links:
+                    continue
+                title, link = links[0]
+                if not self._looks_like_current_state_root_article(link):
+                    continue
+                published_at_hint = clean_text(self.known_url_dates.get(link, ""))
+                if not published_at_hint:
+                    date_match = re.search(r"(20\d{2}-\d{2}-\d{2})T", line)
+                    if date_match:
+                        published_at_hint = date_match.group(1)
+                if published_at_hint and not (overlap_start <= published_at_hint <= overlap_end):
+                    continue
+                if link in seen_urls:
+                    continue
+                seen_urls.add(link)
+                candidates.append((link, title, published_at_hint, ""))
+
         if not candidates:
             oldest_on_page: str | None = None
             for page in range(1, max_pages + 1):
@@ -1010,7 +1037,7 @@ class UsStateDepartmentSource:
             }
             for future in as_completed(futures):
                 record = future.result()
-                if record is not None:
+                if record is not None and overlap_start <= record.published_at <= overlap_end:
                     records.append(record)
 
         return sorted(records, key=lambda record: (record.published_at, record.url), reverse=True)
@@ -1257,10 +1284,12 @@ class UsStateDepartmentSource:
         if source_hint == "department_press_briefing":
             title = self._infer_briefing_title(url) or title
         elif self._is_placeholder_state_title(title):
-            title = self._infer_briefing_title(url) or title
+            title = self._infer_briefing_title(url) or self._infer_state_title_from_url(url) or title
         published_at = published_at_hint or self._extract_state_date(lines, title, url, source_hint)
         if not title or not published_at:
             raise ValueError(f"Missing state title/date for {url}")
+        if self._is_placeholder_state_title(title):
+            raise ValueError(f"Placeholder state title for {url}")
 
         doc_type = self._extract_state_doc_type(lines, title, source_hint)
         speaker = speaker_hint or self._extract_state_speaker(lines, doc_type)
@@ -1306,6 +1335,49 @@ class UsStateDepartmentSource:
             if text:
                 return self._clean_state_title(text)
         return ""
+
+    def _infer_state_title_from_url(self, url: str) -> str:
+        slug = unquote(urlsplit(url).path.rstrip("/").split("/")[-1])
+        if not slug:
+            return ""
+        slug = re.sub(r"-\d+$", "", slug)
+        words = [part for part in slug.split("-") if part]
+        if not words:
+            return ""
+        replacements = {
+            "rubios": "Rubio’s",
+            "landaus": "Landau’s",
+            "rok": "ROK",
+            "uk": "UK",
+            "uae": "UAE",
+            "ccp": "CCP",
+            "nato": "NATO",
+            "us": "U.S.",
+        }
+        lowercase_words = {
+            "a",
+            "an",
+            "and",
+            "at",
+            "for",
+            "from",
+            "in",
+            "of",
+            "on",
+            "the",
+            "to",
+            "with",
+        }
+        rendered: list[str] = []
+        for index, word in enumerate(words):
+            lowered = word.casefold()
+            if lowered in replacements:
+                rendered.append(replacements[lowered])
+            elif lowered in lowercase_words and index > 0:
+                rendered.append(lowered)
+            else:
+                rendered.append(word.capitalize())
+        return " ".join(rendered)
 
     def _extract_state_date(self, lines: list[str], title: str, url: str, source_hint: str) -> str:
         for line in lines[:60]:
@@ -1743,6 +1815,31 @@ class UsStateDepartmentSource:
             if re.fullmatch(r"[A-Za-z]+ \d{1,2}, \d{4}", text):
                 return parse_us_date(text)
         return ""
+
+    @staticmethod
+    def _looks_like_current_state_root_article(link: str) -> bool:
+        if not link.startswith("https://www.state.gov/"):
+            return False
+        path = urlsplit(link).path.strip("/").casefold()
+        if not path or "/" in path:
+            return False
+        if any(path.startswith(prefix) for prefix in ("translations", "tag", "category", "author", "page")):
+            return False
+        keywords = (
+            "secretary-rubios-call",
+            "secretary-rubios-meeting",
+            "secretary-rubios-phone-call",
+            "secretary-of-state-marco-rubio-remarks-to-the-press",
+            "joint-press-availability",
+            "press-availability",
+            "meeting-with",
+            "call-with",
+            "remarks-to-the-press",
+            "readout",
+            "deputy-secretary-landaus-call",
+            "deputy-secretary-landaus-meeting",
+        )
+        return any(keyword in path for keyword in keywords)
 
 
 class UkFcdoNewsSource:

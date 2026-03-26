@@ -236,22 +236,28 @@ def maybe_expand_history_start(existing: pd.DataFrame, source: object, start_dat
 
 
 def configure_source_state(code: str, source: object, existing: pd.DataFrame) -> None:
-    if code != "RU":
+    if code == "RU":
+        source.known_urls = {
+            str(url)
+            for url in existing.get("url", pd.Series(dtype=str)).tolist()
+            if str(url).strip()
+        }
+        source.known_title_keys = {
+            (
+                str(row.get("published_at", "")),
+                source._normalize_compare_text(str(row.get("title", ""))),
+            )
+            for row in existing.to_dict(orient="records")
+            if str(row.get("published_at", "")).strip() and str(row.get("title", "")).strip()
+        }
         return
 
-    source.known_urls = {
-        str(url)
-        for url in existing.get("url", pd.Series(dtype=str)).tolist()
-        if str(url).strip()
-    }
-    source.known_title_keys = {
-        (
-            str(row.get("published_at", "")),
-            source._normalize_compare_text(str(row.get("title", ""))),
-        )
-        for row in existing.to_dict(orient="records")
-        if str(row.get("published_at", "")).strip() and str(row.get("title", "")).strip()
-    }
+    if code == "US":
+        source.known_url_dates = {
+            str(row.get("url", "")).strip(): str(row.get("published_at", "")).strip()
+            for row in existing.to_dict(orient="records")
+            if str(row.get("url", "")).strip() and str(row.get("published_at", "")).strip()
+        }
 
 
 def build_fetch_plan(
