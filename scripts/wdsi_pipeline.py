@@ -1395,22 +1395,17 @@ class UsStateDepartmentSource:
             clean_text(label).casefold(): label
             for label in self.doc_type_labels
         }
+        title_override = self._state_doc_type_from_title(title)
         for line in lines[:40]:
             canonical = normalized_labels.get(clean_text(line).casefold())
             if canonical:
+                if canonical == "Press Release" and title_override:
+                    return title_override
                 return canonical
 
+        if title_override:
+            return title_override
         lowered_title = clean_text(title).casefold()
-        if "remarks to the press" in lowered_title or "remarks to press" in lowered_title:
-            return "Remarks to the Press"
-        if lowered_title.startswith("readout") or " readout " in lowered_title:
-            return "Readout"
-        if "meeting with" in lowered_title or "call with" in lowered_title:
-            return "Readout"
-        if "joint press availability" in lowered_title or "press availability" in lowered_title:
-            return "Press Conference"
-        if " remarks " in lowered_title or lowered_title.startswith("remarks "):
-            return "Remarks"
         if lowered_title.startswith("public schedule"):
             return "Public Schedule"
         if lowered_title.startswith("department press briefing"):
@@ -1559,9 +1554,29 @@ class UsStateDepartmentSource:
             if node:
                 doc_type = clean_text(node.get_text(" ", strip=True))
                 break
+        title_override = self._state_doc_type_from_title(title)
+        if doc_type == "Press Release" and title_override:
+            return title_override
         if doc_type:
             return doc_type
         return self._extract_state_doc_type([title], title, source_hint)
+
+    @staticmethod
+    def _state_doc_type_from_title(title: str) -> str:
+        lowered_title = clean_text(title).casefold()
+        if "remarks to the press" in lowered_title or "remarks to press" in lowered_title:
+            return "Remarks to the Press"
+        if lowered_title.startswith("readout") or " readout " in lowered_title:
+            return "Readout"
+        if "after meeting with" in lowered_title:
+            return ""
+        if "meeting with" in lowered_title or "call with" in lowered_title:
+            return "Readout"
+        if "joint press availability" in lowered_title or "press availability" in lowered_title:
+            return "Press Conference"
+        if " remarks " in lowered_title or lowered_title.startswith("remarks "):
+            return "Remarks"
+        return ""
 
     def _parse_archived_press_listing(self, markdown: str) -> list[tuple[str, str, str, str]]:
         entries: list[tuple[str, str, str, str]] = []
