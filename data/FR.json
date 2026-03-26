@@ -2,7 +2,7 @@
   "code": "FR",
   "label": "France",
   "label_zh": "France",
-  "generated_at": "2026-03-25T22:48:23.360455+00:00",
+  "generated_at": "2026-03-26T04:08:16.856460+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -9350,6 +9350,13 @@
       "rolling7": -2.143,
       "rolling30": -1.633,
       "publication": true
+    },
+    {
+      "date": "2026-03-26",
+      "raw": null,
+      "rolling7": -1.714,
+      "rolling30": -1.533,
+      "publication": false
     }
   ]
 }
