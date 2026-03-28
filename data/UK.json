@@ -2,7 +2,7 @@
   "code": "UK",
   "label": "United Kingdom",
   "label_zh": "英国",
-  "generated_at": "2026-03-27T21:47:47.374120+00:00",
+  "generated_at": "2026-03-28T21:14:29.907019+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -40598,6 +40598,13 @@
       "rolling7": -2.143,
       "rolling30": -2.033,
       "publication": true
+    },
+    {
+      "date": "2026-03-28",
+      "raw": null,
+      "rolling7": -2.143,
+      "rolling30": -2.033,
+      "publication": false
     }
   ]
 }

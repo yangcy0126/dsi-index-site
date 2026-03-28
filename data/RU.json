@@ -2,7 +2,7 @@
   "code": "RU",
   "label": "Russia",
   "label_zh": "Russia",
-  "generated_at": "2026-03-27T21:47:48.663201+00:00",
+  "generated_at": "2026-03-28T21:14:31.173346+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -26153,9 +26153,16 @@
     },
     {
       "date": "2026-03-27",
-      "raw": 2,
-      "rolling7": -2.286,
-      "rolling30": -2.067,
+      "raw": -2,
+      "rolling7": -2.857,
+      "rolling30": -2.2,
+      "publication": true
+    },
+    {
+      "date": "2026-03-28",
+      "raw": -3,
+      "rolling7": -2.857,
+      "rolling30": -2.2,
       "publication": true
     }
   ]
