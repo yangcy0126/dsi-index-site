@@ -7,7 +7,7 @@ const state = {
   selectedCode: null,
   seriesMode: "rolling7",
   trumpSeriesMode: "7d",
-  trumpDirectedSeriesMode: "7d",
+  trumpDirectedSeriesMode: "30d",
   trumpDirectedSelectedCode: null,
   cache: new Map(),
   trumpDirectedCache: new Map(),
@@ -19,7 +19,7 @@ const trumpPath = "data/trump_indices.json";
 const trumpDirectedSummaryPath = "data/trump_directed_summary.json";
 const trumpDirectedBasePath = "data/trump_directed";
 const visitorsPath = "data/visitor_stats.json";
-const assetVersion = "20260325-trump-directed-1";
+const assetVersion = "20260327-trump-directed-30d-1";
 const VISITORS_REFRESH_INTERVAL_MS = 120000;
 let visitorsRefreshTimer = null;
 let visitorsRefreshInFlight = false;
@@ -128,6 +128,14 @@ function getTrumpDirectedSeriesKey(baseKey) {
     return `${baseKey}_30d`;
   }
   return `${baseKey}_7d`;
+}
+
+function getTrumpDirectedBoardSnapshot(country) {
+  const value = country.latest_tone_30d;
+  const tone = hasNumericValue(value)
+    ? trumpToneMeta(value)
+    : { label: "no recent 30-day signal", className: "tone-muted" };
+  return { value, tone };
 }
 
 function directedAttentionMeta(score) {
@@ -840,9 +848,7 @@ function renderTrumpDirectedBoard() {
 
   orderedTrumpDirectedCountries().forEach((country) => {
     const wdsiCountry = getCountryByCode(country.code) || {};
-    const tone = hasNumericValue(country.latest_tone_7d)
-      ? trumpToneMeta(country.latest_tone_7d)
-      : { label: "no recent 7-day signal", className: "tone-muted" };
+    const snapshot = getTrumpDirectedBoardSnapshot(country);
     const button = document.createElement("button");
     button.type = "button";
     button.className = `directed-country-card ${country.code === state.trumpDirectedSelectedCode ? "is-active" : ""}`;
@@ -853,10 +859,10 @@ function renderTrumpDirectedBoard() {
         <span>${formatWholeNumber(country.directed_posts_total)} directed posts</span>
         <span>Last mention ${formatDate(country.last_mention_date)}</span>
       </div>
-      <div class="directed-country-score ${tone.className}">
-        ${hasNumericValue(country.latest_tone_7d) ? formatScore(country.latest_tone_7d) : "--"}
+      <div class="directed-country-score ${snapshot.tone.className}">
+        ${hasNumericValue(snapshot.value) ? formatScore(snapshot.value) : "--"}
       </div>
-      <div class="directed-country-tone">${tone.label}</div>
+      <div class="directed-country-tone">${snapshot.tone.label}</div>
     `;
     button.addEventListener("click", () => {
       void setSelectedTrumpDirectedCountry(country.code);
