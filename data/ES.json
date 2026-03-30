@@ -2,7 +2,7 @@
   "code": "ES",
   "label": "Spain",
   "label_zh": "Spain",
-  "generated_at": "2026-03-29T21:12:11.966182+00:00",
+  "generated_at": "2026-03-30T21:39:47.809369+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -10718,6 +10718,13 @@
     },
     {
       "date": "2026-03-29",
+      "raw": null,
+      "rolling7": -3.0,
+      "rolling30": -2.733,
+      "publication": false
+    },
+    {
+      "date": "2026-03-30",
       "raw": null,
       "rolling7": -3.0,
       "rolling30": -2.733,
