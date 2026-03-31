@@ -2,7 +2,7 @@
   "code": "MX",
   "label": "Mexico",
   "label_zh": "Mexico",
-  "generated_at": "2026-03-30T21:39:47.547174+00:00",
+  "generated_at": "2026-03-31T21:34:11.402269+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -8576,58 +8576,65 @@
     },
     {
       "date": "2026-03-23",
-      "raw": 3,
-      "rolling7": 0.429,
-      "rolling30": 0.033,
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.067,
       "publication": true
     },
     {
       "date": "2026-03-24",
       "raw": 0,
-      "rolling7": 0.429,
-      "rolling30": 0.033,
+      "rolling7": 0.0,
+      "rolling30": -0.067,
       "publication": true
     },
     {
       "date": "2026-03-25",
       "raw": 0,
-      "rolling7": 0.429,
-      "rolling30": 0.033,
+      "rolling7": 0.0,
+      "rolling30": -0.067,
       "publication": true
     },
     {
       "date": "2026-03-26",
       "raw": 0,
-      "rolling7": 0.429,
-      "rolling30": 0.033,
+      "rolling7": 0.0,
+      "rolling30": -0.067,
       "publication": true
     },
     {
       "date": "2026-03-27",
       "raw": 0,
-      "rolling7": 0.429,
-      "rolling30": 0.033,
+      "rolling7": 0.0,
+      "rolling30": -0.067,
       "publication": true
     },
     {
       "date": "2026-03-28",
       "raw": null,
-      "rolling7": 0.429,
-      "rolling30": 0.033,
+      "rolling7": 0.0,
+      "rolling30": -0.067,
       "publication": false
     },
     {
       "date": "2026-03-29",
       "raw": null,
-      "rolling7": 0.429,
-      "rolling30": 0.033,
+      "rolling7": 0.0,
+      "rolling30": -0.067,
       "publication": false
     },
     {
       "date": "2026-03-30",
+      "raw": 0,
+      "rolling7": 0.0,
+      "rolling30": -0.067,
+      "publication": true
+    },
+    {
+      "date": "2026-03-31",
       "raw": null,
       "rolling7": 0.0,
-      "rolling30": 0.033,
+      "rolling30": -0.067,
       "publication": false
     }
   ]

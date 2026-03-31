@@ -2,7 +2,7 @@
   "code": "FR",
   "label": "France",
   "label_zh": "France",
-  "generated_at": "2026-03-30T21:39:45.554027+00:00",
+  "generated_at": "2026-03-31T21:34:09.412056+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -9374,17 +9374,24 @@
     },
     {
       "date": "2026-03-29",
-      "raw": null,
-      "rolling7": -2.143,
-      "rolling30": -1.8,
-      "publication": false
+      "raw": 2,
+      "rolling7": -1.429,
+      "rolling30": -1.633,
+      "publication": true
     },
     {
       "date": "2026-03-30",
-      "raw": null,
-      "rolling7": -2.143,
-      "rolling30": -1.833,
-      "publication": false
+      "raw": 0,
+      "rolling7": -1.0,
+      "rolling30": -1.567,
+      "publication": true
+    },
+    {
+      "date": "2026-03-31",
+      "raw": -2,
+      "rolling7": -1.286,
+      "rolling30": -1.567,
+      "publication": true
     }
   ]
 }

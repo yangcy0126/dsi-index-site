@@ -2,7 +2,7 @@
   "code": "KR",
   "label": "South Korea",
   "label_zh": "韩国",
-  "generated_at": "2026-03-30T21:39:46.726732+00:00",
+  "generated_at": "2026-03-31T21:34:10.586133+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -64531,6 +64531,13 @@
       "rolling7": 0.0,
       "rolling30": 0.567,
       "publication": false
+    },
+    {
+      "date": "2026-03-31",
+      "raw": -2,
+      "rolling7": -0.286,
+      "rolling30": 0.467,
+      "publication": true
     }
   ]
 }
