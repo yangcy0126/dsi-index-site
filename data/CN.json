@@ -2,7 +2,7 @@
   "code": "CN",
   "label": "China",
   "label_zh": "中国",
-  "generated_at": "2026-03-31T21:34:07.700857+00:00",
+  "generated_at": "2026-04-01T21:42:15.037936+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -41513,6 +41513,13 @@
       "date": "2026-03-31",
       "raw": -3,
       "rolling7": -2.429,
+      "rolling30": 0.033,
+      "publication": true
+    },
+    {
+      "date": "2026-04-01",
+      "raw": -3,
+      "rolling7": -2.571,
       "rolling30": 0.033,
       "publication": true
     }
