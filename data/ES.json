@@ -2,7 +2,7 @@
   "code": "ES",
   "label": "Spain",
   "label_zh": "Spain",
-  "generated_at": "2026-04-02T21:39:55.648602+00:00",
+  "generated_at": "2026-04-03T21:20:56.925831+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -10746,10 +10746,17 @@
     },
     {
       "date": "2026-04-02",
-      "raw": 2,
-      "rolling7": -2.143,
-      "rolling30": -2.533,
+      "raw": -3,
+      "rolling7": -2.857,
+      "rolling30": -2.7,
       "publication": true
+    },
+    {
+      "date": "2026-04-03",
+      "raw": null,
+      "rolling7": -2.857,
+      "rolling30": -2.7,
+      "publication": false
     }
   ]
 }
