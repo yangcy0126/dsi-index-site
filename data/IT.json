@@ -2,7 +2,7 @@
   "code": "IT",
   "label": "Italy",
   "label_zh": "Italy",
-  "generated_at": "2026-04-05T21:05:15.800456+00:00",
+  "generated_at": "2026-04-06T21:19:41.665612+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -10875,6 +10875,13 @@
       "raw": null,
       "rolling7": -0.571,
       "rolling30": -0.567,
+      "publication": false
+    },
+    {
+      "date": "2026-04-06",
+      "raw": null,
+      "rolling7": -0.286,
+      "rolling30": -0.5,
       "publication": false
     }
   ]
