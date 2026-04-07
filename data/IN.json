@@ -2,7 +2,7 @@
   "code": "IN",
   "label": "India",
   "label_zh": "India",
-  "generated_at": "2026-04-06T21:19:40.872070+00:00",
+  "generated_at": "2026-04-07T22:00:19.005290+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -3067,38 +3067,45 @@
     },
     {
       "date": "2026-04-02",
-      "raw": 0,
-      "rolling7": 0.0,
-      "rolling30": -0.667,
+      "raw": -2,
+      "rolling7": -0.286,
+      "rolling30": -0.733,
       "publication": true
     },
     {
       "date": "2026-04-03",
       "raw": 0,
-      "rolling7": 0.0,
-      "rolling30": -0.667,
+      "rolling7": -0.286,
+      "rolling30": -0.733,
       "publication": true
     },
     {
       "date": "2026-04-04",
       "raw": null,
-      "rolling7": 0.0,
-      "rolling30": -0.667,
+      "rolling7": -0.286,
+      "rolling30": -0.733,
       "publication": false
     },
     {
       "date": "2026-04-05",
       "raw": null,
-      "rolling7": 0.0,
-      "rolling30": -0.667,
+      "rolling7": -0.286,
+      "rolling30": -0.733,
       "publication": false
     },
     {
       "date": "2026-04-06",
-      "raw": null,
-      "rolling7": 0.0,
-      "rolling30": -0.6,
-      "publication": false
+      "raw": 0,
+      "rolling7": -0.286,
+      "rolling30": -0.667,
+      "publication": true
+    },
+    {
+      "date": "2026-04-07",
+      "raw": -2,
+      "rolling7": -0.571,
+      "rolling30": -0.667,
+      "publication": true
     }
   ]
 }
