@@ -2,7 +2,7 @@
   "code": "CA",
   "label": "Canada",
   "label_zh": "Canada",
-  "generated_at": "2026-04-07T22:00:19.972686+00:00",
+  "generated_at": "2026-04-08T22:03:48.801643+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -18677,6 +18677,13 @@
     },
     {
       "date": "2026-04-07",
+      "raw": null,
+      "rolling7": -0.429,
+      "rolling30": -0.467,
+      "publication": false
+    },
+    {
+      "date": "2026-04-08",
       "raw": null,
       "rolling7": -0.429,
       "rolling30": -0.467,

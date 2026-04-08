@@ -2,7 +2,7 @@
   "code": "KR",
   "label": "South Korea",
   "label_zh": "韩国",
-  "generated_at": "2026-04-07T22:00:20.758277+00:00",
+  "generated_at": "2026-04-08T22:03:49.609893+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -64478,114 +64478,121 @@
     },
     {
       "date": "2026-03-23",
-      "raw": null,
-      "rolling7": 0.0,
-      "rolling30": 0.733,
-      "publication": false
+      "raw": -2,
+      "rolling7": -0.286,
+      "rolling30": 0.667,
+      "publication": true
     },
     {
       "date": "2026-03-24",
       "raw": 0,
-      "rolling7": 0.0,
-      "rolling30": 0.733,
+      "rolling7": -0.286,
+      "rolling30": 0.667,
       "publication": true
     },
     {
       "date": "2026-03-25",
       "raw": null,
-      "rolling7": 0.0,
-      "rolling30": 0.733,
+      "rolling7": -0.286,
+      "rolling30": 0.667,
       "publication": false
     },
     {
       "date": "2026-03-26",
       "raw": null,
-      "rolling7": 0.0,
-      "rolling30": 0.667,
+      "rolling7": -0.286,
+      "rolling30": 0.6,
       "publication": false
     },
     {
       "date": "2026-03-27",
       "raw": 2,
-      "rolling7": 0.286,
-      "rolling30": 0.733,
+      "rolling7": 0.0,
+      "rolling30": 0.667,
       "publication": true
     },
     {
       "date": "2026-03-28",
       "raw": null,
-      "rolling7": 0.571,
-      "rolling30": 0.8,
+      "rolling7": 0.286,
+      "rolling30": 0.733,
       "publication": false
     },
     {
       "date": "2026-03-29",
       "raw": null,
-      "rolling7": 0.857,
-      "rolling30": 0.867,
+      "rolling7": 0.571,
+      "rolling30": 0.8,
       "publication": false
     },
     {
       "date": "2026-03-30",
       "raw": null,
       "rolling7": 1.143,
-      "rolling30": 0.9,
+      "rolling30": 0.833,
       "publication": false
     },
     {
       "date": "2026-03-31",
       "raw": -2,
       "rolling7": 0.857,
-      "rolling30": 0.8,
+      "rolling30": 0.733,
       "publication": true
     },
     {
       "date": "2026-04-01",
       "raw": 0,
       "rolling7": 0.857,
-      "rolling30": 0.733,
+      "rolling30": 0.667,
       "publication": true
     },
     {
       "date": "2026-04-02",
       "raw": null,
       "rolling7": 0.857,
-      "rolling30": 0.667,
+      "rolling30": 0.6,
       "publication": false
     },
     {
       "date": "2026-04-03",
       "raw": null,
       "rolling7": 0.571,
-      "rolling30": 0.6,
+      "rolling30": 0.533,
       "publication": false
     },
     {
       "date": "2026-04-04",
       "raw": null,
       "rolling7": 0.286,
-      "rolling30": 0.533,
+      "rolling30": 0.467,
       "publication": false
     },
     {
       "date": "2026-04-05",
       "raw": null,
       "rolling7": 0.0,
-      "rolling30": 0.467,
+      "rolling30": 0.4,
       "publication": false
     },
     {
       "date": "2026-04-06",
       "raw": -3,
       "rolling7": -0.714,
-      "rolling30": 0.3,
+      "rolling30": 0.233,
       "publication": true
     },
     {
       "date": "2026-04-07",
       "raw": null,
       "rolling7": -0.857,
-      "rolling30": 0.133,
+      "rolling30": 0.067,
+      "publication": false
+    },
+    {
+      "date": "2026-04-08",
+      "raw": null,
+      "rolling7": -1.286,
+      "rolling30": -0.1,
       "publication": false
     }
   ]
