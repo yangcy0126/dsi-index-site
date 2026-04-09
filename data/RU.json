@@ -2,7 +2,7 @@
   "code": "RU",
   "label": "Russia",
   "label_zh": "Russia",
-  "generated_at": "2026-04-08T22:03:49.227145+00:00",
+  "generated_at": "2026-04-09T22:48:57.820880+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -26240,6 +26240,13 @@
       "raw": -3,
       "rolling7": -2.429,
       "rolling30": -2.233,
+      "publication": true
+    },
+    {
+      "date": "2026-04-09",
+      "raw": -2,
+      "rolling7": -2.429,
+      "rolling30": -2.3,
       "publication": true
     }
   ]
