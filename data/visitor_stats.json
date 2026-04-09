@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-09T01:49:37.177223+00:00",
+  "generated_at": "2026-04-09T20:35:44.559102+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -8,10 +8,10 @@
     "Macau",
     "Taiwan"
   ],
-  "total_countries": 15,
-  "flags_collected": 18,
-  "total_views": 436,
-  "total_visitors": 81,
+  "total_countries": 16,
+  "flags_collected": 19,
+  "total_views": 437,
+  "total_visitors": 82,
   "visitors_yesterday": 0,
   "visitors_30d_average": 3,
   "visitors_record": 23,
@@ -61,6 +61,14 @@
       "visitors": 2,
       "members": [
         "Japan"
+      ]
+    },
+    {
+      "code": "CY",
+      "country": "Cyprus",
+      "visitors": 1,
+      "members": [
+        "Cyprus"
       ]
     },
     {
