@@ -2,7 +2,7 @@
   "code": "US",
   "label": "United States",
   "label_zh": "美国",
-  "generated_at": "2026-04-09T22:48:54.729486+00:00",
+  "generated_at": "2026-04-10T21:34:48.722183+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -41602,6 +41602,13 @@
     },
     {
       "date": "2026-04-09",
+      "raw": null,
+      "rolling7": -0.857,
+      "rolling30": -1.2,
+      "publication": false
+    },
+    {
+      "date": "2026-04-10",
       "raw": null,
       "rolling7": -0.857,
       "rolling30": -1.2,
