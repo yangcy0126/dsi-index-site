@@ -2,7 +2,7 @@
   "code": "DE",
   "label": "Germany",
   "label_zh": "Germany",
-  "generated_at": "2026-04-10T21:34:49.763921+00:00",
+  "generated_at": "2026-04-11T21:08:47.918237+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -8362,6 +8362,13 @@
       "raw": null,
       "rolling7": -3.0,
       "rolling30": -1.4,
+      "publication": false
+    },
+    {
+      "date": "2026-04-11",
+      "raw": null,
+      "rolling7": -3.0,
+      "rolling30": -1.433,
       "publication": false
     }
   ]

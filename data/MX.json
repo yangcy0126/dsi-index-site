@@ -2,7 +2,7 @@
   "code": "MX",
   "label": "Mexico",
   "label_zh": "Mexico",
-  "generated_at": "2026-04-10T21:34:52.895311+00:00",
+  "generated_at": "2026-04-11T21:08:51.142526+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -8702,6 +8702,13 @@
     },
     {
       "date": "2026-04-10",
+      "raw": null,
+      "rolling7": 0.0,
+      "rolling30": 0.067,
+      "publication": false
+    },
+    {
+      "date": "2026-04-11",
       "raw": null,
       "rolling7": 0.0,
       "rolling30": 0.067,
