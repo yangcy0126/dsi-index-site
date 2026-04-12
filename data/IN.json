@@ -2,7 +2,7 @@
   "code": "IN",
   "label": "India",
   "label_zh": "India",
-  "generated_at": "2026-04-11T21:08:48.519820+00:00",
+  "generated_at": "2026-04-12T21:09:27.358867+00:00",
   "is_placeholder": false,
   "placeholder_note": "",
   "records": [
@@ -3134,6 +3134,13 @@
       "rolling7": -0.286,
       "rolling30": -0.333,
       "publication": true
+    },
+    {
+      "date": "2026-04-12",
+      "raw": null,
+      "rolling7": -0.286,
+      "rolling30": -0.267,
+      "publication": false
     }
   ]
 }
