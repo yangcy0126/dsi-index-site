@@ -15,10 +15,10 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;700&display=swap"
       rel="stylesheet"
     >
-    <link rel="stylesheet" href="styles.css?v=20260412-dsi-1">
+    <link rel="stylesheet" href="styles.css?v=20260412-dsi-2">
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
-    <script src="script.js?v=20260412-dsi-1" defer></script>
-    <script src="dsi-site.js?v=20260412-dsi-1" defer></script>
+    <script src="script.js?v=20260412-dsi-2" defer></script>
+    <script src="dsi-site.js?v=20260412-dsi-2" defer></script>
   </head>
   <body>
     <div class="page-shell">
@@ -145,8 +145,23 @@
             <p class="eyebrow">Overview</p>
             <h2>Cross-Country DSI Signal Board</h2>
             <p>
-              Start with the full cross-country picture, then move into each country series. The headline number on each card follows the currently selected DSI branch, so you can compare war-related, economic, and other diplomatic tone across countries.
+              Start with the full cross-country picture, then move into each country series. The headline number on each card follows the currently selected DSI branch, so you can compare WDSI, EDSI, and ODSI across countries.
             </p>
+          </div>
+          <div class="signal-board-toolbar">
+            <div class="toggle-stack">
+              <p class="toggle-caption">Signal Board Indicator</p>
+              <div
+                class="series-toggle indicator-toggle"
+                id="overview-indicator-toggle"
+                data-indicator-toggle
+                aria-label="Signal board indicator selector"
+              >
+                <button class="toggle-button is-active" data-indicator="c1" type="button">WDSI</button>
+                <button class="toggle-button" data-indicator="c2" type="button">EDSI</button>
+                <button class="toggle-button" data-indicator="c3" type="button">ODSI</button>
+              </div>
+            </div>
           </div>
           <div class="country-board" id="country-board"></div>
         </section>
@@ -165,7 +180,12 @@
               <div class="tabs" id="country-tabs" aria-label="Country selector"></div>
               <div class="toggle-stack">
                 <p class="toggle-caption">Indicator</p>
-                <div class="series-toggle" id="indicator-toggle" aria-label="Indicator selector">
+                <div
+                  class="series-toggle indicator-toggle"
+                  id="indicator-toggle"
+                  data-indicator-toggle
+                  aria-label="Indicator selector"
+                >
                   <button class="toggle-button is-active" data-indicator="c1" type="button">WDSI</button>
                   <button class="toggle-button" data-indicator="c2" type="button">EDSI</button>
                   <button class="toggle-button" data-indicator="c3" type="button">ODSI</button>

@@ -303,6 +303,14 @@ h3 {
   margin-bottom: 22px;
 }
 
+.signal-board-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
 .country-board,
 .method-grid,
 .research-grid {
@@ -396,6 +404,10 @@ h3 {
 .toggle-stack {
   display: grid;
   gap: 8px;
+}
+
+.indicator-toggle {
+  align-items: center;
 }
 
 .toggle-caption {

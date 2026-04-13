@@ -9,12 +9,13 @@ const DSI_SITE_STATE = {
 
 const dsiSummaryPath = "data/summary.json";
 const dsiEventsPath = "data/events.json";
-const dsiAssetVersion = "20260412-dsi-1";
+const dsiAssetVersion = "20260412-dsi-2";
 
 const DSI_INDICATOR_META = {
   c1: {
     shortLabel: "WDSI",
-    label: "War-Related DSI",
+    label: "WDSI",
+    longLabel: "War-Related DSI",
     rawKey: "c1_raw",
     filledKey: "c1",
     rolling7Key: "c1_7",
@@ -23,7 +24,8 @@ const DSI_INDICATOR_META = {
   },
   c2: {
     shortLabel: "EDSI",
-    label: "Economic DSI",
+    label: "EDSI",
+    longLabel: "Economic DSI",
     rawKey: "c2_raw",
     filledKey: "c2",
     rolling7Key: "c2_7",
@@ -32,7 +34,8 @@ const DSI_INDICATOR_META = {
   },
   c3: {
     shortLabel: "ODSI",
-    label: "Other DSI",
+    label: "ODSI",
+    longLabel: "Other DSI",
     rawKey: "c3_raw",
     filledKey: "c3",
     rolling7Key: "c3_7",
@@ -153,9 +156,9 @@ function dsiScoreSentence(country, indicatorSummary) {
   const score = indicatorSummary.latest_7d;
   const tone = dsiToneMeta(score);
   if (!dsiHasNumericValue(score)) {
-    return `${country.label} does not yet have a recent ${meta.label} signal.`;
+    return `${country.label} does not yet have a recent ${meta.shortLabel} signal.`;
   }
-  return `${country.label} currently has a 7-day ${meta.label} of ${dsiFormatScore(score)}, which sits in the ${tone.label} range.`;
+  return `${country.label} currently has a 7-day ${meta.shortLabel} of ${dsiFormatScore(score)}, which sits in the ${tone.label} range.`;
 }
 
 function dsiDeltaSentence(delta, dayCount) {
@@ -230,7 +233,7 @@ function dsiRenderCountryBoard() {
       <h3>${dsiEscapeHtml(country.label)}</h3>
       <div class="country-meta">
         <span>${dsiEscapeHtml(country.code)}</span>
-        <span>${meta.shortLabel} · ${dsiFormatDate(country.latest_publication_date)}</span>
+        <span>${meta.shortLabel} | ${dsiFormatDate(country.latest_publication_date)}</span>
       </div>
       <div class="country-score ${tone.className}">${dsiFormatScore(indicatorSummary.latest_7d)}</div>
       <div class="country-tone">${dsiEscapeHtml(tone.label)}</div>
@@ -276,9 +279,9 @@ function dsiRenderSelectedMetrics(country) {
         : "tone-neutral";
 
   document.getElementById("selected-country-name").textContent = country.label;
-  document.getElementById("selected-current-label").textContent = `${meta.shortLabel} · 7-day`;
-  document.getElementById("selected-rolling30-label").textContent = `${meta.shortLabel} · 30-day`;
-  document.getElementById("selected-change-label").textContent = `${meta.shortLabel} · 30-day change`;
+  document.getElementById("selected-current-label").textContent = `${meta.shortLabel} 7-day`;
+  document.getElementById("selected-rolling30-label").textContent = `${meta.shortLabel} 30-day`;
+  document.getElementById("selected-change-label").textContent = `${meta.shortLabel} 30-day change`;
 
   latestValueEl.textContent = dsiFormatScore(indicatorSummary.latest_7d);
   latestValueEl.className = `metric-value ${latestTone.className}`;
@@ -287,7 +290,7 @@ function dsiRenderSelectedMetrics(country) {
   rolling30El.textContent = dsiFormatScore(indicatorSummary.latest_30d);
   rolling30El.className = `metric-value ${rolling30Tone.className}`;
   document.getElementById("selected-rolling30-caption").textContent =
-    `${country.label}'s 30-day ${meta.label} is ${dsiFormatScore(indicatorSummary.latest_30d)}.`;
+    `${country.label}'s 30-day ${meta.shortLabel} is ${dsiFormatScore(indicatorSummary.latest_30d)}.`;
 
   changeEl.textContent = dsiHasNumericValue(changeValue)
     ? `${Number(changeValue) >= 0 ? "+" : ""}${dsiFormatScore(changeValue)}`
@@ -296,11 +299,11 @@ function dsiRenderSelectedMetrics(country) {
 
   document.getElementById("selected-publication-date").textContent = dsiFormatDate(country.latest_publication_date);
   document.getElementById("selected-publication-score").textContent =
-    `${country.latest_title || "Latest official publication"} · raw ${meta.shortLabel}: ${dsiFormatScore(indicatorSummary.latest_raw)} · ${dsiDeltaSentence(changeValue, 30)}`;
+    `${country.latest_title || "Latest official publication"} | raw ${meta.shortLabel}: ${dsiFormatScore(indicatorSummary.latest_raw)} | ${dsiDeltaSentence(changeValue, 30)}`;
   document.getElementById("selected-coverage").textContent =
     `${dsiFormatDate(country.start_date)} to ${dsiFormatDate(country.latest_date)}`;
   document.getElementById("selected-publication-days").textContent =
-    `${country.publication_days} publication days · ${country.calendar_days} calendar days · ${meta.shortLabel}`;
+    `${country.publication_days} publication days | ${country.calendar_days} calendar days | ${meta.shortLabel}`;
 }
 
 function dsiRenderDownloadList() {
@@ -321,7 +324,7 @@ function dsiRenderDownloadList() {
     },
     ...DSI_SITE_STATE.summary.countries.map((country) => ({
       title: `${country.label} data`,
-      meta: `${country.code} · ${country.publication_days} publication days`,
+      meta: `${country.code} | ${country.publication_days} publication days`,
       href: country.file_xlsx || country.file_csv,
     })),
   ];
@@ -480,9 +483,9 @@ function dsiRenderChart(country, countryData) {
   });
 
   document.getElementById("chart-caption").textContent =
-    `${country.label} is shown here through ${meta.label}. Current view: ${
+    `${country.label} is shown here through ${meta.longLabel}. Current view: ${
       showRolling7 ? "7-day smoothed trend" : showRolling30 ? "30-day smoothed trend" : "publication-day raw moves"
-    }. WDSI is the c1 war-related branch of the broader DSI family.`;
+    }. WDSI, EDSI, and ODSI are the three DSI branches available on this site.`;
 
   dsiUpdateEventChips(records);
 }
@@ -521,23 +524,31 @@ function dsiBindCountrySelectors() {
   tabs?.addEventListener("click", handler);
 }
 
+function dsiSyncIndicatorToggles() {
+  document.querySelectorAll("[data-indicator-toggle]").forEach((container) => {
+    container.querySelectorAll("button[data-indicator]").forEach((node) => {
+      node.classList.toggle("is-active", node.dataset.indicator === DSI_SITE_STATE.indicatorMode);
+    });
+  });
+}
+
 function dsiBindIndicatorToggle() {
-  const container = document.getElementById("indicator-toggle");
-  if (!container) {
+  const containers = Array.from(document.querySelectorAll("[data-indicator-toggle]"));
+  if (!containers.length) {
     return;
   }
-  container.addEventListener("click", async (event) => {
-    const button = event.target.closest("button[data-indicator]");
-    if (!button) {
-      return;
-    }
-    DSI_SITE_STATE.indicatorMode = button.dataset.indicator;
-    container.querySelectorAll("button").forEach((node) => {
-      node.classList.toggle("is-active", node === button);
+  containers.forEach((container) => {
+    container.addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-indicator]");
+      if (!button) {
+        return;
+      }
+      DSI_SITE_STATE.indicatorMode = button.dataset.indicator;
+      dsiSyncIndicatorToggles();
+      if (DSI_SITE_STATE.selectedCode) {
+        await dsiSetSelectedCountry(DSI_SITE_STATE.selectedCode);
+      }
     });
-    if (DSI_SITE_STATE.selectedCode) {
-      await dsiSetSelectedCountry(DSI_SITE_STATE.selectedCode);
-    }
   });
 }
 
@@ -576,6 +587,7 @@ async function initDSISite() {
     dsiBindCountrySelectors();
     dsiBindIndicatorToggle();
     dsiBindSeriesToggle();
+    dsiSyncIndicatorToggles();
 
     if (DSI_SITE_STATE.selectedCode) {
       await dsiSetSelectedCountry(DSI_SITE_STATE.selectedCode);
