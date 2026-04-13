@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-13T03:43:37.673070+00:00",
+  "generated_at": "2026-04-13T04:49:34.260868+00:00",
   "site_title": "Diplomatic Sentiment Observatory",
   "site_short_name": "DSI Observatory",
   "method_note": "Diplomatic Sentiment Observatory (DSI) site build: each publication-day raw score uses the same-day minimum; missing dates are forward-filled; 3-day, 7-day, and 30-day series are rolling means on the filled daily path. WDSI is the c1 war-related dimension within the broader three-part DSI family.",
@@ -203,14 +203,14 @@
           "slug": "wdsi",
           "short_label": "WDSI",
           "label": "War-Related DSI",
-          "latest_raw": 0,
-          "latest_filled": 0,
-          "latest_7d": 0,
-          "latest_30d": 0,
-          "change_7d": 0,
-          "change_30d": 0,
+          "latest_raw": -3,
+          "latest_filled": -3,
+          "latest_7d": -1.857,
+          "latest_30d": -1.667,
+          "change_7d": 0.286,
+          "change_30d": 0.2,
           "current_year": 2026,
-          "current_year_mean": 0
+          "current_year_mean": -1.522
         },
         "c2": {
           "slug": "edsi",
@@ -218,34 +218,34 @@
           "label": "Economic DSI",
           "latest_raw": 0,
           "latest_filled": 0,
-          "latest_7d": 0,
-          "latest_30d": 0,
-          "change_7d": 0,
-          "change_30d": 0,
+          "latest_7d": 0.429,
+          "latest_30d": -0.067,
+          "change_7d": 0.429,
+          "change_30d": -0.8,
           "current_year": 2026,
-          "current_year_mean": 0
+          "current_year_mean": 0.411
         },
         "c3": {
           "slug": "odsi",
           "short_label": "ODSI",
           "label": "Other DSI",
-          "latest_raw": 0,
-          "latest_filled": 0,
-          "latest_7d": 0,
-          "latest_30d": 0,
-          "change_7d": 0,
-          "change_30d": 0,
+          "latest_raw": 2,
+          "latest_filled": 2,
+          "latest_7d": 0.571,
+          "latest_30d": 0.7,
+          "change_7d": -1,
+          "change_30d": 0.633,
           "current_year": 2026,
-          "current_year_mean": 0
+          "current_year_mean": 0.367
         }
       },
-      "latest_raw": 0,
-      "latest_7d": 0,
-      "latest_30d": 0,
-      "change_7d": 0,
-      "change_30d": 0,
+      "latest_raw": -3,
+      "latest_7d": -1.857,
+      "latest_30d": -1.667,
+      "change_7d": 0.286,
+      "change_30d": 0.2,
       "current_year": 2026,
-      "current_year_mean": 0
+      "current_year_mean": -1.522
     },
     {
       "code": "JP",
