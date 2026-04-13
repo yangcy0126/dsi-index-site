@@ -62,6 +62,13 @@ COUNTRY_META = {
     "ES": {"label": "Spain", "color": "#c37b2d"},
 }
 
+COUNTRY_SITE_START_OVERRIDES = {
+    # France's pre-2022 exploratory backfill is dominated by low-signal science,
+    # agenda, and adoption notices rather than core diplomatic statements.
+    # Trim the public site/download series to the cleaner modern segment.
+    "FR": "2022-01-01",
+}
+
 COUNTRY_WORKBOOK_COLUMNS = [
     "date",
     "publication",
@@ -392,6 +399,11 @@ def main() -> None:
 
     for code in COUNTRY_ORDER:
         country_frame = daily[daily["country_code"].eq(code)].copy()
+        if country_frame.empty:
+            continue
+        start_override = COUNTRY_SITE_START_OVERRIDES.get(code)
+        if start_override:
+            country_frame = country_frame[country_frame["date"].ge(start_override)].copy()
         if country_frame.empty:
             continue
 
