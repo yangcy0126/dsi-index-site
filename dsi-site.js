@@ -9,7 +9,7 @@ const DSI_SITE_STATE = {
 
 const dsiSummaryPath = "data/summary.json";
 const dsiEventsPath = "data/events.json";
-const dsiAssetVersion = "20260412-dsi-2";
+const dsiAssetVersion = "20260412-dsi-3";
 
 const DSI_INDICATOR_META = {
   c1: {
@@ -311,20 +311,36 @@ function dsiRenderDownloadList() {
   if (!list || !DSI_SITE_STATE.summary) {
     return;
   }
+  const downloads = DSI_SITE_STATE.summary.downloads || {};
   const items = [
     {
       title: "Full DSI daily dataset",
-      meta: "Excel workbook with WDSI, EDSI, ODSI, and variable definitions.",
-      href: "data/dsi_all_countries.xlsx",
+      meta: "Combined cross-country workbook with WDSI, EDSI, ODSI, and variable definitions.",
+      href: downloads.dsi_xlsx || "data/dsi_all_countries.xlsx",
+    },
+    {
+      title: "WDSI cross-country panel",
+      meta: "Cross-country workbook for the war-related DSI branch only.",
+      href: downloads.wdsi_xlsx || "data/wdsi_all_countries.xlsx",
+    },
+    {
+      title: "EDSI cross-country panel",
+      meta: "Cross-country workbook for the economic DSI branch only.",
+      href: downloads.edsi_xlsx || "data/edsi_all_countries.xlsx",
+    },
+    {
+      title: "ODSI cross-country panel",
+      meta: "Cross-country workbook for the other-diplomatic DSI branch only.",
+      href: downloads.odsi_xlsx || "data/odsi_all_countries.xlsx",
     },
     {
       title: "Site summary (JSON)",
       meta: "Country list, three-indicator latest values, coverage windows, and download paths.",
-      href: "data/summary.json",
+      href: downloads.summary_json || "data/summary.json",
     },
     ...DSI_SITE_STATE.summary.countries.map((country) => ({
       title: `${country.label} data`,
-      meta: `${country.code} | ${country.publication_days} publication days`,
+      meta: `${country.code} | ${country.publication_days} publication days | workbook contains WDSI, EDSI, and ODSI`,
       href: country.file_xlsx || country.file_csv,
     })),
   ];

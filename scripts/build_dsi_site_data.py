@@ -87,6 +87,8 @@ COUNTRY_WORKBOOK_COLUMNS = [
 
 MASTER_WORKBOOK_COLUMNS = ["country_code", "country"] + COUNTRY_WORKBOOK_COLUMNS
 
+INDICATOR_PANEL_COLUMNS = ["country_code", "country", "date", "publication", "raw", "filled", "ma3", "ma7", "ma30"]
+
 VARIABLE_DEFINITIONS = [
     {
         "variable": "date",
@@ -222,6 +224,25 @@ def write_workbook(path: Path, sheet_name: str, frame: pd.DataFrame) -> None:
         definitions.to_excel(writer, index=False, sheet_name="variable_definitions")
 
 
+def write_indicator_workbook(path: Path, sheet_name: str, frame: pd.DataFrame, indicator_label: str) -> None:
+    definitions = pd.DataFrame(
+        [
+            {"variable": "country_code", "description": "Two-letter country or region code."},
+            {"variable": "country", "description": "Country or region name."},
+            {"variable": "date", "description": "Calendar date of the daily observation."},
+            {"variable": "publication", "description": "Whether at least one official source publication is observed on that date."},
+            {"variable": "raw", "description": f"Publication-day raw score for {indicator_label}."},
+            {"variable": "filled", "description": f"Forward-filled daily path for {indicator_label}."},
+            {"variable": "ma3", "description": f"3-day rolling mean for {indicator_label}."},
+            {"variable": "ma7", "description": f"7-day rolling mean for {indicator_label}."},
+            {"variable": "ma30", "description": f"30-day rolling mean for {indicator_label}."},
+        ]
+    )
+    with pd.ExcelWriter(path, engine="openpyxl") as writer:
+        frame.to_excel(writer, index=False, sheet_name=sheet_name)
+        definitions.to_excel(writer, index=False, sheet_name="variable_definitions")
+
+
 def load_inputs() -> tuple[pd.DataFrame, pd.DataFrame]:
     if not ALL_COUNTRIES_DAILY_PATH.exists():
         raise FileNotFoundError(f"Missing daily panel: {ALL_COUNTRIES_DAILY_PATH}")
@@ -344,6 +365,23 @@ def build_country_payload(
     return country_summary, records, records_for_json
 
 
+def build_indicator_panel(master_frame: pd.DataFrame, indicator: str) -> pd.DataFrame:
+    panel = pd.DataFrame(
+        {
+            "country_code": master_frame["country_code"],
+            "country": master_frame["country"],
+            "date": master_frame["date"],
+            "publication": master_frame["publication"],
+            "raw": master_frame[f"{indicator}_raw"],
+            "filled": master_frame[indicator],
+            "ma3": master_frame[f"{indicator}_3"],
+            "ma7": master_frame[f"{indicator}_7"],
+            "ma30": master_frame[f"{indicator}_30"],
+        }
+    )
+    return panel[INDICATOR_PANEL_COLUMNS]
+
+
 def main() -> None:
     SITE_DATA_DIR.mkdir(parents=True, exist_ok=True)
     daily, _ = load_inputs()
@@ -397,6 +435,17 @@ def main() -> None:
         "site_short_name": "DSI Observatory",
         "method_note": METHOD_NOTE,
         "indicators": INDICATORS,
+        "downloads": {
+            "dsi_xlsx": "data/dsi_all_countries.xlsx",
+            "dsi_csv": "data/dsi_all_countries.csv",
+            "wdsi_xlsx": "data/wdsi_all_countries.xlsx",
+            "wdsi_csv": "data/wdsi_all_countries.csv",
+            "edsi_xlsx": "data/edsi_all_countries.xlsx",
+            "edsi_csv": "data/edsi_all_countries.csv",
+            "odsi_xlsx": "data/odsi_all_countries.xlsx",
+            "odsi_csv": "data/odsi_all_countries.csv",
+            "summary_json": "data/summary.json",
+        },
         "overall": overall,
         "countries": countries,
     }
@@ -412,9 +461,16 @@ def main() -> None:
     master_frame.to_csv(SITE_DATA_DIR / "dsi_all_countries.csv", index=False, encoding="utf-8-sig")
     write_workbook(SITE_DATA_DIR / "dsi_all_countries.xlsx", "daily_panel", master_frame)
 
-    # Keep the legacy master workbook name alive so old links do not break.
-    shutil.copyfile(SITE_DATA_DIR / "dsi_all_countries.csv", SITE_DATA_DIR / "wdsi_all_countries.csv")
-    shutil.copyfile(SITE_DATA_DIR / "dsi_all_countries.xlsx", SITE_DATA_DIR / "wdsi_all_countries.xlsx")
+    for indicator, indicator_meta in INDICATORS.items():
+        indicator_panel = build_indicator_panel(master_frame, indicator)
+        file_slug = indicator_meta["slug"]
+        indicator_panel.to_csv(SITE_DATA_DIR / f"{file_slug}_all_countries.csv", index=False, encoding="utf-8-sig")
+        write_indicator_workbook(
+            SITE_DATA_DIR / f"{file_slug}_all_countries.xlsx",
+            f"{file_slug}_panel",
+            indicator_panel,
+            indicator_meta["short_label"],
+        )
 
 
 if __name__ == "__main__":

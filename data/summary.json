@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-13T03:02:14.529362+00:00",
+  "generated_at": "2026-04-13T03:43:37.673070+00:00",
   "site_title": "Diplomatic Sentiment Observatory",
   "site_short_name": "DSI Observatory",
   "method_note": "Diplomatic Sentiment Observatory (DSI) site build: each publication-day raw score uses the same-day minimum; missing dates are forward-filled; 3-day, 7-day, and 30-day series are rolling means on the filled daily path. WDSI is the c1 war-related dimension within the broader three-part DSI family.",
@@ -25,6 +25,17 @@
       "description": "Other diplomatic sentiment built from the residual non-military, non-economic dimension.",
       "chart_title": "Other DSI"
     }
+  },
+  "downloads": {
+    "dsi_xlsx": "data/dsi_all_countries.xlsx",
+    "dsi_csv": "data/dsi_all_countries.csv",
+    "wdsi_xlsx": "data/wdsi_all_countries.xlsx",
+    "wdsi_csv": "data/wdsi_all_countries.csv",
+    "edsi_xlsx": "data/edsi_all_countries.xlsx",
+    "edsi_csv": "data/edsi_all_countries.csv",
+    "odsi_xlsx": "data/odsi_all_countries.xlsx",
+    "odsi_csv": "data/odsi_all_countries.csv",
+    "summary_json": "data/summary.json"
   },
   "overall": {
     "country_count": 15,
