@@ -440,7 +440,7 @@ jobs:
           path: records
 
       - name: Rebuild site data
-        run: python scripts/build_wdsi_data.py
+        run: python scripts/build_dsi_site_data.py
 
       - name: Check method lock
         run: python scripts/check_method_lock.py

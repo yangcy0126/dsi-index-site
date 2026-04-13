@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import pandas as pd
 import requests
 
-from build_wdsi_data import main as build_site_data
+from build_dsi_site_data import main as build_site_data
 from wdsi_pipeline import (
     AustraliaForeignMinisterMediaReleaseSource,
     BrazilItamaratyPressReleaseSource,
