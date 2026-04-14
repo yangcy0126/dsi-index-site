@@ -5,11 +5,12 @@ const DSI_SITE_STATE = {
   indicatorMode: "c1",
   seriesMode: "rolling7",
   cache: new Map(),
+  dataVersion: null,
 };
 
 const dsiSummaryPath = "data/summary.json";
 const dsiEventsPath = "data/events.json";
-const dsiAssetVersion = "20260413-dsi-5";
+const dsiAssetVersion = "20260413-dsi-6";
 
 const DSI_INDICATOR_META = {
   c1: {
@@ -44,13 +45,14 @@ const DSI_INDICATOR_META = {
   },
 };
 
-function dsiVersionedPath(path) {
+function dsiVersionedPath(path, versionOverride = null) {
+  const version = versionOverride || dsiAssetVersion;
   const separator = path.includes("?") ? "&" : "?";
-  return `${path}${separator}v=${encodeURIComponent(dsiAssetVersion)}`;
+  return `${path}${separator}v=${encodeURIComponent(version)}`;
 }
 
-async function dsiFetchJson(path) {
-  const response = await fetch(dsiVersionedPath(path), { cache: "no-cache" });
+async function dsiFetchJson(path, versionOverride = null) {
+  const response = await fetch(dsiVersionedPath(path, versionOverride), { cache: "reload" });
   if (!response.ok) {
     throw new Error(`Failed to fetch ${path}`);
   }
@@ -507,10 +509,12 @@ function dsiRenderChart(country, countryData) {
 }
 
 async function dsiLoadCountryData(code) {
-  if (!DSI_SITE_STATE.cache.has(code)) {
-    DSI_SITE_STATE.cache.set(code, dsiFetchJson(`data/${code}.json`));
+  const version = DSI_SITE_STATE.dataVersion || dsiAssetVersion;
+  const cacheKey = `${code}::${version}`;
+  if (!DSI_SITE_STATE.cache.has(cacheKey)) {
+    DSI_SITE_STATE.cache.set(cacheKey, dsiFetchJson(`data/${code}.json`, version));
   }
-  return DSI_SITE_STATE.cache.get(code);
+  return DSI_SITE_STATE.cache.get(cacheKey);
 }
 
 async function dsiSetSelectedCountry(code) {
@@ -596,6 +600,7 @@ async function initDSISite() {
     ]);
     DSI_SITE_STATE.summary = summary;
     DSI_SITE_STATE.events = events.events || [];
+    DSI_SITE_STATE.dataVersion = summary.generated_at || dsiAssetVersion;
     DSI_SITE_STATE.selectedCode = summary.countries?.[0]?.code ?? null;
 
     dsiRenderGlobalMeta();
