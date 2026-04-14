@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-14T14:47:32.979720+00:00",
+  "generated_at": "2026-04-14T15:18:36.371362+00:00",
   "site_title": "Diplomatic Sentiment Observatory",
   "site_short_name": "DSI Observatory",
   "method_note": "Diplomatic Sentiment Observatory (DSI) site build: each publication-day raw score uses the same-day minimum; missing dates are forward-filled; 3-day, 7-day, and 30-day series are rolling means on the filled daily path. WDSI is the c1 war-related dimension within the broader three-part DSI family.",
@@ -590,7 +590,7 @@
       "start_date": "2012-01-01",
       "latest_date": "2026-04-10",
       "latest_publication_date": "2026-04-10",
-      "publication_days": 2861,
+      "publication_days": 2876,
       "calendar_days": 5214,
       "latest_title": "Minister Sidhu to represent Canada and advance trade efforts in People’s Republic of China",
       "latest_url": "https://www.canada.ca/en/global-affairs/news/2026/04/minister-sidhu-to-represent-canada-and-advance-trade-efforts-in-peoples-republic-of-china.html",
