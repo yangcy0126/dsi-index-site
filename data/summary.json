@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-14T12:39:44.718338+00:00",
+  "generated_at": "2026-04-14T13:33:53.443743+00:00",
   "site_title": "Diplomatic Sentiment Observatory",
   "site_short_name": "DSI Observatory",
   "method_note": "Diplomatic Sentiment Observatory (DSI) site build: each publication-day raw score uses the same-day minimum; missing dates are forward-filled; 3-day, 7-day, and 30-day series are rolling means on the filled daily path. WDSI is the c1 war-related dimension within the broader three-part DSI family.",
