@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -16,6 +18,7 @@ SOURCE_SUMMARY_JSON = WORKSPACE_ROOT / "data" / "trump_index" / "daily" / "trump
 SITE_DATA_DIR = SITE_ROOT / "data"
 SITE_JSON = SITE_DATA_DIR / "trump_indices.json"
 SITE_XLSX = SITE_DATA_DIR / "trump_indices_workbook.xlsx"
+SYNC_REPO_SCRIPT = WORKSPACE_ROOT / "DSI-ICF" / "code" / "sync_trump_index_data_repo.py"
 
 
 JSON_COLUMNS = [
@@ -409,6 +412,12 @@ def write_workbook(daily: pd.DataFrame, summary: dict[str, object]) -> None:
         workbook.save(SITE_XLSX)
 
 
+def sync_trump_raw_repo() -> None:
+    if not SYNC_REPO_SCRIPT.exists():
+        return
+    subprocess.run([sys.executable, str(SYNC_REPO_SCRIPT)], cwd=str(WORKSPACE_ROOT), check=True)
+
+
 def main() -> None:
     SITE_DATA_DIR.mkdir(parents=True, exist_ok=True)
     daily = pd.read_csv(SOURCE_DAILY_CSV, low_memory=False)
@@ -421,6 +430,7 @@ def main() -> None:
     SITE_JSON.write_text(json.dumps(compact_payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     write_workbook(daily, summary)
     build_directed_assets()
+    sync_trump_raw_repo()
 
     print(f"[OK] saved: {SITE_JSON}")
     print(f"[OK] saved: {SITE_XLSX}")
