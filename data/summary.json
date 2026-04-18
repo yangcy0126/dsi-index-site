@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-14T16:16:52.642321+00:00",
+  "generated_at": "2026-04-18T01:07:27.336986+00:00",
   "site_title": "Diplomatic Sentiment Observatory",
   "site_short_name": "DSI Observatory",
   "method_note": "Diplomatic Sentiment Observatory (DSI) site build: each publication-day raw score uses the same-day minimum; missing dates are forward-filled; 3-day, 7-day, and 30-day series are rolling means on the filled daily path. WDSI is the c1 war-related dimension within the broader three-part DSI family.",
@@ -456,7 +456,7 @@
       "start_date": "2022-01-01",
       "latest_date": "2026-04-09",
       "latest_publication_date": "2026-04-09",
-      "publication_days": 848,
+      "publication_days": 912,
       "calendar_days": 1560,
       "latest_title": "Reconduction du fonds Ukraine : 71 millions d’euros mobilisés dans le cadre de l’appel à projets ouvert jusqu’au 9 avril 2026 (19 février 2026)",
       "latest_url": "https://www.diplomatie.gouv.fr/fr/dossiers-pays/ukraine/evenements/article/reconduction-du-fonds-ukraine-71-millions-d-euros-mobilises-dans-le-cadre-de-l",
@@ -473,12 +473,12 @@
           "label": "War-Related DSI",
           "latest_raw": 1,
           "latest_filled": 1,
-          "latest_7d": -1,
-          "latest_30d": -1.6,
-          "change_7d": 0.571,
-          "change_30d": -0.967,
+          "latest_7d": 0.143,
+          "latest_30d": -0.933,
+          "change_7d": 1.143,
+          "change_30d": -0.133,
           "current_year": 2026,
-          "current_year_mean": -1.141
+          "current_year_mean": -0.848
         },
         "c2": {
           "slug": "edsi",
@@ -487,11 +487,11 @@
           "latest_raw": 3,
           "latest_filled": 3,
           "latest_7d": 0.429,
-          "latest_30d": 0.4,
-          "change_7d": 0.143,
-          "change_30d": 0.3,
+          "latest_30d": 0.533,
+          "change_7d": 0,
+          "change_30d": 0.433,
           "current_year": 2026,
-          "current_year_mean": 0.141
+          "current_year_mean": 0.212
         },
         "c3": {
           "slug": "odsi",
@@ -500,20 +500,20 @@
           "latest_raw": 2,
           "latest_filled": 2,
           "latest_7d": -0.286,
-          "latest_30d": -0.6,
-          "change_7d": 0.714,
-          "change_30d": -1.433,
+          "latest_30d": -0.233,
+          "change_7d": 0,
+          "change_30d": -0.767,
           "current_year": 2026,
-          "current_year_mean": 0.202
+          "current_year_mean": 0.333
         }
       },
       "latest_raw": 1,
-      "latest_7d": -1,
-      "latest_30d": -1.6,
-      "change_7d": 0.571,
-      "change_30d": -0.967,
+      "latest_7d": 0.143,
+      "latest_30d": -0.933,
+      "change_7d": 1.143,
+      "change_30d": -0.133,
       "current_year": 2026,
-      "current_year_mean": -1.141
+      "current_year_mean": -0.848
     },
     {
       "code": "IT",
@@ -525,8 +525,8 @@
       "latest_publication_date": "2026-04-02",
       "publication_days": 3753,
       "calendar_days": 5950,
-      "latest_title": "Ricorso dell’Italia contro il brevetto europeo",
-      "latest_url": "http://www.esteri.it:80/MAE/IT/Sala_Stampa/ArchivioNotizie/Comunicati/2011/05/20110531_RicorsoItalia.htm",
+      "latest_title": "Accordo sul riconoscimento reciproco in materia di conversione delle patenti di guida tra l’Italia e l’Ecuador",
+      "latest_url": "http://www.esteri.it/MAE/IT/Sala_Stampa/ArchivioNotizie/Comunicati/2011/05/20110601_patentiecuador.htm",
       "data_source": "dsi_icf_three_category",
       "file_json": "data/IT.json",
       "file_csv": "data/IT.csv",
@@ -590,7 +590,7 @@
       "start_date": "2012-01-01",
       "latest_date": "2026-04-10",
       "latest_publication_date": "2026-04-10",
-      "publication_days": 2881,
+      "publication_days": 3057,
       "calendar_days": 5214,
       "latest_title": "Minister Sidhu to represent Canada and advance trade efforts in People’s Republic of China",
       "latest_url": "https://www.canada.ca/en/global-affairs/news/2026/04/minister-sidhu-to-represent-canada-and-advance-trade-efforts-in-peoples-republic-of-china.html",
