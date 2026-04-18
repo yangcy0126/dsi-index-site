@@ -461,7 +461,7 @@ function renderSelectedMetrics(country) {
     document.getElementById("selected-change-score").className = "metric-value tone-muted";
     document.getElementById("selected-publication-date").textContent = "Pending";
     document.getElementById("selected-publication-score").textContent =
-      country.placeholder_note || "No WDSI series has been published yet for this slot.";
+      country.placeholder_note || "No DSI series has been published yet for this slot.";
     document.getElementById("selected-coverage").textContent = "Reserved slot";
     document.getElementById("selected-publication-days").textContent = "Official-source pipeline pending";
     return;
@@ -796,7 +796,7 @@ function renderTrumpChart() {
   });
 
   document.getElementById("trump-chart-caption").textContent =
-    `This panel overlays the ${trumpSeriesLabel(state.trumpSeriesMode)} Trump Tone Index, Trump Geopolitical Index, and Trump Shock Index across Twitter and Truth Social. Dotted markers flag major Trump political milestones, while the shaded band marks the platform transition gap. Levels are complementary to WDSI rather than directly comparable to ministry-based WDSI values.`;
+    `This panel overlays the ${trumpSeriesLabel(state.trumpSeriesMode)} Trump Tone Index, Trump Geopolitical Index, and Trump Shock Index across Twitter and Truth Social. Dotted markers flag major Trump political milestones, while the shaded band marks the platform transition gap. Levels are complementary to the ministry-based DSI family rather than directly comparable to any single branch series.`;
 }
 
 function renderTrumpSupplement() {
@@ -1230,7 +1230,7 @@ function renderChart(country, countryData) {
       displaylogo: false,
     });
     document.getElementById("chart-caption").textContent =
-      `${country.label} is currently shown as a GDP top-15 placeholder. The chart will populate once WDSI collection and validation are complete.`;
+      `${country.label} is currently shown as a GDP top-15 placeholder. The chart will populate once DSI collection and validation are complete.`;
     updateEventChips(countryData);
     return;
   }

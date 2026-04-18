@@ -6,7 +6,7 @@
     <title>Diplomatic Sentiment Observatory</title>
     <meta
       name="description"
-      content="An interactive site for Diplomatic Sentiment Observatory (DSI) series built from official diplomatic texts, with WDSI, economic, and other diplomatic sentiment views, methodology notes, and data downloads."
+      content="An interactive site for Diplomatic Sentiment Observatory (DSI) series built from official diplomatic texts, with parallel war-related, economic, and other diplomatic sentiment branches, methodology notes, and data downloads."
     >
     <meta name="theme-color" content="#0f3a3d">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,8 +17,8 @@
     >
     <link rel="stylesheet" href="styles.css?v=20260414-dsi-7">
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
-    <script src="script.js?v=20260414-dsi-7" defer></script>
-    <script src="dsi-site.js?v=20260414-dsi-7" defer></script>
+    <script src="script.js?v=20260417-dsi-copy-1" defer></script>
+    <script src="dsi-site.js?v=20260417-dsi-copy-1" defer></script>
   </head>
   <body>
     <div class="page-shell">
@@ -42,7 +42,7 @@
             <p class="eyebrow">From official language to market-facing signal</p>
             <h1>Diplomatic Sentiment Observatory</h1>
             <p class="hero-lede">
-              This site presents the Diplomatic Sentiment Observatory (DSI): a three-part family of daily diplomatic sentiment indices built from official diplomatic texts. WDSI is the war-related branch, alongside economic and other diplomatic sentiment series.
+              This site presents the Diplomatic Sentiment Observatory (DSI): a three-part family of daily diplomatic sentiment indices built from official diplomatic texts. War-related, economic, and other diplomatic sentiment are treated here as parallel DSI branches that can be compared side by side.
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href="#explorer">View the series</a>
@@ -96,18 +96,18 @@
           <div class="hero-panel">
             <div class="metric-grid">
               <article class="metric-card metric-card-primary">
-                <p class="metric-label" id="selected-current-label">WDSI · 7-day</p>
+                <p class="metric-label" id="selected-current-label">Selected branch - 7-day</p>
                 <h2 id="selected-country-name">Loading</h2>
                 <p class="metric-value" id="selected-latest-score">--</p>
                 <p class="metric-detail" id="selected-score-caption">Loading summary data...</p>
               </article>
               <article class="metric-card">
-                <p class="metric-label" id="selected-rolling30-label">WDSI · 30-day</p>
+                <p class="metric-label" id="selected-rolling30-label">Selected branch - 30-day</p>
                 <p class="metric-value" id="selected-rolling30-score">--</p>
                 <p class="metric-detail" id="selected-rolling30-caption">Loading summary data...</p>
               </article>
               <article class="metric-card">
-                <p class="metric-label" id="selected-change-label">WDSI · 30-day change</p>
+                <p class="metric-label" id="selected-change-label">Selected branch - 30-day change</p>
                 <p class="metric-value" id="selected-change-score">--</p>
                 <p class="metric-detail">Compared with the 30-day smoothed value 30 days earlier</p>
               </article>
@@ -145,7 +145,7 @@
             <p class="eyebrow">Overview</p>
             <h2>Cross-Country DSI Signal Board</h2>
             <p>
-              Start with the full cross-country picture, then move into each country series. The headline number on each card follows the currently selected DSI branch, so you can compare WDSI, EDSI, and ODSI across countries.
+              Start with the full cross-country picture, then move into each country series. The headline number on each card follows the currently selected DSI branch, so you can compare the three branches across countries on the same footing.
             </p>
           </div>
           <div class="signal-board-toolbar">
@@ -171,7 +171,7 @@
             <p class="eyebrow">Explorer</p>
             <h2>Index Explorer</h2>
             <p>
-              Switch first across the three DSI branches, then choose whether to view the 7-day trend, 30-day trend, or the raw publication-day score. WDSI remains the war-related branch within this broader DSI family.
+              Switch first across the three DSI branches, then choose whether to view the 7-day trend, 30-day trend, or the raw publication-day score for the selected branch.
             </p>
           </div>
 
@@ -256,9 +256,9 @@
         <section class="research" id="research">
           <div class="section-heading">
             <p class="eyebrow">Why It Matters</p>
-            <h2>What We Have Already Found in WDSI</h2>
+            <h2>What We Have Already Found in the DSI Data</h2>
             <p>
-              Our current paper evidence is strongest for WDSI, the war-related branch inside the broader DSI family. These results show that official diplomatic wording can work as a high-frequency signal for geopolitical expectations, cross-border capital flows, and market responses.
+              Our current paper evidence is strongest on the war-related branch, but the broader DSI family is designed to support parallel work on geopolitical expectations, cross-border capital flows, market responses, and future branch-specific extensions.
             </p>
           </div>
 
@@ -269,7 +269,7 @@
             </article>
             <article class="research-card">
               <h3>It changes the direction of cross-border flows</h3>
-              <p>In the China sample, more negative diplomatic sentiment is associated with stronger capital outflow pressure. Our estimates show that a one-unit decline in China's WDSI corresponds to roughly a 35.6 million USD shift in daily net flows toward outflows.</p>
+              <p>In the China sample, more negative war-related diplomatic sentiment is associated with stronger capital outflow pressure. Our estimates show that a one-unit decline in China's war-related DSI corresponds to roughly a 35.6 million USD shift in daily net flows toward outflows.</p>
             </article>
             <article class="research-card">
               <h3>It carries both safe-haven and spillover effects</h3>
@@ -287,7 +287,7 @@
             <p class="eyebrow">Download</p>
             <h2>Data Downloads</h2>
             <p>
-              This section provides a combined DSI workbook, separate WDSI, EDSI, and ODSI cross-country panels, and country-level workbooks that include all three branches together with raw publication-day values and 3-day, 7-day, and 30-day smoothed series.
+              This section provides a combined DSI workbook, branch-specific cross-country panels, and country-level workbooks that include all three DSI branches together with raw publication-day values and 3-day, 7-day, and 30-day smoothed series.
             </p>
           </div>
 
@@ -303,7 +303,7 @@
             <p>
               This bottom panel adds an actor-level signal alongside the ministry-based DSI family. It tracks Donald Trump's
               own cross-platform posting tone, geopolitical stance, and shock intensity across Twitter and Truth
-              Social, and should be read as a complement to the broader DSI site, especially the war-related branch WDSI.
+              Social, and should be read as a complement to the broader DSI site rather than as a substitute for any single ministry-based DSI branch.
             </p>
           </div>
 

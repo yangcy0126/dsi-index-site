@@ -210,7 +210,7 @@ function dsiRenderGlobalMeta() {
     overallEnd.textContent = dsiFormatDate(overall.last_date);
   }
   if (footer) {
-    footer.textContent = `Covering ${overall.country_count} countries / regions across WDSI, EDSI, and ODSI from ${dsiFormatDate(overall.first_date)} to ${dsiFormatDate(overall.last_date)}.`;
+    footer.textContent = `Covering ${overall.country_count} countries / regions across the three DSI branches from ${dsiFormatDate(overall.first_date)} to ${dsiFormatDate(overall.last_date)}.`;
   }
 }
 
@@ -317,7 +317,7 @@ function dsiRenderDownloadList() {
   const items = [
     {
       title: "Full DSI daily dataset",
-      meta: "Combined cross-country workbook with WDSI, EDSI, ODSI, and variable definitions.",
+      meta: "Combined cross-country workbook covering all three DSI branches and variable definitions.",
       href: downloads.dsi_xlsx || "data/dsi_all_countries.xlsx",
     },
     {
@@ -342,7 +342,7 @@ function dsiRenderDownloadList() {
     },
     ...DSI_SITE_STATE.summary.countries.map((country) => ({
       title: `${country.label} data`,
-      meta: `${country.code} | ${country.publication_days} publication days | workbook contains WDSI, EDSI, and ODSI`,
+      meta: `${country.code} | ${country.publication_days} publication days | workbook contains all three DSI branches`,
       href: country.file_xlsx || country.file_csv,
     })),
   ];
@@ -503,7 +503,7 @@ function dsiRenderChart(country, countryData) {
   document.getElementById("chart-caption").textContent =
     `${country.label} is shown here through ${meta.longLabel}. Current view: ${
       showRolling7 ? "7-day smoothed trend" : showRolling30 ? "30-day smoothed trend" : "publication-day raw moves"
-    }. WDSI, EDSI, and ODSI are the three DSI branches available on this site.`;
+    }. This site presents the three DSI branches on equal footing.`;
 
   dsiUpdateEventChips(records);
 }

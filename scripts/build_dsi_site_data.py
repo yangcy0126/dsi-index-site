@@ -107,15 +107,15 @@ VARIABLE_DEFINITIONS = [
     },
     {
         "variable": "raw",
-        "description": "Backward-compatible alias for c1_raw, the WDSI publication-day raw score.",
+        "description": "Backward-compatible alias for c1_raw, the c1 publication-day raw score (war-related DSI / WDSI).",
     },
     {
         "variable": "rolling7",
-        "description": "Backward-compatible alias for c1_7, the 7-day smoothed WDSI.",
+        "description": "Backward-compatible alias for c1_7, the 7-day smoothed c1 series (war-related DSI / WDSI).",
     },
     {
         "variable": "rolling30",
-        "description": "Backward-compatible alias for c1_30, the 30-day smoothed WDSI.",
+        "description": "Backward-compatible alias for c1_30, the 30-day smoothed c1 series (war-related DSI / WDSI).",
     },
     {
         "variable": "c1_raw / c2_raw / c3_raw",
@@ -142,7 +142,7 @@ VARIABLE_DEFINITIONS = [
 METHOD_NOTE = (
     "Diplomatic Sentiment Observatory (DSI) site build: each publication-day raw score uses the same-day minimum; "
     "missing dates are forward-filled; 3-day, 7-day, and 30-day series are rolling means on the filled daily path. "
-    "WDSI is the c1 war-related dimension within the broader three-part DSI family."
+    "The site presents c1/WDSI, c2/EDSI, and c3/ODSI as parallel branches within the same DSI framework."
 )
 
 

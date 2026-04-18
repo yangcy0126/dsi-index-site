@@ -1,4 +1,4 @@
-name: Deploy WDSI Site
+name: Deploy DSI Site
 
 on:
   push:

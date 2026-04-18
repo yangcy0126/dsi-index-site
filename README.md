@@ -1,6 +1,6 @@
-# WDSI Index Site
+# DSI Index Site
 
-This repository hosts a static WDSI website on GitHub Pages and a daily automation pipeline that can refresh the data.
+This repository hosts the public DSI website on GitHub Pages and the automation/build pipeline that refreshes its data assets.
 
 ## What the site now supports
 
@@ -30,10 +30,10 @@ Bootstrap repository-local historical records from the parent research folder:
 python scripts/bootstrap_records.py
 ```
 
-Rebuild website data files from `records/*.csv`:
+Rebuild website data files from the integrated DSI-ICF outputs:
 
 ```bash
-python scripts/build_wdsi_data.py
+python scripts/build_dsi_site_data.py
 ```
 
 Run the method lock check:
@@ -73,11 +73,11 @@ Then open `http://127.0.0.1:8000`.
 ## Data flow
 
 1. Historical baseline is imported into `records/*.csv`.
-2. `scripts/update_wdsi_records.py` fetches recent official texts.
-3. New or changed texts are scored with the OpenAI API on the `-3` to `3` WDSI scale.
-4. `scripts/build_wdsi_data.py` applies the original DSI-ICF construction rule:
-   same-day raw score = daily minimum, then forward-fill, then rolling 7-day / 30-day means.
-5. `scripts/check_method_lock.py` verifies that the build still obeys that rule.
+2. `scripts/update_wdsi_records.py` refreshes recent official texts for the currently automated sources.
+3. `scripts/build_dsi_site_data.py` rebuilds the public site assets from the latest three-branch DSI panels and score metadata.
+4. The public DSI series keep the original DSI-ICF construction rule:
+   same-day raw score = daily minimum, then forward-fill, then rolling 3-day / 7-day / 30-day means.
+5. `scripts/check_method_lock.py` verifies that the exported series still obey that rule.
 6. GitHub Actions commits the changed `records/` and `data/` files.
 7. The existing Pages workflow deploys the refreshed site.
 
@@ -118,8 +118,9 @@ When `WDSI_API_BASE_URL` is set, the pipeline automatically uses the OpenAI-comp
 
 - `records/`: canonical scored records used by the website build
 - `data/`: static assets served by the site
-- `METHODOLOGY_LOCK.md`: authoritative WDSI construction rule for this repo
+- `METHODOLOGY_LOCK.md`: authoritative DSI construction rule for this repo
 - `scripts/bootstrap_records.py`: one-time baseline import
 - `scripts/update_wdsi_records.py`: incremental fetch and score pipeline
-- `scripts/build_wdsi_data.py`: static asset builder
+- `scripts/build_dsi_site_data.py`: public site asset builder for the three DSI branches
+- `scripts/build_wdsi_data.py`: legacy helper module retained for method-lock and visitor utilities
 - `scripts/check_method_lock.py`: deterministic guardrail against aggregation drift
