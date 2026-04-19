@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-19T05:49:40.784099+00:00",
+  "generated_at": "2026-04-19T17:43:12.703436+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -10,8 +10,8 @@
   ],
   "total_countries": 16,
   "flags_collected": 21,
-  "total_views": 478,
-  "total_visitors": 100,
+  "total_views": 479,
+  "total_visitors": 101,
   "visitors_yesterday": 3,
   "visitors_30d_average": 3,
   "visitors_record": 23,
@@ -50,7 +50,7 @@
     {
       "code": "SG",
       "country": "Singapore",
-      "visitors": 6,
+      "visitors": 7,
       "members": [
         "Singapore"
       ]
@@ -166,7 +166,7 @@
     {
       "code": "SG",
       "country": "Singapore",
-      "visitors": 6,
+      "visitors": 7,
       "members": [
         "Singapore"
       ]
