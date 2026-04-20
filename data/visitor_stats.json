@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-13T01:10:56.621205+00:00",
+  "generated_at": "2026-04-20T14:09:11.214928+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -9,22 +9,22 @@
     "Taiwan"
   ],
   "total_countries": 16,
-  "flags_collected": 20,
-  "total_views": 439,
-  "total_visitors": 84,
-  "visitors_yesterday": 1,
+  "flags_collected": 21,
+  "total_views": 481,
+  "total_visitors": 101,
+  "visitors_yesterday": 2,
   "visitors_30d_average": 3,
   "visitors_record": 23,
   "visitors_record_date": "March 22, 2026",
-  "views_yesterday": 1,
-  "views_30d_average": 14,
+  "views_yesterday": 2,
+  "views_30d_average": 9,
   "views_record": 108,
   "views_record_date": "March 22, 2026",
   "countries": [
     {
       "code": "CN",
       "country": "China",
-      "visitors": 38,
+      "visitors": 49,
       "members": [
         "Taiwan",
         "China",
@@ -42,7 +42,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 8,
+      "visitors": 10,
       "members": [
         "United States"
       ]
@@ -50,9 +50,25 @@
     {
       "code": "SG",
       "country": "Singapore",
-      "visitors": 6,
+      "visitors": 7,
       "members": [
         "Singapore"
+      ]
+    },
+    {
+      "code": "CY",
+      "country": "Cyprus",
+      "visitors": 3,
+      "members": [
+        "Cyprus"
+      ]
+    },
+    {
+      "code": "GR",
+      "country": "Greece",
+      "visitors": 2,
+      "members": [
+        "Greece"
       ]
     },
     {
@@ -61,14 +77,6 @@
       "visitors": 2,
       "members": [
         "Japan"
-      ]
-    },
-    {
-      "code": "CY",
-      "country": "Cyprus",
-      "visitors": 1,
-      "members": [
-        "Cyprus"
       ]
     },
     {
@@ -85,14 +93,6 @@
       "visitors": 1,
       "members": [
         "Germany"
-      ]
-    },
-    {
-      "code": "GR",
-      "country": "Greece",
-      "visitors": 1,
-      "members": [
-        "Greece"
       ]
     },
     {
@@ -140,7 +140,7 @@
     {
       "code": "CN",
       "country": "China",
-      "visitors": 38,
+      "visitors": 49,
       "members": [
         "Taiwan",
         "China",
@@ -158,7 +158,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 8,
+      "visitors": 10,
       "members": [
         "United States"
       ]
@@ -166,17 +166,17 @@
     {
       "code": "SG",
       "country": "Singapore",
-      "visitors": 6,
+      "visitors": 7,
       "members": [
         "Singapore"
       ]
     },
     {
-      "code": "JP",
-      "country": "Japan",
-      "visitors": 2,
+      "code": "CY",
+      "country": "Cyprus",
+      "visitors": 3,
       "members": [
-        "Japan"
+        "Cyprus"
       ]
     }
   ]
