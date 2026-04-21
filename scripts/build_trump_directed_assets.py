@@ -1,7 +1,19 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 from pathlib import Path
+
+for _site_path in filter(
+    None,
+    [
+        os.getenv("CODEX_PYTHON_SITE"),
+        r"C:\codex_sitepkgs",
+    ],
+):
+    if Path(_site_path).exists() and _site_path not in sys.path:
+        sys.path.insert(0, _site_path)
 
 import pandas as pd
 from openpyxl.styles import Font
