@@ -5,10 +5,13 @@ import os
 import sys
 from pathlib import Path
 
+_HERE = Path(__file__).resolve()
+_WORKSPACE_ROOT_HINT = _HERE.parents[2]
 for _site_path in filter(
     None,
     [
         os.getenv("CODEX_PYTHON_SITE"),
+        str(_WORKSPACE_ROOT_HINT / "_codex_sitepkgs_py314"),
         r"C:\codex_sitepkgs",
     ],
 ):
@@ -21,9 +24,19 @@ from openpyxl.styles import Font
 
 SITE_ROOT = Path(__file__).resolve().parents[1]
 WORKSPACE_ROOT = SITE_ROOT.parent
-SOURCE_DAILY_CSV = WORKSPACE_ROOT / "data" / "trump_index" / "daily" / "trump_country_directed_daily.csv"
-SOURCE_SUMMARY_JSON = WORKSPACE_ROOT / "data" / "trump_index" / "daily" / "trump_country_directed_summary.json"
-SITE_DATA_DIR = SITE_ROOT / "data"
+SOURCE_DAILY_CSV = Path(
+    os.getenv(
+        "TRUMP_DIRECTED_SOURCE_DAILY_CSV",
+        str(WORKSPACE_ROOT / "data" / "trump_index" / "daily" / "trump_country_directed_daily.csv"),
+    )
+)
+SOURCE_SUMMARY_JSON = Path(
+    os.getenv(
+        "TRUMP_DIRECTED_SOURCE_SUMMARY_JSON",
+        str(WORKSPACE_ROOT / "data" / "trump_index" / "daily" / "trump_country_directed_summary.json"),
+    )
+)
+SITE_DATA_DIR = Path(os.getenv("TRUMP_DIRECTED_SITE_DATA_DIR", str(SITE_ROOT / "data")))
 SITE_COUNTRY_DIR = SITE_DATA_DIR / "trump_directed"
 SITE_SUMMARY_JSON = SITE_DATA_DIR / "trump_directed_summary.json"
 SITE_XLSX = SITE_DATA_DIR / "trump_directed_workbook.xlsx"

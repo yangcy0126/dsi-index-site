@@ -6,10 +6,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+_HERE = Path(__file__).resolve()
+_WORKSPACE_ROOT_HINT = _HERE.parents[2]
 for _site_path in filter(
     None,
     [
         os.getenv("CODEX_PYTHON_SITE"),
+        str(_WORKSPACE_ROOT_HINT / "_codex_sitepkgs_py314"),
         r"C:\codex_sitepkgs",
     ],
 ):
