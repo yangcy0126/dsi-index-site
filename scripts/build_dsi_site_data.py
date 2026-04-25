@@ -62,12 +62,7 @@ COUNTRY_META = {
     "ES": {"label": "Spain", "color": "#c37b2d"},
 }
 
-COUNTRY_SITE_START_OVERRIDES = {
-    # France's pre-2022 exploratory backfill is dominated by low-signal science,
-    # agenda, and adoption notices rather than core diplomatic statements.
-    # Trim the public site/download series to the cleaner modern segment.
-    "FR": "2022-01-01",
-}
+COUNTRY_SITE_START_OVERRIDES = {}
 
 COUNTRY_WORKBOOK_COLUMNS = [
     "date",
