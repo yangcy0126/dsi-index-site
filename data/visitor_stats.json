@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-30T04:00:47.682414+00:00",
+  "generated_at": "2026-04-30T08:38:28.912363+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -10,8 +10,8 @@
   ],
   "total_countries": 16,
   "flags_collected": 21,
-  "total_views": 498,
-  "total_visitors": 108,
+  "total_views": 503,
+  "total_visitors": 111,
   "visitors_yesterday": 0,
   "visitors_30d_average": 1,
   "visitors_record": 23,
@@ -34,7 +34,7 @@
     {
       "code": "GB",
       "country": "United Kingdom",
-      "visitors": 21,
+      "visitors": 22,
       "members": [
         "United Kingdom"
       ]
@@ -56,6 +56,14 @@
       ]
     },
     {
+      "code": "JP",
+      "country": "Japan",
+      "visitors": 4,
+      "members": [
+        "Japan"
+      ]
+    },
+    {
       "code": "CY",
       "country": "Cyprus",
       "visitors": 3,
@@ -64,17 +72,9 @@
       ]
     },
     {
-      "code": "JP",
-      "country": "Japan",
-      "visitors": 3,
-      "members": [
-        "Japan"
-      ]
-    },
-    {
       "code": "GR",
       "country": "Greece",
-      "visitors": 2,
+      "visitors": 3,
       "members": [
         "Greece"
       ]
@@ -150,7 +150,7 @@
     {
       "code": "GB",
       "country": "United Kingdom",
-      "visitors": 21,
+      "visitors": 22,
       "members": [
         "United Kingdom"
       ]
@@ -172,11 +172,11 @@
       ]
     },
     {
-      "code": "CY",
-      "country": "Cyprus",
-      "visitors": 3,
+      "code": "JP",
+      "country": "Japan",
+      "visitors": 4,
       "members": [
-        "Cyprus"
+        "Japan"
       ]
     }
   ]
