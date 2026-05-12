@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-11T01:28:16.209016+00:00",
+  "generated_at": "2026-05-12T18:55:01.384329+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -8,10 +8,10 @@
     "Macau",
     "Taiwan"
   ],
-  "total_countries": 16,
-  "flags_collected": 22,
-  "total_views": 525,
-  "total_visitors": 123,
+  "total_countries": 17,
+  "flags_collected": 23,
+  "total_views": 526,
+  "total_visitors": 124,
   "visitors_yesterday": 0,
   "visitors_30d_average": 1,
   "visitors_record": 23,
@@ -133,6 +133,14 @@
       "visitors": 1,
       "members": [
         "Switzerland"
+      ]
+    },
+    {
+      "code": "TH",
+      "country": "Thailand",
+      "visitors": 1,
+      "members": [
+        "Thailand"
       ]
     }
   ],
