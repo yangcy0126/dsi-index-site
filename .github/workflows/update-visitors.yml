@@ -14,6 +14,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: visitor-snapshot
@@ -22,6 +24,9 @@ concurrency:
 jobs:
   refresh-visitors:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,10 +45,13 @@ jobs:
         run: python scripts/update_visitor_snapshot.py
 
       - name: Commit and push
+        id: commit-and-push
         run: |
           if git diff --quiet -- data/visitor_stats.json; then
             echo "No visitor snapshot changes detected."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add data/visitor_stats.json
@@ -59,3 +67,18 @@ jobs:
             echo "Failed to push visitor snapshot after 3 attempts."
             exit 1
           fi
+
+      - name: Setup Pages
+        if: steps.commit-and-push.outputs.changed == 'true'
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        if: steps.commit-and-push.outputs.changed == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        if: steps.commit-and-push.outputs.changed == 'true'
+        id: deployment
+        uses: actions/deploy-pages@v4
