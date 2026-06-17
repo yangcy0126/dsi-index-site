@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-15T02:07:52.104149+00:00",
+  "generated_at": "2026-06-17T18:00:26.916586+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -9,9 +9,9 @@
     "Taiwan"
   ],
   "total_countries": 17,
-  "flags_collected": 23,
-  "total_views": 613,
-  "total_visitors": 181,
+  "flags_collected": 24,
+  "total_views": 614,
+  "total_visitors": 182,
   "visitors_yesterday": 0,
   "visitors_30d_average": 1,
   "visitors_record": 23,
@@ -50,7 +50,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 13,
+      "visitors": 14,
       "members": [
         "United States"
       ]
@@ -174,7 +174,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 13,
+      "visitors": 14,
       "members": [
         "United States"
       ]
