@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-29T01:04:57.686289+00:00",
+  "generated_at": "2026-07-31T07:25:03.114843+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -10,8 +10,8 @@
   ],
   "total_countries": 17,
   "flags_collected": 24,
-  "total_views": 639,
-  "total_visitors": 201,
+  "total_views": 640,
+  "total_visitors": 202,
   "visitors_yesterday": 0,
   "visitors_30d_average": 0,
   "visitors_record": 23,
@@ -66,7 +66,7 @@
     {
       "code": "GR",
       "country": "Greece",
-      "visitors": 5,
+      "visitors": 6,
       "members": [
         "Greece"
       ]
