@@ -374,23 +374,23 @@ function dsiBuildChartLayout(country, records) {
     plot_bgcolor: "rgba(255,255,255,0)",
     hovermode: "x unified",
     font: {
-      family: '"Space Grotesk", sans-serif',
-      color: "#213132",
+      family: '"Source Sans 3", Arial, sans-serif',
+      color: "#18212b",
     },
     xaxis: {
       showgrid: true,
-      gridcolor: "rgba(20, 38, 40, 0.08)",
+      gridcolor: "rgba(24, 33, 43, 0.10)",
       zeroline: false,
-      tickfont: { color: "#5b6968" },
+      tickfont: { color: "#5c6672" },
     },
     yaxis: {
       title: meta.shortLabel,
       range: [-3.2, 3.2],
       showgrid: true,
-      gridcolor: "rgba(20, 38, 40, 0.08)",
+      gridcolor: "rgba(24, 33, 43, 0.10)",
       zeroline: true,
-      zerolinecolor: "rgba(20, 38, 40, 0.18)",
-      tickfont: { color: "#5b6968" },
+      zerolinecolor: "rgba(24, 33, 43, 0.28)",
+      tickfont: { color: "#5c6672" },
     },
     legend: {
       orientation: "h",
@@ -406,7 +406,7 @@ function dsiBuildChartLayout(country, records) {
       y0: -3.2,
       y1: 3.2,
       line: {
-        color: "rgba(184, 95, 53, 0.22)",
+        color: "rgba(150, 59, 52, 0.24)",
         width: 1.2,
         dash: "dot",
       },
@@ -485,7 +485,7 @@ function dsiRenderChart(country, countryData) {
       mode: "markers",
       name: `${meta.shortLabel} raw publication-day score`,
       marker: {
-        color: "#b85f35",
+        color: "#963b34",
         size: showRaw ? 8 : 6,
         opacity: showRaw ? 0.88 : 0.22,
       },

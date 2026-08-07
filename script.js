@@ -660,23 +660,23 @@ function buildTrumpChartLayout(records) {
     plot_bgcolor: "rgba(255,255,255,0)",
     hovermode: "x unified",
     font: {
-      family: '"Space Grotesk", sans-serif',
-      color: "#213132",
+      family: '"Source Sans 3", Arial, sans-serif',
+      color: "#18212b",
     },
     xaxis: {
       showgrid: true,
-      gridcolor: "rgba(20, 38, 40, 0.08)",
+      gridcolor: "rgba(24, 33, 43, 0.10)",
       zeroline: false,
-      tickfont: { color: "#5b6968" },
+      tickfont: { color: "#5c6672" },
     },
     yaxis: {
       title: "Trump index",
       range: [-3.2, 3.2],
       showgrid: true,
-      gridcolor: "rgba(20, 38, 40, 0.08)",
+      gridcolor: "rgba(24, 33, 43, 0.10)",
       zeroline: true,
-      zerolinecolor: "rgba(20, 38, 40, 0.18)",
-      tickfont: { color: "#5b6968" },
+      zerolinecolor: "rgba(24, 33, 43, 0.28)",
+      tickfont: { color: "#5c6672" },
     },
     legend: {
       orientation: "h",
@@ -693,7 +693,7 @@ function buildTrumpChartLayout(records) {
         y0: -3.2,
         y1: 3.2,
         line: { width: 0 },
-        fillcolor: "rgba(20, 38, 40, 0.06)",
+        fillcolor: "rgba(24, 33, 43, 0.06)",
       },
       ...politicalEvents.map((event) => ({
         type: "line",
@@ -702,7 +702,7 @@ function buildTrumpChartLayout(records) {
         y0: -3.2,
         y1: 3.2,
         line: {
-          color: "rgba(184, 95, 53, 0.22)",
+          color: "rgba(150, 59, 52, 0.24)",
           width: 1.2,
           dash: "dot",
         },
@@ -716,7 +716,7 @@ function buildTrumpChartLayout(records) {
         yref: "y",
         text: "platform gap",
         showarrow: false,
-        font: { size: 11, color: "#5b6968" },
+        font: { size: 11, color: "#5c6672" },
       },
       ...politicalEvents.map((event) => ({
         x: event.date,
@@ -729,10 +729,10 @@ function buildTrumpChartLayout(records) {
         yanchor: event.chartAnchor || "bottom",
         align: "center",
         bgcolor: "rgba(255, 248, 242, 0.92)",
-        bordercolor: "rgba(184, 95, 53, 0.18)",
+        bordercolor: "rgba(150, 59, 52, 0.20)",
         borderwidth: 1,
         borderpad: 4,
-        font: { size: 10, color: "#7b4b33" },
+        font: { size: 10, color: "#743c37" },
       })),
     ],
   };
@@ -757,7 +757,7 @@ function renderTrumpChart() {
       mode: "lines",
       name: "Trump Tone Index",
       line: {
-        color: "#b85f35",
+        color: "#963b34",
         width: 2.6,
       },
       hovertemplate: "%{x}<br>Trump Tone Index: %{y:.3f}<extra></extra>",
@@ -769,7 +769,7 @@ function renderTrumpChart() {
       mode: "lines",
       name: "Trump Geopolitical Index",
       line: {
-        color: "#0f6c74",
+        color: "#1f4e79",
         width: 2.4,
       },
       hovertemplate: "%{x}<br>Trump Geopolitical Index: %{y:.3f}<extra></extra>",
@@ -781,7 +781,7 @@ function renderTrumpChart() {
       mode: "lines",
       name: "Trump Shock Index",
       line: {
-        color: "#213132",
+        color: "#343e49",
         width: 2.2,
       },
       hovertemplate: "%{x}<br>Trump Shock Index: %{y:.3f}<extra></extra>",
@@ -852,7 +852,7 @@ function renderTrumpDirectedBoard() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = `directed-country-card ${country.code === state.trumpDirectedSelectedCode ? "is-active" : ""}`;
-    button.style.setProperty("--country-color", wdsiCountry.color || "#0f6c74");
+    button.style.setProperty("--country-color", wdsiCountry.color || "#1f4e79");
     button.innerHTML = `
       <h3>${country.label}</h3>
       <div class="directed-country-meta">
@@ -928,23 +928,23 @@ function buildTrumpDirectedChartLayout(countryMeta) {
     plot_bgcolor: "rgba(255,255,255,0)",
     hovermode: "x unified",
     font: {
-      family: '"Space Grotesk", sans-serif',
-      color: "#213132",
+      family: '"Source Sans 3", Arial, sans-serif',
+      color: "#18212b",
     },
     xaxis: {
       showgrid: true,
-      gridcolor: "rgba(20, 38, 40, 0.08)",
+      gridcolor: "rgba(24, 33, 43, 0.10)",
       zeroline: false,
-      tickfont: { color: "#5b6968" },
+      tickfont: { color: "#5c6672" },
     },
     yaxis: {
       title: `${countryMeta.label} directed tone / geopolitics`,
       range: [-3.2, 3.2],
       showgrid: true,
-      gridcolor: "rgba(20, 38, 40, 0.08)",
+      gridcolor: "rgba(24, 33, 43, 0.10)",
       zeroline: true,
-      zerolinecolor: "rgba(20, 38, 40, 0.18)",
-      tickfont: { color: "#5b6968" },
+      zerolinecolor: "rgba(24, 33, 43, 0.28)",
+      tickfont: { color: "#5c6672" },
     },
     yaxis2: {
       title: state.trumpDirectedSeriesMode === "daily" ? "Directed posts" : "Attention (log mentions)",
@@ -952,7 +952,7 @@ function buildTrumpDirectedChartLayout(countryMeta) {
       side: "right",
       rangemode: "tozero",
       showgrid: false,
-      tickfont: { color: "#5b6968" },
+      tickfont: { color: "#5c6672" },
     },
     legend: {
       orientation: "h",
@@ -969,7 +969,7 @@ function buildTrumpDirectedChartLayout(countryMeta) {
         y0: -3.2,
         y1: 3.2,
         line: { width: 0 },
-        fillcolor: "rgba(20, 38, 40, 0.06)",
+        fillcolor: "rgba(24, 33, 43, 0.06)",
       },
       ...getVisibleTrumpPoliticalEvents(state.trump?.records || []).map((event) => ({
         type: "line",
@@ -978,7 +978,7 @@ function buildTrumpDirectedChartLayout(countryMeta) {
         y0: -3.2,
         y1: 3.2,
         line: {
-          color: "rgba(184, 95, 53, 0.22)",
+          color: "rgba(150, 59, 52, 0.24)",
           width: 1.1,
           dash: "dot",
         },
@@ -992,7 +992,7 @@ function buildTrumpDirectedChartLayout(countryMeta) {
         yref: "y",
         text: "platform gap",
         showarrow: false,
-        font: { size: 11, color: "#5b6968" },
+        font: { size: 11, color: "#5c6672" },
       },
     ],
   };
@@ -1019,7 +1019,7 @@ function renderTrumpDirectedChart(countryMeta, countryData) {
       mode: "lines",
       name: "Directed tone",
       line: {
-        color: "#b85f35",
+        color: "#963b34",
         width: 2.4,
       },
       hovertemplate: "%{x}<br>Directed tone: %{y:.3f}<extra></extra>",
@@ -1031,7 +1031,7 @@ function renderTrumpDirectedChart(countryMeta, countryData) {
       mode: "lines",
       name: "Directed geopolitical",
       line: {
-        color: "#0f6c74",
+        color: "#1f4e79",
         width: 2.2,
       },
       hovertemplate: "%{x}<br>Directed geopolitical: %{y:.3f}<extra></extra>",
@@ -1056,7 +1056,7 @@ function renderTrumpDirectedChart(countryMeta, countryData) {
           name: "Directed attention",
           yaxis: "y2",
           line: {
-            color: "#213132",
+            color: "#343e49",
             width: 2,
             dash: "dot",
           },
@@ -1146,23 +1146,23 @@ function buildChartLayout(country, countryData) {
     plot_bgcolor: "rgba(255,255,255,0)",
     hovermode: "x unified",
     font: {
-      family: '"Space Grotesk", sans-serif',
-      color: "#213132",
+      family: '"Source Sans 3", Arial, sans-serif',
+      color: "#18212b",
     },
     xaxis: {
       showgrid: true,
-      gridcolor: "rgba(20, 38, 40, 0.08)",
+      gridcolor: "rgba(24, 33, 43, 0.10)",
       zeroline: false,
-      tickfont: { color: "#5b6968" },
+      tickfont: { color: "#5c6672" },
     },
     yaxis: {
       title: "WDSI",
       range: [-3.2, 3.2],
       showgrid: true,
-      gridcolor: "rgba(20, 38, 40, 0.08)",
+      gridcolor: "rgba(24, 33, 43, 0.10)",
       zeroline: true,
-      zerolinecolor: "rgba(20, 38, 40, 0.18)",
-      tickfont: { color: "#5b6968" },
+      zerolinecolor: "rgba(24, 33, 43, 0.28)",
+      tickfont: { color: "#5c6672" },
     },
     legend: {
       orientation: "h",
@@ -1178,7 +1178,7 @@ function buildChartLayout(country, countryData) {
       y0: -3.2,
       y1: 3.2,
       line: {
-        color: "rgba(184, 95, 53, 0.22)",
+        color: "rgba(150, 59, 52, 0.24)",
         width: 1.2,
         dash: "dot",
       },
@@ -1192,8 +1192,8 @@ function buildPlaceholderChartLayout(country) {
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(255,255,255,0)",
     font: {
-      family: '"Space Grotesk", sans-serif',
-      color: "#213132",
+      family: '"Source Sans 3", Arial, sans-serif',
+      color: "#18212b",
     },
     xaxis: { visible: false },
     yaxis: { visible: false },
@@ -1205,7 +1205,7 @@ function buildPlaceholderChartLayout(country) {
         yref: "paper",
         showarrow: false,
         text: `${country.label} is reserved as a top-15 GDP placeholder`,
-        font: { size: 18, color: "#213132" },
+        font: { size: 18, color: "#18212b" },
       },
       {
         x: 0.5,
@@ -1214,7 +1214,7 @@ function buildPlaceholderChartLayout(country) {
         yref: "paper",
         showarrow: false,
         text: country.placeholder_note || "The time series will appear after official-source onboarding and validation.",
-        font: { size: 13, color: "#5b6968" },
+        font: { size: 13, color: "#5c6672" },
         align: "center",
       },
     ],
@@ -1280,7 +1280,7 @@ function renderChart(country, countryData) {
       mode: "markers",
       name: "Raw publication-day score",
       marker: {
-        color: "#b85f35",
+        color: "#963b34",
         size: showRaw ? 8 : 6,
         opacity: showRaw ? 0.88 : 0.22,
       },
