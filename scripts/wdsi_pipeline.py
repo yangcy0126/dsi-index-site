@@ -7,6 +7,7 @@ import os
 import re
 import subprocess
 import time
+import uuid
 from email.utils import parsedate_to_datetime
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -567,13 +568,13 @@ def request_markdown_via_jina(url: str) -> str:
     if cached is not None:
         return cached
 
-    gateway_url = f"https://r.jina.ai/http://{url}"
+    gateway_url = f"https://r.jina.ai/{url}"
     is_state_archive_listing = "state.gov/press-releases/page/" in url
     last_error: Exception | None = None
     timeout_schedule = (30, 45, 60, 60, 60, 60, 60) if is_state_archive_listing else (30, 45, 60, 60, 60)
     for attempt, timeout_seconds in enumerate(timeout_schedule, start=1):
         try:
-            response = requests.get(gateway_url, headers=BROWSER_HEADERS, timeout=timeout_seconds)
+            response = requests.get(gateway_url, timeout=timeout_seconds)
             if response.status_code == 429:
                 retry_after = response.headers.get("Retry-After")
                 if retry_after:
@@ -632,6 +633,21 @@ def markdown_links(line: str) -> list[tuple[str, str]]:
     return [(clean_text(match.group("label")), clean_text(match.group("url"))) for match in MARKDOWN_LINK_RE.finditer(line)]
 
 
+def sitemap_markdown_entries(markdown: str) -> list[tuple[str, str, str]]:
+    entries: list[tuple[str, str, str]] = []
+    pending_link: tuple[str, str] | None = None
+    for line in extract_jina_markdown_body(markdown).splitlines():
+        links = markdown_links(line)
+        if links:
+            pending_link = links[0]
+        date_match = re.search(r"(20\d{2}-\d{2}-\d{2})T", line)
+        if pending_link is not None and date_match:
+            title, url = pending_link
+            entries.append((title, url, date_match.group(1)))
+            pending_link = None
+    return entries
+
+
 def extract_json_object(text: str) -> dict[str, object]:
     match = JSON_BLOCK_RE.search(text.strip())
     if not match:
@@ -678,11 +694,16 @@ class ChinaMfaRegularPressSource:
     def fetch_between(self, start_date: str, end_date: str, page_size: int = 10) -> list[ScrapedRecord]:
         begin = iso_to_date(start_date)
         finish = iso_to_date(end_date)
+        # The MFA search API now binds each search credential to an anonymous
+        # session cookie issued when the search page is opened.
+        self.session.get(CN_SEARCH_REFERER, headers=BROWSER_HEADERS, timeout=30).raise_for_status()
         payload = {
             "code": "18fe7c6489d",
+            "searchRequestId": str(uuid.uuid4()),
             "configCode": "",
             "codes": "",
             "searchWord": "Regular Press Conference",
+            "historySearchWords": [],
             "dataTypeId": "2076",
             "orderBy": "time",
             "searchBy": "title",
@@ -705,12 +726,15 @@ class ChinaMfaRegularPressSource:
                 self.session,
                 self.search_url,
                 payload,
-                headers={"Referer": CN_SEARCH_REFERER},
+                headers={"Referer": CN_SEARCH_REFERER, "Origin": "https://www.mfa.gov.cn"},
             )
             if not isinstance(result, dict) or not result.get("success"):
                 raise RuntimeError(f"CN search failed for {start_date} to {end_date}: {result}")
 
             data = result.get("data") or {}
+            credential = data.get("eventCredential") if isinstance(data, dict) else {}
+            if isinstance(credential, dict) and credential.get("searchContextToken"):
+                payload["searchContextToken"] = credential["searchContextToken"]
             pager = data.get("pager") if isinstance(data, dict) else {}
             page_count = int((pager or {}).get("pageCount") or 1)
             middle = data.get("middle") if isinstance(data, dict) else {}
@@ -941,18 +965,9 @@ class UsStateDepartmentSource:
                 markdown = request_markdown_via_jina(sitemap_url)
             except Exception:
                 continue
-            body = extract_jina_markdown_body(markdown)
-            for line in body.splitlines():
-                links = markdown_links(line)
-                if not links:
-                    continue
-                title, link = links[0]
+            for title, link, published_at in sitemap_markdown_entries(markdown):
                 if not self._looks_like_press_listing_article(link):
                     continue
-                date_match = re.search(r"(20\d{2}-\d{2}-\d{2})T", line)
-                if not date_match:
-                    continue
-                published_at = date_match.group(1)
                 if not (overlap_start <= published_at <= overlap_end):
                     continue
                 if link in seen_urls:
@@ -965,19 +980,12 @@ class UsStateDepartmentSource:
                 markdown = request_markdown_via_jina(sitemap_url)
             except Exception:
                 continue
-            body = extract_jina_markdown_body(markdown)
-            for line in body.splitlines():
-                links = markdown_links(line)
-                if not links:
-                    continue
-                title, link = links[0]
+            for title, link, sitemap_date in sitemap_markdown_entries(markdown):
                 if not self._looks_like_current_state_root_article(link):
                     continue
                 published_at_hint = clean_text(self.known_url_dates.get(link, ""))
                 if not published_at_hint:
-                    date_match = re.search(r"(20\d{2}-\d{2}-\d{2})T", line)
-                    if date_match:
-                        published_at_hint = date_match.group(1)
+                    published_at_hint = sitemap_date
                 if published_at_hint and not (overlap_start <= published_at_hint <= overlap_end):
                     continue
                 if link in seen_urls:
