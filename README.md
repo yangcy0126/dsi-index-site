@@ -55,11 +55,17 @@ set OPENAI_API_KEY=your_key_here
 python scripts/update_wdsi_records.py --countries CN,US,FR,RU
 ```
 
-If you are fetching `RU` locally and the Russian MFA site blocks headless Chromium, run it with a visible browser session:
+If the Russian MFA site is unavailable, use the ministry's official English Telegram channel as the fallback while retaining the original `mid.ru` article URLs:
 
 ```bash
-set WDSI_PLAYWRIGHT_HEADLESS=0
-python scripts/update_wdsi_records.py --countries RU --dry-run --max-pages 1
+set WDSI_RU_OFFICIAL_TELEGRAM_ONLY=1
+python scripts/update_three_category_sources.py --countries RU --start-date 2026-04-12 --end-date 2026-08-06 --max-pages 120
+```
+
+For the full three-category research refresh, use `update_three_category_sources.py` to update the local corpus, run the sibling DSI-ICF scorer, then use `rebuild_three_category_daily.py`, `sync_three_category_records.py`, and `build_dsi_site_data.py` in that order. The Brazil election-period migration gap has a dedicated reproducible recovery command:
+
+```bash
+python scripts/recover_brazil_migration_gap.py --start-date 2026-04-20 --end-date 2026-07-02
 ```
 
 Serve locally:
@@ -121,6 +127,10 @@ When `WDSI_API_BASE_URL` is set, the pipeline automatically uses the OpenAI-comp
 - `METHODOLOGY_LOCK.md`: authoritative DSI construction rule for this repo
 - `scripts/bootstrap_records.py`: one-time baseline import
 - `scripts/update_wdsi_records.py`: incremental fetch and score pipeline
+- `scripts/update_three_category_sources.py`: official-source corpus refresh for all 15 countries
+- `scripts/recover_brazil_migration_gap.py`: Brazil 2026 migration-gap recovery from official search entries and web archives
+- `scripts/rebuild_three_category_daily.py`: archived-baseline overlay and daily 3/7/30-day rebuild
+- `scripts/sync_three_category_records.py`: sync accepted c1 scores to the website record store
 - `scripts/build_dsi_site_data.py`: public site asset builder for the three DSI branches
 - `scripts/build_wdsi_data.py`: legacy helper module retained for method-lock and visitor utilities
 - `scripts/check_method_lock.py`: deterministic guardrail against aggregation drift

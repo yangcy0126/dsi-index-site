@@ -6,6 +6,7 @@ import json
 import os
 import re
 import subprocess
+import threading
 import time
 import uuid
 from email.utils import parsedate_to_datetime
@@ -108,6 +109,8 @@ BR_LISTING_DATE_RE = re.compile(
     r"^published\s+(?P<date>[A-Z][a-z]{2}\s+\d{2},\s+\d{4})\s+\d{2}:\d{2}\s+[AP]M\s+News$"
 )
 JINA_CACHE: dict[str, str] = {}
+JINA_REQUEST_LOCK = threading.Lock()
+JINA_REQUEST_STATE = {"last_started": 0.0}
 
 FR_MONTHS = {
     "janvier": 1,
@@ -571,30 +574,42 @@ def request_markdown_via_jina(url: str) -> str:
     gateway_url = f"https://r.jina.ai/{url}"
     is_state_archive_listing = "state.gov/press-releases/page/" in url
     last_error: Exception | None = None
-    timeout_schedule = (30, 45, 60, 60, 60, 60, 60) if is_state_archive_listing else (30, 45, 60, 60, 60)
-    for attempt, timeout_seconds in enumerate(timeout_schedule, start=1):
-        try:
-            response = requests.get(gateway_url, timeout=timeout_seconds)
-            if response.status_code == 429:
-                retry_after = response.headers.get("Retry-After")
-                if retry_after:
-                    sleep_seconds = float(retry_after)
-                elif is_state_archive_listing:
-                    sleep_seconds = min(90, 12 * attempt)
-                else:
-                    sleep_seconds = min(20, 4 * attempt)
-                last_error = RuntimeError(f"Jina rate limited {url}")
-                time.sleep(sleep_seconds)
-                continue
-            response.raise_for_status()
-            if response.encoding == "ISO-8859-1" and response.apparent_encoding:
-                response.encoding = response.apparent_encoding
-            JINA_CACHE[url] = response.text
-            time.sleep(0.25)
-            return response.text
-        except requests.RequestException as exc:
-            last_error = exc
-            time.sleep(1.5)
+    timeout_schedule = (30, 45, 60, 60, 60, 60, 60)
+    headers = {}
+    jina_api_key = clean_text(os.getenv("JINA_API_KEY", ""))
+    if jina_api_key:
+        headers["Authorization"] = f"Bearer {jina_api_key}"
+    min_interval = max(0.0, float(os.getenv("JINA_MIN_INTERVAL_SECONDS", "1.5")))
+
+    # Detail fetchers use thread pools. Serialize gateway calls so one country
+    # cannot exhaust the shared anonymous Jina quota in a short burst.
+    with JINA_REQUEST_LOCK:
+        for attempt, timeout_seconds in enumerate(timeout_schedule, start=1):
+            elapsed = time.monotonic() - JINA_REQUEST_STATE["last_started"]
+            if elapsed < min_interval:
+                time.sleep(min_interval - elapsed)
+            JINA_REQUEST_STATE["last_started"] = time.monotonic()
+            try:
+                response = requests.get(gateway_url, headers=headers, timeout=timeout_seconds)
+                if response.status_code == 429:
+                    retry_after = response.headers.get("Retry-After")
+                    if retry_after:
+                        sleep_seconds = float(retry_after)
+                    elif is_state_archive_listing:
+                        sleep_seconds = min(90, 12 * attempt)
+                    else:
+                        sleep_seconds = min(60, 8 * attempt)
+                    last_error = RuntimeError(f"Jina rate limited {url}")
+                    time.sleep(sleep_seconds)
+                    continue
+                response.raise_for_status()
+                if response.encoding == "ISO-8859-1" and response.apparent_encoding:
+                    response.encoding = response.apparent_encoding
+                JINA_CACHE[url] = response.text
+                return response.text
+            except requests.RequestException as exc:
+                last_error = exc
+                time.sleep(min(12, 1.5 * attempt))
     assert last_error is not None
     raise last_error
 
@@ -3738,28 +3753,46 @@ class SpainMfaComunicadosSource:
     def _extract_content(body: str, title: str) -> str:
         lines = [clean_text(line) for line in body.splitlines()]
         normalized_title = normalize_compare_text(title)
-        title_hits = 0
-        start_index = 0
+        start_index: int | None = None
 
         for index, line in enumerate(lines):
             if not line.startswith("# "):
                 continue
             if normalize_compare_text(line.removeprefix("# ").strip()) != normalized_title:
                 continue
-            title_hits += 1
-            if title_hits >= 2:
-                start_index = index + 1
-                break
+            start_index = index + 1
+            break
 
-        if start_index == 0:
-            raise ValueError(f"Could not locate Spain MFA body for {title}")
+        if start_index is None:
+            for index, line in enumerate(lines):
+                if re.fullmatch(r"(?:PRESS )?STATEMENT\s+\d+", line, re.I):
+                    start_index = index + 1
+                    break
+        if start_index is None:
+            for index, line in enumerate(lines):
+                if line == "Markdown Content:":
+                    start_index = index + 1
+                    break
+        if start_index is None:
+            start_index = 0
 
         content_lines: list[str] = []
         for line in lines[start_index:]:
             if not line or line == "Today" or normalize_compare_text(line) == normalized_title:
                 continue
-            if line == "_-NON OFFICIAL TRANSLATION-_" or line.startswith("## More information") or line == "Banners":
+            if (
+                "NON OFFICIAL TRANSLATION" in line
+                or line.startswith("## More information")
+                or line == "Banners"
+            ):
                 break
+            if re.fullmatch(r"(?:PRESS )?STATEMENT\s+\d+", line, re.I):
+                continue
+            try:
+                parse_us_date(line)
+                continue
+            except ValueError:
+                pass
             content_lines.append(line.removeprefix("# ").strip() if line.startswith("# ") else line)
 
         content = clean_text("\n".join(content_lines))
@@ -3788,10 +3821,11 @@ class BrazilItamaratyPressReleaseSource:
     resume_missing_history = True
     history_backfill_chunk_days = 150
     history_max_pages = 120
-    archive_url = "https://www.gov.br/mre/en/en/contact-us/press-area/press-releases/press-releases"
+    archive_url = "https://www.gov.br/mre/pt-br/canais_atendimento/imprensa/notas-a-imprensa"
 
     def __init__(self, session: requests.Session) -> None:
         self.session = session
+        self._last_request_started = 0.0
 
     def fetch_recent(self, max_pages: int = 6) -> list[ScrapedRecord]:
         end_date = datetime.now(timezone.utc).date()
@@ -3803,8 +3837,17 @@ class BrazilItamaratyPressReleaseSource:
         seen_urls: set[str] = set()
 
         for page_index in range(max_pages):
-            page_markdown = request_markdown_via_jina(self._page_url(page_index))
-            page_candidates, has_next = self._extract_listing_candidates(page_markdown)
+            page_url = self._page_url(page_index)
+            page_candidates: list[tuple[str, str, str, str]] = []
+            try:
+                page_candidates = self._extract_listing_candidates_from_html(self._request_gov_html(page_url))
+            except (requests.RequestException, RuntimeError):
+                page_candidates = []
+
+            has_next = len(page_candidates) >= 30
+            if not page_candidates:
+                page_markdown = request_markdown_via_jina(page_url)
+                page_candidates, has_next = self._extract_listing_candidates(page_markdown)
             if not page_candidates:
                 break
 
@@ -3881,19 +3924,68 @@ class BrazilItamaratyPressReleaseSource:
 
         return candidates, "Next »" in markdown
 
+    @staticmethod
+    def _extract_listing_candidates_from_html(html_text: str) -> list[tuple[str, str, str, str]]:
+        soup = BeautifulSoup(html_text, "html.parser")
+        candidates: list[tuple[str, str, str, str]] = []
+        for item in soup.select("ul.noticias.listagem-noticias-com-foto > li"):
+            anchor = item.select_one("h2.titulo a[href]")
+            if anchor is None:
+                continue
+            title = clean_text(anchor.get_text(" ", strip=True))
+            href = clean_text(anchor.get("href") or "")
+            block = item.select_one("div.conteudo") or item
+            block_text = clean_text(block.get_text("\n", strip=True))
+            date_match = re.search(r"(?P<day>\d{2})/(?P<month>\d{2})/(?P<year>\d{4})", block_text)
+            if not title or not href or date_match is None:
+                continue
+            published_at = (
+                f"{date_match.group('year')}-{date_match.group('month')}-{date_match.group('day')}"
+            )
+            excerpt = clean_text(block_text.replace(title, "", 1).replace(date_match.group(0), "", 1))
+            candidates.append(
+                (normalize_generic_url(urljoin("https://www.gov.br", href)), title, published_at, excerpt)
+            )
+        return candidates
+
     def _fetch_detail_record(self, url: str, fallback_title: str, fallback_published_at: str, excerpt: str) -> ScrapedRecord:
         title = fallback_title
         published_at = fallback_published_at
         content = ""
-        fetch_url = self._detail_fetch_url(url)
 
         try:
-            markdown = request_markdown_via_jina(fetch_url)
-            title = self._extract_title(markdown) or fallback_title
-            published_at = self._extract_published_at(markdown) or fallback_published_at
-            content = self._extract_content(extract_jina_markdown_body(markdown), title)
-        except Exception:
+            soup = BeautifulSoup(self._request_gov_html(url), "html.parser")
+            title_node = soup.select_one(".documentFirstHeading")
+            if title_node is not None:
+                title = clean_text(title_node.get_text(" ", strip=True)) or title
+            byline = soup.select_one(".documentByLine")
+            if byline is not None:
+                date_match = re.search(
+                    r"(?P<day>\d{2})/(?P<month>\d{2})/(?P<year>\d{4})",
+                    clean_text(byline.get_text(" ", strip=True)),
+                )
+                if date_match is not None:
+                    published_at = (
+                        f"{date_match.group('year')}-{date_match.group('month')}-{date_match.group('day')}"
+                    )
+            content_root = soup.select_one("#content-core")
+            if content_root is not None:
+                content_parts = [
+                    clean_text(node.get_text(" ", strip=True))
+                    for node in content_root.select("p, li, h2, h3")
+                ]
+                content = clean_text("\n".join(part for part in content_parts if part))
+        except (requests.RequestException, RuntimeError):
             content = ""
+
+        if not content:
+            try:
+                markdown = request_markdown_via_jina(self._detail_fetch_url(url))
+                title = self._extract_title(markdown) or fallback_title
+                published_at = self._extract_published_at(markdown) or fallback_published_at
+                content = self._extract_content(extract_jina_markdown_body(markdown), title)
+            except Exception:
+                content = ""
 
         if not content:
             content = excerpt or title
@@ -3905,13 +3997,39 @@ class BrazilItamaratyPressReleaseSource:
             title=title,
             content=content,
             source_kind=self._source_kind(title, content),
-            language="en",
-            speaker="Brazilian Ministry of Foreign Affairs",
+            language="pt",
+            speaker="Ministério das Relações Exteriores",
         )
+
+    def _request_gov_html(self, url: str) -> str:
+        last_error: Exception | None = None
+        headers = {**BROWSER_HEADERS, "User-Agent": "Googlebot/2.1 (+http://www.google.com/bot.html)"}
+        for attempt in range(5):
+            elapsed = time.monotonic() - self._last_request_started
+            if elapsed < 1.5:
+                time.sleep(1.5 - elapsed)
+            self._last_request_started = time.monotonic()
+            try:
+                response = self.session.get(url, headers=headers, timeout=60)
+                if response.status_code == 429:
+                    retry_after = clean_text(response.headers.get("Retry-After") or "")
+                    delay = float(retry_after) if retry_after.isdigit() else min(45, 6 * (attempt + 1))
+                    time.sleep(delay)
+                    last_error = RuntimeError(f"Brazil government site rate limited {url}")
+                    continue
+                response.raise_for_status()
+                if "Acesso Temporariamente Interrompido" in response.text:
+                    raise RuntimeError(f"Brazil government site blocked {url}")
+                return response.text
+            except (requests.RequestException, RuntimeError) as exc:
+                last_error = exc
+                time.sleep(min(12, 2 * (attempt + 1)))
+        assert last_error is not None
+        raise last_error
 
     @staticmethod
     def _detail_fetch_url(url: str) -> str:
-        return url.replace("/mre/en/contact-us/", "/mre/en/en/contact-us/")
+        return url
 
     @staticmethod
     def _extract_title(markdown: str) -> str:
@@ -3964,9 +4082,16 @@ class BrazilItamaratyPressReleaseSource:
     @staticmethod
     def _source_kind(title: str, content: str) -> str:
         lowered = normalize_compare_text(f"{title}\n{content[:200]}")
-        if "joint statement" in lowered or "joint communiqu" in lowered or "joint press release" in lowered:
+        if (
+            "joint statement" in lowered
+            or "joint communiqu" in lowered
+            or "joint press release" in lowered
+            or "declaração conjunta" in lowered
+            or "comunicado conjunto" in lowered
+            or "nota conjunta" in lowered
+        ):
             return "br_mre_joint_statement"
-        if "statement" in lowered:
+        if "statement" in lowered or "declaração" in lowered:
             return "br_mre_statement"
         return "br_mre_press_release"
 
@@ -3984,9 +4109,17 @@ class IndiaMeaOfficialSource:
     history_retry_delay_seconds = 0.5
     recent_fetch_workers = 4
     resume_missing_history = True
-    recent_listing_start_date = "2026-02-18"
+    recent_listing_start_date = "2026-01-01"
     recent_listing_url = "https://www.mea.gov.in/whats-new.htm"
     recent_sections = ("Press Releases", "Media Briefings", "Lok Sabha", "Rajya Sabha")
+    recent_publication_ids = {
+        "Press Releases": 51,
+        "Media Briefings": 49,
+        "Lok Sabha": 61,
+        "Rajya Sabha": 62,
+    }
+    listing_api_url = "https://www.mea.gov.in/FrontEnd/FetchPublicationListingData"
+    detail_api_url = "https://www.mea.gov.in/FrontEnd/FetchPublicationDetailData"
     recent_index_urls = (
         "https://www.mea.gov.in/whats-new.htm",
         "https://www.mea.gov.in/press-releases.htm?51/Press_Releases",
@@ -4200,14 +4333,56 @@ class IndiaMeaOfficialSource:
         return record
 
     def _fetch_recent_listing_between(self, start_date: str, end_date: str) -> list[ScrapedRecord]:
-        markdown = request_markdown_via_jina(self.recent_listing_url)
-        items = self._parse_recent_listing(markdown)
-        if not items:
-            return []
-
-        candidates = [
-            item for item in items if start_date <= item["published_at"] <= end_date  # type: ignore[index]
-        ]
+        candidates: list[dict[str, str]] = []
+        seen_urls: set[str] = set()
+        headers = {
+            **BROWSER_HEADERS,
+            "Referer": self.recent_listing_url,
+            "X-Requested-With": "XMLHttpRequest",
+        }
+        for section, publication_id in self.recent_publication_ids.items():
+            response = self.session.get(
+                self.listing_api_url,
+                params={
+                    "publicationId": publication_id,
+                    "KeywordName": "",
+                    "SortBy": "Newest First",
+                    "page": 1,
+                    "PageSize": 1000,
+                    "DateRange": "",
+                    "IsInternalMEA": "false",
+                    "PLngId": 1,
+                },
+                headers=headers,
+                timeout=90,
+            )
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, "html.parser")
+            for card in soup.select(".pressRelesastBox"):
+                anchor = card.select_one(".pressTitle a[href*='dtl/']")
+                date_node = card.select_one(".date")
+                if anchor is None or date_node is None:
+                    continue
+                title = clean_text(anchor.get_text(" ", strip=True))
+                href = clean_text(anchor.get("href") or "")
+                try:
+                    published_at = datetime.strptime(
+                        clean_text(date_node.get_text(" ", strip=True)), "%d %B, %Y"
+                    ).date().isoformat()
+                except ValueError:
+                    continue
+                url = normalize_generic_url(urljoin("https://www.mea.gov.in", href))
+                if not title or not url or url in seen_urls or not (start_date <= published_at <= end_date):
+                    continue
+                seen_urls.add(url)
+                candidates.append(
+                    {
+                        "section": section,
+                        "title": title,
+                        "url": url,
+                        "published_at": published_at,
+                    }
+                )
         if not candidates:
             return []
 
@@ -4294,16 +4469,38 @@ class IndiaMeaOfficialSource:
         fallback_title: str,
         fallback_published_at: str,
     ) -> ScrapedRecord:
-        markdown = request_markdown_via_jina(url)
-        if self._is_unavailable_markdown(markdown):
-            raise ValueError(f"India MEA listing detail page is unavailable in English: {url}")
-
-        title = self._extract_title(markdown) or clean_text(fallback_title)
-        try:
-            published_at = parse_india_page_updated(markdown)
-        except ValueError:
-            published_at = fallback_published_at
-        content = self._extract_content(markdown, title)
+        detail_match = re.search(r"[?&]dtl/(?P<pkid>\d+)", url)
+        if detail_match is None:
+            raise ValueError(f"Missing India MEA publication id in {url}")
+        response = self.session.get(
+            self.detail_api_url,
+            params={"pkid": int(detail_match.group("pkid")), "languageId": 1},
+            headers={
+                **BROWSER_HEADERS,
+                "Referer": url,
+                "X-Requested-With": "XMLHttpRequest",
+            },
+            timeout=60,
+        )
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, "html.parser")
+        title_node = soup.select_one(".titleText")
+        title = clean_text(title_node.get_text(" ", strip=True)) if title_node is not None else fallback_title
+        date_node = soup.select_one(".date")
+        published_at = fallback_published_at
+        if date_node is not None:
+            try:
+                published_at = datetime.strptime(
+                    clean_text(date_node.get_text(" ", strip=True)), "%d %B, %Y"
+                ).date().isoformat()
+            except ValueError:
+                pass
+        content_root = soup.select_one(".description")
+        if content_root is None:
+            raise ValueError(f"Missing India MEA publication body for {url}")
+        content = clean_text(content_root.get_text("\n", strip=True))
+        if not content:
+            raise ValueError(f"Empty India MEA publication body for {url}")
         source_kind = self._source_kind(title, content)
 
         return ScrapedRecord(
@@ -4447,6 +4644,7 @@ class FranceMfaSpokespersonSource:
     resume_missing_history = True
     sitemap_url = "https://www.diplomatie.gouv.fr/sitemap.xml"
     relevant_patterns = (
+        re.compile(r"/fr/presse-et-ressources/decouvrir-et-informer/actualites/[^/]+$"),
         re.compile(r"/fr/salle-de-presse/point-de-presse-live-du-porte-parole-du-meae/article/"),
         re.compile(r"/fr/les-ministres/[^/]+/presse-et-medias/article/"),
         re.compile(r"/fr/les-ministres/[^/]+/discours/article/"),
@@ -4469,7 +4667,10 @@ class FranceMfaSpokespersonSource:
     def fetch_between(self, start_date: str, end_date: str, max_pages: int = 20) -> list[ScrapedRecord]:
         records: list[ScrapedRecord] = []
         with ThreadPoolExecutor(max_workers=10) as executor:
-            futures = {executor.submit(self._parse_article_threadsafe, url): url for url in self._load_candidate_urls()}
+            futures = {
+                executor.submit(self._parse_article_threadsafe, url): url
+                for url in self._load_candidate_urls(start_date, end_date)
+            }
             for future in as_completed(futures):
                 try:
                     record = future.result()
@@ -4481,18 +4682,36 @@ class FranceMfaSpokespersonSource:
         deduped = {record.url: record for record in records}
         return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
 
-    def _load_candidate_urls(self) -> list[str]:
+    def _load_candidate_urls(self, start_date: str = "", end_date: str = "") -> list[str]:
         if self._candidate_urls is not None:
             return self._candidate_urls
 
         sitemap_xml = request_html(self.session, self.sitemap_url)
-        urls = re.findall(r"<loc>(.*?)</loc>", sitemap_xml)
+        sitemap_urls = re.findall(r"<loc>(.*?)</loc>", sitemap_xml)
+        child_sitemaps = [url for url in sitemap_urls if "sitemap.xml?" in url]
+        sitemap_documents = [sitemap_xml]
+        for child_url in child_sitemaps:
+            sitemap_documents.append(request_html(self.session, clean_text(child_url)))
+
         filtered: list[str] = []
-        for url in urls:
-            normalized = normalize_generic_url(clean_text(url))
-            if not normalized.startswith("https://www.diplomatie.gouv.fr/fr/"):
-                continue
-            if any(pattern.search(normalized) for pattern in self.relevant_patterns):
+        for document in sitemap_documents:
+            soup = BeautifulSoup(document, "xml")
+            for entry in soup.find_all("url"):
+                loc_node = entry.find("loc")
+                if loc_node is None:
+                    continue
+                normalized = normalize_generic_url(clean_text(loc_node.get_text(" ", strip=True)))
+                if not normalized.startswith("https://www.diplomatie.gouv.fr/fr/"):
+                    continue
+                if not any(pattern.search(normalized) for pattern in self.relevant_patterns):
+                    continue
+                lastmod_node = entry.find("lastmod")
+                if lastmod_node is not None and (start_date or end_date):
+                    lastmod = clean_text(lastmod_node.get_text(" ", strip=True))[:10]
+                    if start_date and lastmod < start_date:
+                        continue
+                    if end_date and lastmod > end_date:
+                        continue
                 filtered.append(normalized)
 
         self._candidate_urls = list(dict.fromkeys(filtered))
@@ -4620,6 +4839,7 @@ class RussiaMfaNewsSource:
             "section_start_date": "2026-01-01",
         },
     )
+    official_telegram_url = "https://t.me/s/MFARussia"
 
     def __init__(self, session: requests.Session) -> None:
         self.session = session
@@ -4630,6 +4850,9 @@ class RussiaMfaNewsSource:
         return self.fetch_between(start_date.isoformat(), end_date.isoformat(), max_pages=max_pages)
 
     def fetch_between(self, start_date: str, end_date: str, max_pages: int = 20) -> list[ScrapedRecord]:
+        if os.getenv("WDSI_RU_OFFICIAL_TELEGRAM_ONLY", "").strip().lower() in {"1", "true", "yes"}:
+            return self._fetch_official_telegram_between(start_date, end_date, max_pages=max_pages)
+
         try:
             from playwright.sync_api import sync_playwright
         except ImportError as exc:  # pragma: no cover - optional dependency in CI/local fetches
@@ -4707,8 +4930,135 @@ class RussiaMfaNewsSource:
                     context.close()
             browser.close()
 
+        if not records:
+            return self._fetch_official_telegram_between(start_date, end_date, max_pages=max_pages)
+
         deduped = {record.url: record for record in records}
         return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
+
+    def _fetch_official_telegram_between(
+        self,
+        start_date: str,
+        end_date: str,
+        *,
+        max_pages: int,
+    ) -> list[ScrapedRecord]:
+        known_article_ids = {
+            match.group(1)
+            for value in getattr(self, "known_urls", set())
+            if (match := re.search(r"/(\d{6,})/?(?:\?|$)", str(value)))
+        }
+        minimum_article_id = max((int(value) for value in known_article_ids), default=0)
+        seen_article_ids = set(known_article_ids)
+        before: int | None = None
+        records: list[ScrapedRecord] = []
+
+        for _ in range(max_pages):
+            page_url = self.official_telegram_url
+            if before is not None:
+                page_url = f"{page_url}?before={before}"
+            response = self.session.get(page_url, headers=BROWSER_HEADERS, timeout=60)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, "html.parser")
+            messages = soup.select(".tgme_widget_message[data-post]")
+            message_ids: list[int] = []
+            page_dates: list[str] = []
+
+            for message in messages:
+                post_name = clean_text(message.get("data-post") or "")
+                message_id_match = re.search(r"/(\d+)$", post_name)
+                if message_id_match:
+                    message_ids.append(int(message_id_match.group(1)))
+
+                time_node = message.select_one("time[datetime]")
+                text_node = message.select_one(".tgme_widget_message_text")
+                if time_node is None or text_node is None:
+                    continue
+                try:
+                    published_at = datetime.fromisoformat(
+                        clean_text(time_node.get("datetime") or "").replace("Z", "+00:00")
+                    ).date().isoformat()
+                except ValueError:
+                    continue
+                page_dates.append(published_at)
+                if not (start_date <= published_at <= end_date):
+                    continue
+
+                content = clean_text(text_node.get_text("\n", strip=True))
+                if not content:
+                    continue
+                article_urls: dict[str, str] = {}
+                for anchor in text_node.select("a[href]"):
+                    raw_url = urljoin(page_url, clean_text(anchor.get("href") or ""))
+                    match = re.search(
+                        r"https?://(?:www\.)?mid\.ru/(?:en|ru)/"
+                        r"(?:press_service/spokesman/(?:official_statement|briefings)|foreign_policy/news)/"
+                        r"(?P<article_id>\d{6,})",
+                        raw_url,
+                        re.I,
+                    )
+                    if not match:
+                        continue
+                    article_id = match.group("article_id")
+                    if minimum_article_id and int(article_id) < minimum_article_id:
+                        continue
+                    article_urls.setdefault(article_id, normalize_generic_url(raw_url))
+
+                title = self._telegram_title(content)
+                for article_id, article_url in article_urls.items():
+                    if article_id in seen_article_ids:
+                        continue
+                    seen_article_ids.add(article_id)
+                    source_kind = self._telegram_source_kind(article_url, title)
+                    records.append(
+                        ScrapedRecord(
+                            country_code=self.country_code,
+                            published_at=published_at,
+                            url=article_url,
+                            title=title,
+                            content=content,
+                            source_kind=source_kind,
+                            language="en",
+                            speaker=self._speaker(title, "MFA of Russia"),
+                        )
+                    )
+
+            if not message_ids:
+                break
+            next_before = min(message_ids)
+            if before == next_before:
+                break
+            before = next_before
+            if page_dates and min(page_dates) < start_date:
+                break
+
+        deduped: dict[str, ScrapedRecord] = {}
+        for record in records:
+            match = re.search(r"/(\d{6,})/?(?:\?|$)", record.url)
+            key = match.group(1) if match else record.url
+            existing = deduped.get(key)
+            if existing is None or len(record.content) > len(existing.content):
+                deduped[key] = record
+        return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
+
+    @staticmethod
+    def _telegram_title(content: str) -> str:
+        first_line = next((clean_text(line) for line in content.splitlines() if clean_text(line)), "")
+        first_line = re.sub(r"^#[A-Za-z0-9_]+\s*", "", first_line)
+        first_line = re.sub(r"^[^A-Za-z0-9]+", "", first_line).strip()
+        if len(first_line) > 360:
+            sentence = re.split(r"(?<=[.!?])\s+", first_line, maxsplit=1)[0]
+            first_line = sentence if len(sentence) >= 40 else first_line[:360].rsplit(" ", 1)[0]
+        return first_line or "Russian Foreign Ministry update"
+
+    @staticmethod
+    def _telegram_source_kind(url: str, title: str) -> str:
+        normalized = normalize_generic_url(url)
+        if "/press_service/spokesman/briefings/" in normalized:
+            return "ru_mfa_briefing"
+        if "/press_service/spokesman/official_statement/" in normalized:
+            return "ru_mfa_statement"
+        return RussiaMfaNewsSource._source_kind(title)
 
     def _collect_candidates(
         self,
@@ -4792,8 +5142,12 @@ class RussiaMfaNewsSource:
 
     def _fetch_article_text(self, page: object, article_url: str, referer: str) -> str:
         body_text = ""
-        for _ in range(3):
-            self._navigate_mid_page(page, article_url, referer=referer, warmup=False)
+        for attempt in range(3):
+            try:
+                self._navigate_mid_page(page, article_url, referer=referer, warmup=False)
+            except RuntimeError:
+                page.wait_for_timeout((attempt + 1) * 2_000)
+                continue
             body_text = self._read_mid_body_text(page)
             if not self._is_rejected_text(body_text) and len(body_text) > 500:
                 return body_text
@@ -4801,7 +5155,11 @@ class RussiaMfaNewsSource:
 
     def _load_mid_list_page(self, page: object, page_url: str, referer: str | None = None) -> None:
         for attempt in range(4):
-            self._navigate_mid_page(page, page_url, referer=referer, warmup=attempt == 0)
+            try:
+                self._navigate_mid_page(page, page_url, referer=referer, warmup=attempt == 0)
+            except RuntimeError:
+                page.wait_for_timeout((attempt + 1) * 2_000)
+                continue
             try:
                 if page.locator(".announce__item").count() > 0:
                     return
@@ -4831,8 +5189,16 @@ class RussiaMfaNewsSource:
         goto_kwargs: dict[str, object] = {"wait_until": "domcontentloaded", "timeout": 90_000}
         if referer:
             goto_kwargs["referer"] = referer
-        page.goto(url, **goto_kwargs)
-        page.wait_for_timeout(5_000 if warmup else 2_500)
+        last_error: Exception | None = None
+        for attempt in range(4):
+            try:
+                page.goto(url, **goto_kwargs)
+                page.wait_for_timeout(5_000 if warmup and attempt == 0 else 2_500)
+                return
+            except Exception as exc:  # pragma: no cover - network/browser dependent
+                last_error = exc
+                page.wait_for_timeout((attempt + 1) * 2_000)
+        raise RuntimeError(f"Russian MFA navigation failed for {url}") from last_error
 
     @staticmethod
     def _read_mid_body_text(page: object) -> str:
