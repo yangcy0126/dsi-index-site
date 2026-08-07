@@ -45,7 +45,10 @@ CN_SEARCH_REFERER = (
 JSON_BLOCK_RE = re.compile(r"\{.*\}", re.S)
 WHITESPACE_RE = re.compile(r"\s+")
 QUESTION_LABEL_RE = re.compile(r"^(?P<label>[A-Z][A-Za-z0-9 .&/'()\\-]{0,80}|Q)\s*:\s*(?P<body>.*)$")
-SPEAKER_TITLE_RE = re.compile(r"Foreign Ministry Spokesperson (.+?)'s Regular Press Conference", re.I)
+SPEAKER_TITLE_RE = re.compile(
+    r"Foreign Ministry Spokesperson (.+?)'s (?:Regular Press Conference|Remarks)",
+    re.I,
+)
 ISO_LIKE_DATE_RE = re.compile(r"(\d{4}[./-]\d{2}[./-]\d{2})")
 MONTH_DAY_RE = re.compile(
     r"^(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})$"
@@ -712,59 +715,60 @@ class ChinaMfaRegularPressSource:
         # The MFA search API now binds each search credential to an anonymous
         # session cookie issued when the search page is opened.
         self.session.get(CN_SEARCH_REFERER, headers=BROWSER_HEADERS, timeout=30).raise_for_status()
-        payload = {
-            "code": "18fe7c6489d",
-            "searchRequestId": str(uuid.uuid4()),
-            "configCode": "",
-            "codes": "",
-            "searchWord": "Regular Press Conference",
-            "historySearchWords": [],
-            "dataTypeId": "2076",
-            "orderBy": "time",
-            "searchBy": "title",
-            "appendixType": "",
-            "granularity": "CUSTOM",
-            "beginDateTime": int(datetime.combine(begin, datetime.min.time()).timestamp() * 1000),
-            "endDateTime": int((datetime.combine(finish + timedelta(days=1), datetime.min.time()).timestamp() * 1000) - 1),
-            "isSearchForced": 0,
-            "filters": [],
-            "pageNo": 1,
-            "pageSize": page_size,
-            "isDefaultAdvanced": 0,
-            "advancedFilters": None,
-        }
-
-        page_count = 1
         article_urls: list[str] = []
-        while int(payload["pageNo"]) <= page_count:
-            result = request_json_post(
-                self.session,
-                self.search_url,
-                payload,
-                headers={"Referer": CN_SEARCH_REFERER, "Origin": "https://www.mfa.gov.cn"},
-            )
-            if not isinstance(result, dict) or not result.get("success"):
-                raise RuntimeError(f"CN search failed for {start_date} to {end_date}: {result}")
+        for search_word in ("Regular Press Conference", "Spokesperson Remarks"):
+            payload = {
+                "code": "18fe7c6489d",
+                "searchRequestId": str(uuid.uuid4()),
+                "configCode": "",
+                "codes": "",
+                "searchWord": search_word,
+                "historySearchWords": [],
+                "dataTypeId": "2076",
+                "orderBy": "time",
+                "searchBy": "title",
+                "appendixType": "",
+                "granularity": "CUSTOM",
+                "beginDateTime": int(datetime.combine(begin, datetime.min.time()).timestamp() * 1000),
+                "endDateTime": int((datetime.combine(finish + timedelta(days=1), datetime.min.time()).timestamp() * 1000) - 1),
+                "isSearchForced": 0,
+                "filters": [],
+                "pageNo": 1,
+                "pageSize": page_size,
+                "isDefaultAdvanced": 0,
+                "advancedFilters": None,
+            }
 
-            data = result.get("data") or {}
-            credential = data.get("eventCredential") if isinstance(data, dict) else {}
-            if isinstance(credential, dict) and credential.get("searchContextToken"):
-                payload["searchContextToken"] = credential["searchContextToken"]
-            pager = data.get("pager") if isinstance(data, dict) else {}
-            page_count = int((pager or {}).get("pageCount") or 1)
-            middle = data.get("middle") if isinstance(data, dict) else {}
-            items = middle.get("listAndBox") if isinstance(middle, dict) else []
-            if not isinstance(items, list):
-                break
+            page_count = 1
+            while int(payload["pageNo"]) <= page_count:
+                result = request_json_post(
+                    self.session,
+                    self.search_url,
+                    payload,
+                    headers={"Referer": CN_SEARCH_REFERER, "Origin": "https://www.mfa.gov.cn"},
+                )
+                if not isinstance(result, dict) or not result.get("success"):
+                    raise RuntimeError(f"CN search failed for {start_date} to {end_date}: {result}")
 
-            for item in items:
-                entry = item.get("data") if isinstance(item, dict) else {}
-                url = normalize_cn_article_url(str(entry.get("url", "")).strip())
-                if "/xw/fyrbt/lxjzh/" not in url:
-                    continue
-                article_urls.append(url)
+                data = result.get("data") or {}
+                credential = data.get("eventCredential") if isinstance(data, dict) else {}
+                if isinstance(credential, dict) and credential.get("searchContextToken"):
+                    payload["searchContextToken"] = credential["searchContextToken"]
+                pager = data.get("pager") if isinstance(data, dict) else {}
+                page_count = int((pager or {}).get("pageCount") or 1)
+                middle = data.get("middle") if isinstance(data, dict) else {}
+                items = middle.get("listAndBox") if isinstance(middle, dict) else []
+                if not isinstance(items, list):
+                    break
 
-            payload["pageNo"] = int(payload["pageNo"]) + 1
+                for item in items:
+                    entry = item.get("data") if isinstance(item, dict) else {}
+                    url = normalize_cn_article_url(str(entry.get("url", "")).strip())
+                    if "/xw/fyrbt/lxjzh/" not in url:
+                        continue
+                    article_urls.append(url)
+
+                payload["pageNo"] = int(payload["pageNo"]) + 1
 
         unique_urls = list(dict.fromkeys(article_urls))
         return [self._parse_article(url) for url in unique_urls]
@@ -797,7 +801,11 @@ class ChinaMfaRegularPressSource:
             url=url,
             title=title,
             content=content,
-            source_kind="mfa_regular_press_conference",
+            source_kind=(
+                "mfa_regular_press_conference"
+                if "regular press conference" in title.lower()
+                else "mfa_spokesperson_remarks"
+            ),
             language="en",
             speaker=speaker,
         )

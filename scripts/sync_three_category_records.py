@@ -11,6 +11,12 @@ import pandas as pd
 SITE_ROOT = Path(__file__).resolve().parents[1]
 DSI_DATA_ROOT = SITE_ROOT.parent / "DSI-ICF" / "data"
 ARCHIVE_ROOT = DSI_DATA_ROOT / "ARCHIVE_OLD_DSI_INDEX_VERSIONS_20260806" / "pre_update_remaining12"
+CN_US_KR_ARCHIVE_ROOT = (
+    DSI_DATA_ROOT
+    / "ARCHIVE_OLD_DSI_INDEX_VERSIONS_20260806"
+    / "pre_update_cn_us_kr"
+    / "scores"
+)
 RECORD_ROOT = SITE_ROOT / "records"
 RECORD_COLUMNS = [
     "record_id", "country_code", "published_at", "url", "title", "speaker", "content_chars",
@@ -41,11 +47,22 @@ def find_live_score(code: str) -> Path:
     return candidates[0]
 
 
+def find_archived_score(code: str) -> Path:
+    candidates = [
+        ARCHIVE_ROOT / f"{code}_scores.csv",
+        CN_US_KR_ARCHIVE_ROOT / f"{code}_scores.csv",
+    ]
+    matches = [path for path in candidates if path.exists()]
+    if len(matches) != 1:
+        raise RuntimeError(f"Expected one archived score file for {code}, found {matches}")
+    return matches[0]
+
+
 def changed_accepted_scores(code: str) -> pd.DataFrame:
     current = read_csv(find_live_score(code))
     if "score_status" in current.columns:
         current = current.loc[current["score_status"].eq("accepted")].copy()
-    archived = read_csv(ARCHIVE_ROOT / f"{code}_scores.csv")
+    archived = read_csv(find_archived_score(code))
     archived["_identity"] = [identity(row) for _, row in archived.iterrows()]
     old_lookup = archived.drop_duplicates("_identity", keep="last").set_index("_identity")
 
@@ -107,6 +124,8 @@ def build_record(code: str, row: pd.Series, scored_at: str) -> dict[str, object]
 def sync_country(code: str, scored_at: str) -> tuple[int, int]:
     destination = RECORD_ROOT / f"{code}.csv"
     existing = read_csv(destination) if destination.exists() else pd.DataFrame(columns=RECORD_COLUMNS)
+    output_columns = list(existing.columns)
+    output_columns.extend(column for column in RECORD_COLUMNS if column not in output_columns)
     delta = changed_accepted_scores(code)
     additions = pd.DataFrame([build_record(code, row, scored_at) for _, row in delta.iterrows()])
     if additions.empty:
@@ -119,7 +138,7 @@ def sync_country(code: str, scored_at: str) -> tuple[int, int]:
     for column in RECORD_COLUMNS:
         if column not in updated.columns:
             updated[column] = ""
-    updated = updated[RECORD_COLUMNS].drop_duplicates("record_id", keep="last")
+    updated = updated[output_columns].drop_duplicates("record_id", keep="last")
     updated = updated.sort_values(["published_at", "record_id"]).reset_index(drop=True)
     updated.to_csv(destination, index=False, encoding="utf-8")
     return len(additions), len(updated)
