@@ -10,6 +10,9 @@ SITE_ROOT = Path(__file__).resolve().parents[1]
 DSI_ROOT = SITE_ROOT.parent / "DSI-ICF"
 DATA_ROOT = DSI_ROOT / "data"
 ARCHIVE_ROOT = DATA_ROOT / "ARCHIVE_OLD_DSI_INDEX_VERSIONS_20260806" / "pre_update_remaining12"
+CN_US_KR_ARCHIVE_ROOT = (
+    DATA_ROOT / "ARCHIVE_OLD_DSI_INDEX_VERSIONS_20260806" / "pre_update_cn_us_kr"
+)
 
 
 def find_live_file(filename: str) -> Path:
@@ -21,6 +24,16 @@ def find_live_file(filename: str) -> Path:
 
 def read_csv(path: Path) -> pd.DataFrame:
     return pd.read_csv(path, dtype=str, keep_default_na=False, low_memory=False)
+
+
+def find_archived_file(code: str, kind: str) -> Path:
+    candidates = [ARCHIVE_ROOT / f"{code}_{kind}.csv"]
+    if code in {"CN", "US", "KR"}:
+        candidates.insert(0, CN_US_KR_ARCHIVE_ROOT / kind / f"{code}_{kind}.csv")
+    for path in candidates:
+        if path.exists():
+            return path
+    raise FileNotFoundError(f"Missing archived {kind} input for {code}: {candidates}")
 
 
 def identity(row: pd.Series) -> str:
@@ -66,10 +79,8 @@ def changed_scores(current: pd.DataFrame, archived: pd.DataFrame) -> pd.DataFram
 def rebuild_country(code: str) -> tuple[int, int, str]:
     score_path = find_live_file(f"{code}_scores.csv")
     daily_path = find_live_file(f"{code}_daily.csv")
-    old_score_path = ARCHIVE_ROOT / f"{code}_scores.csv"
-    old_daily_path = ARCHIVE_ROOT / f"{code}_daily.csv"
-    if not old_score_path.exists() or not old_daily_path.exists():
-        raise FileNotFoundError(f"Missing archived inputs for {code}")
+    old_score_path = find_archived_file(code, "scores")
+    old_daily_path = find_archived_file(code, "daily")
 
     current_scores = accepted_scores(read_csv(score_path))
     archived_scores = read_csv(old_score_path)

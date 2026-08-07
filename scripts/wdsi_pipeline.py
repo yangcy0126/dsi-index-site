@@ -637,7 +637,7 @@ def html_looks_like_block_page(html_text: str) -> bool:
 
 
 def markdown_looks_like_block_page(markdown_text: str) -> bool:
-    lowered = extract_jina_markdown_body(markdown_text or "").casefold()
+    lowered = extract_jina_markdown_body(markdown_text or "").casefold()[:3000]
     return (
         "technical difficulties" in lowered
         or "http error 407" in lowered
@@ -853,6 +853,7 @@ class UsStateDepartmentSource:
     history_max_pages = 760
 
     press_archive_url = "https://www.state.gov/press-releases/"
+    current_sitemap_index_url = "https://www.state.gov/sitemap_index.xml"
     current_press_release_sitemaps = (
         "https://www.state.gov/state_press_release-sitemap.xml",
         "https://www.state.gov/state_press_release-sitemap2.xml",
@@ -901,6 +902,7 @@ class UsStateDepartmentSource:
 
     def __init__(self, session: requests.Session) -> None:
         self.session = session
+        self.known_url_dates: dict[str, str] = {}
 
     def fetch_recent(self, max_pages: int = 2) -> list[ScrapedRecord]:
         end_date = datetime.now(timezone.utc).date()
@@ -983,7 +985,8 @@ class UsStateDepartmentSource:
 
         candidates: list[tuple[str, str, str, str]] = []
         seen_urls: set[str] = set()
-        for sitemap_url in self.current_press_release_sitemaps:
+        press_release_sitemaps, root_page_sitemaps = self._discover_current_sitemaps()
+        for sitemap_url in press_release_sitemaps:
             try:
                 markdown = request_markdown_via_jina(sitemap_url)
             except Exception:
@@ -998,7 +1001,7 @@ class UsStateDepartmentSource:
                 seen_urls.add(link)
                 candidates.append((link, title, published_at, ""))
 
-        for sitemap_url in self.current_root_page_sitemaps:
+        for sitemap_url in root_page_sitemaps:
             try:
                 markdown = request_markdown_via_jina(sitemap_url)
             except Exception:
@@ -1072,6 +1075,23 @@ class UsStateDepartmentSource:
                     records.append(record)
 
         return sorted(records, key=lambda record: (record.published_at, record.url), reverse=True)
+
+    def _discover_current_sitemaps(self) -> tuple[tuple[str, ...], tuple[str, ...]]:
+        press_release_urls = set(self.current_press_release_sitemaps)
+        root_page_urls = set(self.current_root_page_sitemaps)
+        try:
+            markdown = request_markdown_via_jina(self.current_sitemap_index_url)
+            for _, link, _ in sitemap_markdown_entries(markdown):
+                path = urlsplit(link).path.rsplit("/", 1)[-1]
+                if re.fullmatch(r"state_press_release-sitemap\d*\.xml", path):
+                    press_release_urls.add(link)
+                    continue
+                match = re.fullmatch(r"page-sitemap(?P<part>\d*)\.xml", path)
+                if match and int(match.group("part") or "1") >= 6:
+                    root_page_urls.add(link)
+        except Exception:
+            pass
+        return tuple(sorted(press_release_urls)), tuple(sorted(root_page_urls))
 
     def _fetch_archived_press_releases(
         self,
@@ -1316,7 +1336,7 @@ class UsStateDepartmentSource:
             title = self._infer_briefing_title(url) or title
         elif self._is_placeholder_state_title(title):
             title = self._infer_briefing_title(url) or self._infer_state_title_from_url(url) or title
-        published_at = published_at_hint or self._extract_state_date(lines, title, url, source_hint)
+        published_at = self._extract_state_date(lines, title, url, source_hint) or published_at_hint
         if not title or not published_at:
             raise ValueError(f"Missing state title/date for {url}")
         if self._is_placeholder_state_title(title):
@@ -1353,8 +1373,13 @@ class UsStateDepartmentSource:
         )
 
     def _extract_state_title(self, lines: list[str], fallback_title: str) -> str:
-        if lines and lines[0].startswith("# "):
-            return clean_text(lines[0].lstrip("# ").strip())
+        for line in lines[:200]:
+            if line.startswith("# "):
+                return clean_text(line.lstrip("# ").strip())
+        for line in lines[:40]:
+            match = re.search(r"Funding Opportunity Title:?\*{0,2}\s*(?P<title>.+)$", line, re.I)
+            if match:
+                return clean_text(match.group("title").strip("* "))
         return fallback_title
 
     def _extract_state_title_from_html(self, soup: BeautifulSoup) -> str:
@@ -1411,8 +1436,12 @@ class UsStateDepartmentSource:
         return " ".join(rendered)
 
     def _extract_state_date(self, lines: list[str], title: str, url: str, source_hint: str) -> str:
-        for line in lines[:60]:
-            match = self.state_listing_date_re.search(line)
+        anchor_index = self._find_state_article_anchor(lines, title)
+        scan_start = anchor_index + 1 if anchor_index is not None else 0
+        for line in lines[scan_start : scan_start + 80]:
+            if line.startswith("# "):
+                continue
+            match = self._standalone_state_date_match(line)
             if match:
                 return parse_us_date(match.group("date"))
         if source_hint == "department_press_briefing":
@@ -1486,11 +1515,11 @@ class UsStateDepartmentSource:
         repeated_title_index = self._find_state_article_anchor(lines, title)
         if source_hint != "department_press_briefing":
             date_line_index = None
-            scan_start = repeated_title_index or 0
+            scan_start = repeated_title_index + 1 if repeated_title_index is not None else 0
             scan_end = min(len(lines), scan_start + 120)
             for index in range(scan_start, scan_end):
                 line = lines[index]
-                if self.state_listing_date_re.search(line):
+                if self._standalone_state_date_match(line):
                     date_line_index = index
                     break
             if date_line_index is not None:
@@ -1526,10 +1555,31 @@ class UsStateDepartmentSource:
         while start_index < len(lines) and self._looks_like_state_metadata_line(lines[start_index], doc_type):
             start_index += 1
 
-        content = clean_text("\n".join(lines[start_index:]))
+        end_index = len(lines)
+        footer_markers = {
+            "tags",
+            "back to top",
+            "cookie settings",
+            "follow us",
+        }
+        for index in range(start_index, len(lines)):
+            text = clean_text(lines[index])
+            lowered = text.casefold()
+            if lowered in footer_markers or lowered.startswith("### have feedback about our website?"):
+                end_index = index
+                break
+            if text.startswith("* [White House]") or text.startswith("[Print]("):
+                end_index = index
+                break
+
+        content = clean_text("\n".join(lines[start_index:end_index]))
         if source_hint == "department_press_briefing" and not content:
             content = clean_text("\n".join(lines[1 if lines and lines[0].startswith("# ") else 0 :]))
         return content
+
+    def _standalone_state_date_match(self, line: str) -> re.Match[str] | None:
+        text = clean_text(re.sub(r"^#+\s*", "", line)).strip("*_ ")
+        return self.state_listing_date_re.fullmatch(text)
 
     def _find_state_article_anchor(self, lines: list[str], title: str) -> int | None:
         normalized_title = clean_text(title).casefold()
@@ -1898,6 +1948,7 @@ class UkFcdoNewsSource:
         "oral_statement": "fcdo_oral_statement_to_parliament",
         "written_statement": "fcdo_written_statement_to_parliament",
         "news_article": "fcdo_news_story",
+        "news_story": "fcdo_news_story",
         "world_news_story": "fcdo_world_news_story",
         "world_location_news_article": "fcdo_world_news_story",
         "authored_article": "fcdo_authored_article",
@@ -1924,7 +1975,11 @@ class UkFcdoNewsSource:
         page_size = 150
         for page_index in range(max_pages):
             page_url = f"{self.search_api_url}?{urlencode(self._search_params(start_date, end_date, page_size, page_index * page_size), doseq=True)}"
-            payload = request_json(self.session, page_url)
+            try:
+                payload = request_json(self.session, page_url)
+            except Exception:
+                markdown = request_markdown_via_jina(page_url)
+                payload = json.loads(extract_jina_markdown_body(markdown))
             if not isinstance(payload, dict):
                 break
             items = payload.get("results", [])
@@ -1999,9 +2054,31 @@ class UkFcdoNewsSource:
         published_at: str,
         source_kind: str,
     ) -> ScrapedRecord:
-        with requests.Session() as session:
-            html_text = request_html(session, url)
+        try:
+            with requests.Session() as session:
+                html_text = request_html(session, url)
+        except Exception:
+            html_text = self._fetch_content_api_html(url)
         return self._make_record_from_html(html_text, url, title, published_at, source_kind)
+
+    def _fetch_content_api_html(self, url: str) -> str:
+        path = urlsplit(url).path
+        api_url = urljoin(self.site_root, f"/api/content{path}")
+        markdown = request_markdown_via_jina(api_url)
+        payload = json.loads(extract_jina_markdown_body(markdown))
+        details = payload.get("details", {})
+        if not isinstance(details, dict):
+            raise ValueError(f"Missing GOV.UK content details for {url}")
+        body = clean_text(str(details.get("body", "")))
+        description = clean_text(str(payload.get("description", "")))
+        if not body:
+            raise ValueError(f"Missing GOV.UK content body for {url}")
+        return (
+            "<main>"
+            f"<p class='govuk-lead-paragraph'>{description}</p>"
+            f"<div class='govspeak'>{body}</div>"
+            "</main>"
+        )
 
     def _make_record_from_html(
         self,
@@ -2039,7 +2116,7 @@ class UkFcdoNewsSource:
             if lead_text:
                 content_parts.append(lead_text)
 
-        body = main.select_one(".gem-c-govspeak, .govuk-govspeak")
+        body = main.select_one(".gem-c-govspeak, .govuk-govspeak, .govspeak")
         if body is not None:
             for node in body.select("p, li"):
                 text = clean_text(node.get_text(" ", strip=True))
