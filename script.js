@@ -61,6 +61,12 @@ function isPlaceholderCountry(country) {
   return Boolean(country?.is_placeholder);
 }
 
+function countryFlagMarkup(code, extraClass = "") {
+  const flagCode = code === "UK" ? "gb" : String(code || "").toLowerCase();
+  const className = ["country-flag", extraClass].filter(Boolean).join(" ");
+  return `<img class="${className}" src="assets/flags/${flagCode}.svg" alt="" aria-hidden="true" width="26" height="18" loading="lazy" decoding="async">`;
+}
+
 function formatBuildTime(dateText) {
   const date = new Date(dateText);
   return date.toLocaleString("en-US", {
@@ -408,7 +414,10 @@ function renderCountryBoard() {
     button.style.setProperty("--country-color", country.color);
     button.style.animationDelay = `${120 + index * 40}ms`;
     button.innerHTML = isPlaceholder ? `
-      <h3>${country.label}</h3>
+      <div class="country-card-heading">
+        ${countryFlagMarkup(country.code)}
+        <h3>${country.label}</h3>
+      </div>
       <div class="country-meta">
         <span>${country.code}</span>
         <span>GDP top-15 placeholder</span>
@@ -416,7 +425,10 @@ function renderCountryBoard() {
       <div class="country-score tone-muted">Placeholder</div>
       <div class="country-tone">Source onboarding pending</div>
     ` : `
-      <h3>${country.label}</h3>
+      <div class="country-card-heading">
+        ${countryFlagMarkup(country.code)}
+        <h3>${country.label}</h3>
+      </div>
       <div class="country-meta">
         <span>${country.code}</span>
         <span>Latest publication ${formatDate(country.latest_publication_date)}</span>
@@ -438,9 +450,10 @@ function renderCountryTabs() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = `tab-button ${country.code === state.selectedCode ? "is-active" : ""} ${isPlaceholder ? "is-placeholder" : ""}`;
-    button.textContent = isPlaceholder
+    const tabLabel = isPlaceholder
       ? `${country.label} - ${country.code} placeholder`
       : `${country.label} - ${country.code}`;
+    button.innerHTML = `${countryFlagMarkup(country.code, "country-flag-tab")}<span>${tabLabel}</span>`;
     button.addEventListener("click", () => setSelectedCountry(country.code));
     tabs.appendChild(button);
   });
@@ -854,7 +867,10 @@ function renderTrumpDirectedBoard() {
     button.className = `directed-country-card ${country.code === state.trumpDirectedSelectedCode ? "is-active" : ""}`;
     button.style.setProperty("--country-color", wdsiCountry.color || "#1f4e79");
     button.innerHTML = `
-      <h3>${country.label}</h3>
+      <div class="country-card-heading">
+        ${countryFlagMarkup(country.code)}
+        <h3>${country.label}</h3>
+      </div>
       <div class="directed-country-meta">
         <span>${formatWholeNumber(country.directed_posts_total)} directed posts</span>
         <span>Last mention ${formatDate(country.last_mention_date)}</span>

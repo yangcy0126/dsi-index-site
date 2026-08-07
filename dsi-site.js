@@ -110,6 +110,12 @@ function dsiEscapeHtml(value) {
   });
 }
 
+function dsiCountryFlagMarkup(code, extraClass = "") {
+  const flagCode = code === "UK" ? "gb" : String(code || "").toLowerCase();
+  const className = ["country-flag", extraClass].filter(Boolean).join(" ");
+  return `<img class="${className}" src="assets/flags/${flagCode}.svg" alt="" aria-hidden="true" width="26" height="18" loading="lazy" decoding="async">`;
+}
+
 function dsiToneMeta(score) {
   if (!dsiHasNumericValue(score)) {
     return { label: "no recent signal", className: "tone-muted" };
@@ -232,7 +238,10 @@ function dsiRenderCountryBoard() {
     button.style.setProperty("--country-color", country.color);
     button.style.animationDelay = `${120 + index * 40}ms`;
     button.innerHTML = `
-      <h3>${dsiEscapeHtml(country.label)}</h3>
+      <div class="country-card-heading">
+        ${dsiCountryFlagMarkup(country.code)}
+        <h3>${dsiEscapeHtml(country.label)}</h3>
+      </div>
       <div class="country-meta">
         <span>${dsiEscapeHtml(country.code)}</span>
         <span>${meta.shortLabel} | ${dsiFormatDate(country.latest_publication_date)}</span>
@@ -255,7 +264,7 @@ function dsiRenderCountryTabs() {
     button.type = "button";
     button.dataset.countryCode = country.code;
     button.className = `tab-button ${country.code === DSI_SITE_STATE.selectedCode ? "is-active" : ""}`;
-    button.textContent = `${country.label} - ${country.code}`;
+    button.innerHTML = `${dsiCountryFlagMarkup(country.code, "country-flag-tab")}<span>${dsiEscapeHtml(country.label)} - ${dsiEscapeHtml(country.code)}</span>`;
     tabs.appendChild(button);
   });
 }

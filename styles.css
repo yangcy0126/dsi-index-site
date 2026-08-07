@@ -494,6 +494,28 @@ h3 {
   font-size: 1.35rem;
 }
 
+.country-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.country-card-heading h3 {
+  min-width: 0;
+}
+
+.country-flag {
+  display: block;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 18px;
+  border: 1px solid rgba(24, 33, 43, 0.2);
+  border-radius: 2px;
+  background: #ffffff;
+  object-fit: contain;
+}
+
 .country-meta,
 .directed-country-meta {
   display: flex;
@@ -558,6 +580,19 @@ h3 {
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 600;
+}
+
+.tab-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.country-flag-tab {
+  width: 18px;
+  height: 12px;
+  margin-right: 7px;
+  border-radius: 1px;
 }
 
 .tab-button:first-child,
