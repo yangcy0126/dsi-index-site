@@ -34,14 +34,25 @@ class VisitorRegionTests(unittest.TestCase):
         self.assertEqual(by_code["HK"]["visitors"], 7)
         self.assertNotIn("MO", by_code)
 
-    def test_display_includes_all_four_regions(self) -> None:
-        countries = normalize_visitor_countries(self.raw)
-        display = build_visitor_display_countries(countries, other_limit=2)
+    def test_display_is_ranked_positive_and_limited(self) -> None:
+        raw = self.raw + [
+            {"code": "MO", "country": "Macau", "visitors": 0},
+        ] + [
+            {"code": f"X{index:02}", "country": f"Country {index:02}", "visitors": index}
+            for index in range(1, 14)
+        ]
+        countries = normalize_visitor_countries(raw)
+        display = build_visitor_display_countries(countries)
 
-        self.assertEqual([row["code"] for row in display[:4]], ["CN", "TW", "HK", "MO"])
-        self.assertEqual([row["visitors"] for row in display[:4]], [55, 35, 7, 0])
-        self.assertTrue(all(row["is_focus_region"] for row in display[:4]))
-        self.assertEqual([row["code"] for row in display[4:]], ["GB", "SG"])
+        self.assertEqual(len(display), 12)
+        self.assertNotIn("MO", [row["code"] for row in display])
+        self.assertTrue(all(int(row["visitors"]) > 0 for row in display))
+        self.assertEqual(
+            [row["visitors"] for row in display],
+            sorted((row["visitors"] for row in display), reverse=True),
+        )
+        self.assertTrue(next(row for row in display if row["code"] == "CN")["is_focus_region"])
+        self.assertFalse(next(row for row in display if row["code"] == "GB")["is_focus_region"])
 
 
 if __name__ == "__main__":

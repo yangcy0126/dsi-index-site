@@ -379,28 +379,19 @@ def normalize_visitor_countries(countries: list[dict[str, object]]) -> list[dict
 
 def build_visitor_display_countries(
     countries: list[dict[str, object]],
-    other_limit: int = 5,
+    limit: int = 12,
 ) -> list[dict[str, object]]:
-    by_code = {str(country["code"]): country for country in countries}
-    regional_rows: list[dict[str, object]] = []
-    for code, label in VISITOR_REGION_LABELS.items():
-        source = by_code.get(code)
-        regional_rows.append(
-            {
-                "code": code,
-                "country": label,
-                "visitors": int(source["visitors"]) if source else 0,
-                "members": list(source.get("members", [])) if source else [],
-                "is_focus_region": True,
-            }
-        )
-
-    other_rows = [
-        {**country, "is_focus_region": False}
-        for country in countries
-        if str(country["code"]) not in VISITOR_REGION_LABELS
+    ranked = sorted(
+        (country for country in countries if int(country["visitors"]) > 0),
+        key=lambda item: (-int(item["visitors"]), str(item["country"])),
+    )
+    return [
+        {
+            **country,
+            "is_focus_region": str(country["code"]) in VISITOR_REGION_LABELS,
+        }
+        for country in ranked[:limit]
     ]
-    return regional_rows + other_rows[:other_limit]
 
 
 def build_visitor_snapshot() -> dict[str, object]:

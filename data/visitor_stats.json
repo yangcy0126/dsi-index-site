@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-08T12:30:35.228236+00:00",
+  "generated_at": "2026-08-08T12:34:20.737662+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,7 +11,7 @@
   ],
   "total_countries": 17,
   "flags_collected": 24,
-  "total_views": 669,
+  "total_views": 671,
   "total_visitors": 205,
   "visitors_yesterday": 2,
   "visitors_30d_average": 0,
@@ -221,22 +221,6 @@
       "is_focus_region": true
     },
     {
-      "code": "HK",
-      "country": "Hong Kong",
-      "visitors": 7,
-      "members": [
-        "Hong Kong"
-      ],
-      "is_focus_region": true
-    },
-    {
-      "code": "MO",
-      "country": "Macao",
-      "visitors": 0,
-      "members": [],
-      "is_focus_region": true
-    },
-    {
       "code": "GB",
       "country": "United Kingdom",
       "visitors": 34,
@@ -273,11 +257,56 @@
       "is_focus_region": false
     },
     {
+      "code": "HK",
+      "country": "Hong Kong",
+      "visitors": 7,
+      "members": [
+        "Hong Kong"
+      ],
+      "is_focus_region": true
+    },
+    {
       "code": "GR",
       "country": "Greece",
       "visitors": 6,
       "members": [
         "Greece"
+      ],
+      "is_focus_region": false
+    },
+    {
+      "code": "CY",
+      "country": "Cyprus",
+      "visitors": 3,
+      "members": [
+        "Cyprus"
+      ],
+      "is_focus_region": false
+    },
+    {
+      "code": "FR",
+      "country": "France",
+      "visitors": 1,
+      "members": [
+        "France"
+      ],
+      "is_focus_region": false
+    },
+    {
+      "code": "DE",
+      "country": "Germany",
+      "visitors": 1,
+      "members": [
+        "Germany"
+      ],
+      "is_focus_region": false
+    },
+    {
+      "code": "IN",
+      "country": "India",
+      "visitors": 1,
+      "members": [
+        "India"
       ],
       "is_focus_region": false
     }
