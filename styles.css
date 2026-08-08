@@ -991,15 +991,6 @@ h3 {
   border-bottom: 1px solid var(--line);
 }
 
-.visitor-row-region {
-  background: var(--accent-soft);
-}
-
-.visitor-row-region .visitor-code {
-  border-color: #9db5c9;
-  background: #ffffff;
-}
-
 .visitor-code {
   display: inline-flex;
   align-items: center;
