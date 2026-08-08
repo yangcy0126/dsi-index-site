@@ -1,17 +1,18 @@
 {
-  "generated_at": "2026-08-08T02:10:43.806003+00:00",
+  "generated_at": "2026-08-08T12:29:22.835306+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
-  "rolled_into_china": [
+  "separated_regions": [
+    "Mainland China",
+    "Taiwan",
     "Hong Kong",
-    "Macau",
-    "Taiwan"
+    "Macao"
   ],
   "total_countries": 17,
   "flags_collected": 24,
-  "total_views": 665,
-  "total_visitors": 204,
+  "total_views": 668,
+  "total_visitors": 205,
   "visitors_yesterday": 2,
   "visitors_30d_average": 0,
   "visitors_record": 23,
@@ -23,12 +24,18 @@
   "countries": [
     {
       "code": "CN",
-      "country": "China",
-      "visitors": 96,
+      "country": "Mainland China",
+      "visitors": 55,
       "members": [
-        "China",
-        "Taiwan",
-        "Hong Kong"
+        "China"
+      ]
+    },
+    {
+      "code": "TW",
+      "country": "Taiwan",
+      "visitors": 35,
+      "members": [
+        "Taiwan"
       ]
     },
     {
@@ -61,6 +68,14 @@
       "visitors": 9,
       "members": [
         "Japan"
+      ]
+    },
+    {
+      "code": "HK",
+      "country": "Hong Kong",
+      "visitors": 7,
+      "members": [
+        "Hong Kong"
       ]
     },
     {
@@ -147,12 +162,18 @@
   "top_countries": [
     {
       "code": "CN",
-      "country": "China",
-      "visitors": 96,
+      "country": "Mainland China",
+      "visitors": 55,
       "members": [
-        "China",
-        "Taiwan",
-        "Hong Kong"
+        "China"
+      ]
+    },
+    {
+      "code": "TW",
+      "country": "Taiwan",
+      "visitors": 35,
+      "members": [
+        "Taiwan"
       ]
     },
     {
@@ -178,6 +199,69 @@
       "members": [
         "United States"
       ]
+    }
+  ],
+  "display_countries": [
+    {
+      "code": "CN",
+      "country": "Mainland China",
+      "visitors": 55,
+      "members": [
+        "China"
+      ],
+      "is_focus_region": true
+    },
+    {
+      "code": "TW",
+      "country": "Taiwan",
+      "visitors": 35,
+      "members": [
+        "Taiwan"
+      ],
+      "is_focus_region": true
+    },
+    {
+      "code": "HK",
+      "country": "Hong Kong",
+      "visitors": 7,
+      "members": [
+        "Hong Kong"
+      ],
+      "is_focus_region": true
+    },
+    {
+      "code": "MO",
+      "country": "Macao",
+      "visitors": 0,
+      "members": [],
+      "is_focus_region": true
+    },
+    {
+      "code": "GB",
+      "country": "United Kingdom",
+      "visitors": 34,
+      "members": [
+        "United Kingdom"
+      ],
+      "is_focus_region": false
+    },
+    {
+      "code": "SG",
+      "country": "Singapore",
+      "visitors": 33,
+      "members": [
+        "Singapore"
+      ],
+      "is_focus_region": false
+    },
+    {
+      "code": "US",
+      "country": "United States",
+      "visitors": 15,
+      "members": [
+        "United States"
+      ],
+      "is_focus_region": false
     },
     {
       "code": "JP",
@@ -185,7 +269,17 @@
       "visitors": 9,
       "members": [
         "Japan"
-      ]
+      ],
+      "is_focus_region": false
+    },
+    {
+      "code": "GR",
+      "country": "Greece",
+      "visitors": 6,
+      "members": [
+        "Greece"
+      ],
+      "is_focus_region": false
     }
   ]
 }

@@ -371,10 +371,10 @@ function renderVisitorsCard() {
     </div>
   `;
 
-  const topCountries = snapshot.top_countries || [];
-  list.innerHTML = topCountries.length
-    ? topCountries.map((country) => `
-      <div class="visitor-row">
+  const displayCountries = snapshot.display_countries || snapshot.top_countries || [];
+  list.innerHTML = displayCountries.length
+    ? displayCountries.map((country) => `
+      <div class="visitor-row ${country.is_focus_region ? "visitor-row-region" : ""}">
         <span class="visitor-code">${escapeHtml(country.code)}</span>
         <span class="visitor-country">${escapeHtml(country.country)}</span>
         <span class="visitor-count">${formatWholeNumber(country.visitors)}</span>

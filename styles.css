@@ -972,7 +972,7 @@ h3 {
   grid-column: 3;
   grid-row: 1 / span 2;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
   align-self: start;
   margin-top: 0;
@@ -989,6 +989,15 @@ h3 {
   padding: 6px 8px;
   border-right: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
+}
+
+.visitor-row-region {
+  background: var(--accent-soft);
+}
+
+.visitor-row-region .visitor-code {
+  border-color: #9db5c9;
+  background: #ffffff;
 }
 
 .visitor-code {

@@ -76,10 +76,11 @@ VISITOR_COUNTER_ID = "DVgZ"
 VISITOR_OVERVIEW_URL = f"https://s01.flagcounter.com/more/{VISITOR_COUNTER_ID}/"
 VISITOR_COUNTRIES_URL = f"https://s01.flagcounter.com/countries/{VISITOR_COUNTER_ID}/"
 VISITOR_HISTORY_URL = f"https://s01.flagcounter.com/more30/{VISITOR_COUNTER_ID}/"
-VISITOR_COUNTRY_ROLLOVER = {
-    "TW": {"code": "CN", "country": "China"},
-    "HK": {"code": "CN", "country": "China"},
-    "MO": {"code": "CN", "country": "China"},
+VISITOR_REGION_LABELS = {
+    "CN": "Mainland China",
+    "TW": "Taiwan",
+    "HK": "Hong Kong",
+    "MO": "Macao",
 }
 
 COUNTRIES = [
@@ -354,29 +355,52 @@ def parse_visitor_countries(countries_html: str) -> list[dict[str, object]]:
     return countries
 
 
-def roll_up_visitor_countries(countries: list[dict[str, object]]) -> list[dict[str, object]]:
-    rolled: dict[str, dict[str, object]] = {}
+def normalize_visitor_countries(countries: list[dict[str, object]]) -> list[dict[str, object]]:
+    normalized: dict[str, dict[str, object]] = {}
     for country in countries:
-        target = VISITOR_COUNTRY_ROLLOVER.get(
-            str(country["code"]),
-            {"code": country["code"], "country": country["country"]},
-        )
-        key = str(target["code"])
-        if key not in rolled:
-            rolled[key] = {
-                "code": target["code"],
-                "country": target["country"],
+        code = str(country["code"]).upper()
+        label = VISITOR_REGION_LABELS.get(code, str(country["country"]))
+        if code not in normalized:
+            normalized[code] = {
+                "code": code,
+                "country": label,
                 "visitors": 0,
                 "members": [],
             }
-        rolled[key]["visitors"] = int(rolled[key]["visitors"]) + int(country["visitors"])
-        members = rolled[key]["members"]
+        normalized[code]["visitors"] = int(normalized[code]["visitors"]) + int(country["visitors"])
+        members = normalized[code]["members"]
         if str(country["country"]) not in members:
             members.append(str(country["country"]))
     return sorted(
-        rolled.values(),
+        normalized.values(),
         key=lambda item: (-int(item["visitors"]), str(item["country"])),
     )
+
+
+def build_visitor_display_countries(
+    countries: list[dict[str, object]],
+    other_limit: int = 5,
+) -> list[dict[str, object]]:
+    by_code = {str(country["code"]): country for country in countries}
+    regional_rows: list[dict[str, object]] = []
+    for code, label in VISITOR_REGION_LABELS.items():
+        source = by_code.get(code)
+        regional_rows.append(
+            {
+                "code": code,
+                "country": label,
+                "visitors": int(source["visitors"]) if source else 0,
+                "members": list(source.get("members", [])) if source else [],
+                "is_focus_region": True,
+            }
+        )
+
+    other_rows = [
+        {**country, "is_focus_region": False}
+        for country in countries
+        if str(country["code"]) not in VISITOR_REGION_LABELS
+    ]
+    return regional_rows + other_rows[:other_limit]
 
 
 def build_visitor_snapshot() -> dict[str, object]:
@@ -385,13 +409,13 @@ def build_visitor_snapshot() -> dict[str, object]:
     history_html = fetch_url_text(VISITOR_HISTORY_URL)
     overview = parse_visitor_overview(overview_html)
     totals = parse_visitor_history(history_html)
-    countries = roll_up_visitor_countries(parse_visitor_countries(countries_html))
+    countries = normalize_visitor_countries(parse_visitor_countries(countries_html))
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "available": True,
         "counter_id": VISITOR_COUNTER_ID,
         "source": "Flag Counter public overview",
-        "rolled_into_china": ["Hong Kong", "Macau", "Taiwan"],
+        "separated_regions": list(VISITOR_REGION_LABELS.values()),
         "total_countries": overview["total_countries"],
         "flags_collected": overview["flags_collected"],
         "total_views": totals["total_views"],
@@ -406,6 +430,7 @@ def build_visitor_snapshot() -> dict[str, object]:
         "views_record_date": overview["views_record_date"],
         "countries": countries,
         "top_countries": countries[:5],
+        "display_countries": build_visitor_display_countries(countries),
     }
 
 
@@ -740,11 +765,12 @@ def main() -> None:
             "available": False,
             "counter_id": VISITOR_COUNTER_ID,
             "source": "Flag Counter public overview",
-            "rolled_into_china": ["Hong Kong", "Macau", "Taiwan"],
+            "separated_regions": list(VISITOR_REGION_LABELS.values()),
             "total_views": None,
             "total_visitors": None,
             "countries": [],
             "top_countries": [],
+            "display_countries": [],
         }
     (OUTPUT_DIR / "visitor_stats.json").write_text(
         json.dumps(visitor_payload, ensure_ascii=False, indent=2),

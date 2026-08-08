@@ -4,10 +4,12 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from build_wdsi_data import OUTPUT_DIR, VISITOR_COUNTER_ID, build_visitor_snapshot
-
-
-ROLLED_INTO_CHINA = ["Hong Kong", "Macau", "Taiwan"]
+from build_wdsi_data import (
+    OUTPUT_DIR,
+    VISITOR_COUNTER_ID,
+    VISITOR_REGION_LABELS,
+    build_visitor_snapshot,
+)
 
 
 def load_existing_snapshot(path: Path) -> dict[str, object] | None:
@@ -30,11 +32,12 @@ def unavailable_snapshot() -> dict[str, object]:
         "available": False,
         "counter_id": VISITOR_COUNTER_ID,
         "source": "Flag Counter public overview",
-        "rolled_into_china": ROLLED_INTO_CHINA,
+        "separated_regions": list(VISITOR_REGION_LABELS.values()),
         "total_views": None,
         "total_visitors": None,
         "countries": [],
         "top_countries": [],
+        "display_countries": [],
     }
 
 
