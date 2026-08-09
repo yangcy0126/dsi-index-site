@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-09T17:48:29.123234+00:00",
+  "generated_at": "2026-08-09T19:01:36.979390+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 17,
   "flags_collected": 28,
-  "total_views": 738,
-  "total_visitors": 254,
+  "total_views": 740,
+  "total_visitors": 255,
   "visitors_yesterday": 1,
   "visitors_30d_average": 0,
   "visitors_record": 23,
@@ -23,19 +23,19 @@
   "views_record_date": "March 22, 2026",
   "countries": [
     {
+      "code": "US",
+      "country": "United States",
+      "visitors": 58,
+      "members": [
+        "United States"
+      ]
+    },
+    {
       "code": "CN",
       "country": "Mainland China",
       "visitors": 57,
       "members": [
         "China"
-      ]
-    },
-    {
-      "code": "US",
-      "country": "United States",
-      "visitors": 57,
-      "members": [
-        "United States"
       ]
     },
     {
@@ -161,19 +161,19 @@
   ],
   "top_countries": [
     {
+      "code": "US",
+      "country": "United States",
+      "visitors": 58,
+      "members": [
+        "United States"
+      ]
+    },
+    {
       "code": "CN",
       "country": "Mainland China",
       "visitors": 57,
       "members": [
         "China"
-      ]
-    },
-    {
-      "code": "US",
-      "country": "United States",
-      "visitors": 57,
-      "members": [
-        "United States"
       ]
     },
     {
@@ -203,6 +203,15 @@
   ],
   "display_countries": [
     {
+      "code": "US",
+      "country": "United States",
+      "visitors": 58,
+      "members": [
+        "United States"
+      ],
+      "is_focus_region": false
+    },
+    {
       "code": "CN",
       "country": "Mainland China",
       "visitors": 57,
@@ -210,15 +219,6 @@
         "China"
       ],
       "is_focus_region": true
-    },
-    {
-      "code": "US",
-      "country": "United States",
-      "visitors": 57,
-      "members": [
-        "United States"
-      ],
-      "is_focus_region": false
     },
     {
       "code": "TW",
