@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-09T08:06:33.568918+00:00",
+  "generated_at": "2026-08-09T09:27:06.793585+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -10,9 +10,9 @@
     "Macao"
   ],
   "total_countries": 17,
-  "flags_collected": 24,
-  "total_views": 684,
-  "total_visitors": 207,
+  "flags_collected": 25,
+  "total_views": 700,
+  "total_visitors": 220,
   "visitors_yesterday": 1,
   "visitors_30d_average": 0,
   "visitors_record": 23,
@@ -57,7 +57,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 15,
+      "visitors": 26,
       "members": [
         "United States"
       ]
@@ -65,7 +65,7 @@
     {
       "code": "JP",
       "country": "Japan",
-      "visitors": 9,
+      "visitors": 10,
       "members": [
         "Japan"
       ]
@@ -95,19 +95,19 @@
       ]
     },
     {
+      "code": "DE",
+      "country": "Germany",
+      "visitors": 2,
+      "members": [
+        "Germany"
+      ]
+    },
+    {
       "code": "FR",
       "country": "France",
       "visitors": 1,
       "members": [
         "France"
-      ]
-    },
-    {
-      "code": "DE",
-      "country": "Germany",
-      "visitors": 1,
-      "members": [
-        "Germany"
       ]
     },
     {
@@ -195,7 +195,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 15,
+      "visitors": 26,
       "members": [
         "United States"
       ]
@@ -241,7 +241,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 15,
+      "visitors": 26,
       "members": [
         "United States"
       ],
@@ -250,7 +250,7 @@
     {
       "code": "JP",
       "country": "Japan",
-      "visitors": 9,
+      "visitors": 10,
       "members": [
         "Japan"
       ],
@@ -284,20 +284,20 @@
       "is_focus_region": false
     },
     {
+      "code": "DE",
+      "country": "Germany",
+      "visitors": 2,
+      "members": [
+        "Germany"
+      ],
+      "is_focus_region": false
+    },
+    {
       "code": "FR",
       "country": "France",
       "visitors": 1,
       "members": [
         "France"
-      ],
-      "is_focus_region": false
-    },
-    {
-      "code": "DE",
-      "country": "Germany",
-      "visitors": 1,
-      "members": [
-        "Germany"
       ],
       "is_focus_region": false
     },
