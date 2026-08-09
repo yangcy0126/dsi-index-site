@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-09T11:06:12.482449+00:00",
+  "generated_at": "2026-08-09T11:38:42.881528+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 17,
   "flags_collected": 28,
-  "total_views": 706,
-  "total_visitors": 226,
+  "total_views": 712,
+  "total_visitors": 230,
   "visitors_yesterday": 1,
   "visitors_30d_average": 0,
   "visitors_record": 23,
@@ -39,6 +39,14 @@
       ]
     },
     {
+      "code": "US",
+      "country": "United States",
+      "visitors": 36,
+      "members": [
+        "United States"
+      ]
+    },
+    {
       "code": "GB",
       "country": "United Kingdom",
       "visitors": 34,
@@ -52,14 +60,6 @@
       "visitors": 33,
       "members": [
         "Singapore"
-      ]
-    },
-    {
-      "code": "US",
-      "country": "United States",
-      "visitors": 32,
-      "members": [
-        "United States"
       ]
     },
     {
@@ -177,6 +177,14 @@
       ]
     },
     {
+      "code": "US",
+      "country": "United States",
+      "visitors": 36,
+      "members": [
+        "United States"
+      ]
+    },
+    {
       "code": "GB",
       "country": "United Kingdom",
       "visitors": 34,
@@ -190,14 +198,6 @@
       "visitors": 33,
       "members": [
         "Singapore"
-      ]
-    },
-    {
-      "code": "US",
-      "country": "United States",
-      "visitors": 32,
-      "members": [
-        "United States"
       ]
     }
   ],
@@ -221,6 +221,15 @@
       "is_focus_region": true
     },
     {
+      "code": "US",
+      "country": "United States",
+      "visitors": 36,
+      "members": [
+        "United States"
+      ],
+      "is_focus_region": false
+    },
+    {
       "code": "GB",
       "country": "United Kingdom",
       "visitors": 34,
@@ -235,15 +244,6 @@
       "visitors": 33,
       "members": [
         "Singapore"
-      ],
-      "is_focus_region": false
-    },
-    {
-      "code": "US",
-      "country": "United States",
-      "visitors": 32,
-      "members": [
-        "United States"
       ],
       "is_focus_region": false
     },
