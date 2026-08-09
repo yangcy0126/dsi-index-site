@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-09T11:38:42.881528+00:00",
+  "generated_at": "2026-08-09T12:00:09.658748+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 17,
   "flags_collected": 28,
-  "total_views": 712,
-  "total_visitors": 230,
+  "total_views": 714,
+  "total_visitors": 232,
   "visitors_yesterday": 1,
   "visitors_30d_average": 0,
   "visitors_record": 23,
@@ -31,19 +31,19 @@
       ]
     },
     {
+      "code": "US",
+      "country": "United States",
+      "visitors": 38,
+      "members": [
+        "United States"
+      ]
+    },
+    {
       "code": "TW",
       "country": "Taiwan",
       "visitors": 36,
       "members": [
         "Taiwan"
-      ]
-    },
-    {
-      "code": "US",
-      "country": "United States",
-      "visitors": 36,
-      "members": [
-        "United States"
       ]
     },
     {
@@ -169,19 +169,19 @@
       ]
     },
     {
+      "code": "US",
+      "country": "United States",
+      "visitors": 38,
+      "members": [
+        "United States"
+      ]
+    },
+    {
       "code": "TW",
       "country": "Taiwan",
       "visitors": 36,
       "members": [
         "Taiwan"
-      ]
-    },
-    {
-      "code": "US",
-      "country": "United States",
-      "visitors": 36,
-      "members": [
-        "United States"
       ]
     },
     {
@@ -212,6 +212,15 @@
       "is_focus_region": true
     },
     {
+      "code": "US",
+      "country": "United States",
+      "visitors": 38,
+      "members": [
+        "United States"
+      ],
+      "is_focus_region": false
+    },
+    {
       "code": "TW",
       "country": "Taiwan",
       "visitors": 36,
@@ -219,15 +228,6 @@
         "Taiwan"
       ],
       "is_focus_region": true
-    },
-    {
-      "code": "US",
-      "country": "United States",
-      "visitors": 36,
-      "members": [
-        "United States"
-      ],
-      "is_focus_region": false
     },
     {
       "code": "GB",
