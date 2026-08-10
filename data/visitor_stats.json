@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-09T23:37:23.408975+00:00",
+  "generated_at": "2026-08-10T02:03:20.620660+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -9,23 +9,23 @@
     "Hong Kong",
     "Macao"
   ],
-  "total_countries": 17,
-  "flags_collected": 28,
-  "total_views": 751,
-  "total_visitors": 266,
-  "visitors_yesterday": 1,
-  "visitors_30d_average": 0,
-  "visitors_record": 23,
-  "visitors_record_date": "March 22, 2026",
-  "views_yesterday": 15,
-  "views_30d_average": 2,
+  "total_countries": 18,
+  "flags_collected": 30,
+  "total_views": 756,
+  "total_visitors": 270,
+  "visitors_yesterday": 59,
+  "visitors_30d_average": 2,
+  "visitors_record": 59,
+  "visitors_record_date": "August 9, 2026",
+  "views_yesterday": 69,
+  "views_30d_average": 4,
   "views_record": 108,
   "views_record_date": "March 22, 2026",
   "countries": [
     {
       "code": "US",
       "country": "United States",
-      "visitors": 69,
+      "visitors": 72,
       "members": [
         "United States"
       ]
@@ -108,6 +108,14 @@
       "visitors": 2,
       "members": [
         "Switzerland"
+      ]
+    },
+    {
+      "code": "CA",
+      "country": "Canada",
+      "visitors": 1,
+      "members": [
+        "Canada"
       ]
     },
     {
@@ -163,7 +171,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 69,
+      "visitors": 72,
       "members": [
         "United States"
       ]
@@ -205,7 +213,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 69,
+      "visitors": 72,
       "members": [
         "United States"
       ],
@@ -302,11 +310,11 @@
       "is_focus_region": false
     },
     {
-      "code": "FR",
-      "country": "France",
+      "code": "CA",
+      "country": "Canada",
       "visitors": 1,
       "members": [
-        "France"
+        "Canada"
       ],
       "is_focus_region": false
     }
