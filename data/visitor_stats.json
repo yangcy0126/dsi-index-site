@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-11T08:16:42.188416+00:00",
+  "generated_at": "2026-08-11T09:14:24.699099+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 19,
   "flags_collected": 31,
-  "total_views": 812,
-  "total_visitors": 322,
+  "total_views": 814,
+  "total_visitors": 323,
   "visitors_yesterday": 41,
   "visitors_30d_average": 4,
   "visitors_record": 59,
@@ -95,19 +95,19 @@
       ]
     },
     {
+      "code": "FR",
+      "country": "France",
+      "visitors": 3,
+      "members": [
+        "France"
+      ]
+    },
+    {
       "code": "NL",
       "country": "Netherlands",
       "visitors": 3,
       "members": [
         "Netherlands"
-      ]
-    },
-    {
-      "code": "FR",
-      "country": "France",
-      "visitors": 2,
-      "members": [
-        "France"
       ]
     },
     {
@@ -300,20 +300,20 @@
       "is_focus_region": false
     },
     {
+      "code": "FR",
+      "country": "France",
+      "visitors": 3,
+      "members": [
+        "France"
+      ],
+      "is_focus_region": false
+    },
+    {
       "code": "NL",
       "country": "Netherlands",
       "visitors": 3,
       "members": [
         "Netherlands"
-      ],
-      "is_focus_region": false
-    },
-    {
-      "code": "FR",
-      "country": "France",
-      "visitors": 2,
-      "members": [
-        "France"
       ],
       "is_focus_region": false
     },
