@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-10T19:59:09.274717+00:00",
+  "generated_at": "2026-08-11T00:37:48.604304+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,21 +11,21 @@
   ],
   "total_countries": 19,
   "flags_collected": 31,
-  "total_views": 794,
-  "total_visitors": 305,
-  "visitors_yesterday": 59,
-  "visitors_30d_average": 2,
+  "total_views": 798,
+  "total_visitors": 308,
+  "visitors_yesterday": 41,
+  "visitors_30d_average": 4,
   "visitors_record": 59,
   "visitors_record_date": "August 9, 2026",
-  "views_yesterday": 69,
-  "views_30d_average": 4,
+  "views_yesterday": 45,
+  "views_30d_average": 5,
   "views_record": 108,
   "views_record_date": "March 22, 2026",
   "countries": [
     {
       "code": "US",
       "country": "United States",
-      "visitors": 102,
+      "visitors": 104,
       "members": [
         "United States"
       ]
@@ -92,6 +92,14 @@
       "visitors": 4,
       "members": [
         "Cyprus"
+      ]
+    },
+    {
+      "code": "FR",
+      "country": "France",
+      "visitors": 2,
+      "members": [
+        "France"
       ]
     },
     {
@@ -135,14 +143,6 @@
       ]
     },
     {
-      "code": "FR",
-      "country": "France",
-      "visitors": 1,
-      "members": [
-        "France"
-      ]
-    },
-    {
       "code": "IN",
       "country": "India",
       "visitors": 1,
@@ -179,7 +179,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 102,
+      "visitors": 104,
       "members": [
         "United States"
       ]
@@ -221,7 +221,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 102,
+      "visitors": 104,
       "members": [
         "United States"
       ],
@@ -300,6 +300,15 @@
       "is_focus_region": false
     },
     {
+      "code": "FR",
+      "country": "France",
+      "visitors": 2,
+      "members": [
+        "France"
+      ],
+      "is_focus_region": false
+    },
+    {
       "code": "DE",
       "country": "Germany",
       "visitors": 2,
@@ -314,15 +323,6 @@
       "visitors": 2,
       "members": [
         "Netherlands"
-      ],
-      "is_focus_region": false
-    },
-    {
-      "code": "KR",
-      "country": "South Korea",
-      "visitors": 2,
-      "members": [
-        "South Korea"
       ],
       "is_focus_region": false
     }
