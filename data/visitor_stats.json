@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-11T00:37:48.604304+00:00",
+  "generated_at": "2026-08-11T02:37:37.300977+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 19,
   "flags_collected": 31,
-  "total_views": 798,
-  "total_visitors": 308,
+  "total_views": 801,
+  "total_visitors": 311,
   "visitors_yesterday": 41,
   "visitors_30d_average": 4,
   "visitors_record": 59,
@@ -25,7 +25,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 104,
+      "visitors": 106,
       "members": [
         "United States"
       ]
@@ -41,7 +41,7 @@
     {
       "code": "TW",
       "country": "Taiwan",
-      "visitors": 36,
+      "visitors": 37,
       "members": [
         "Taiwan"
       ]
@@ -179,7 +179,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 104,
+      "visitors": 106,
       "members": [
         "United States"
       ]
@@ -195,7 +195,7 @@
     {
       "code": "TW",
       "country": "Taiwan",
-      "visitors": 36,
+      "visitors": 37,
       "members": [
         "Taiwan"
       ]
@@ -221,7 +221,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 104,
+      "visitors": 106,
       "members": [
         "United States"
       ],
@@ -239,7 +239,7 @@
     {
       "code": "TW",
       "country": "Taiwan",
-      "visitors": 36,
+      "visitors": 37,
       "members": [
         "Taiwan"
       ],
