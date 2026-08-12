@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-12T03:11:13.168933+00:00",
+  "generated_at": "2026-08-12T04:58:09.603304+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 19,
   "flags_collected": 31,
-  "total_views": 837,
-  "total_visitors": 343,
+  "total_views": 840,
+  "total_visitors": 346,
   "visitors_yesterday": 33,
   "visitors_30d_average": 5,
   "visitors_record": 59,
@@ -25,7 +25,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 130,
+      "visitors": 131,
       "members": [
         "United States"
       ]
@@ -87,19 +87,19 @@
       ]
     },
     {
+      "code": "FR",
+      "country": "France",
+      "visitors": 5,
+      "members": [
+        "France"
+      ]
+    },
+    {
       "code": "CY",
       "country": "Cyprus",
       "visitors": 4,
       "members": [
         "Cyprus"
-      ]
-    },
-    {
-      "code": "FR",
-      "country": "France",
-      "visitors": 3,
-      "members": [
-        "France"
       ]
     },
     {
@@ -179,7 +179,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 130,
+      "visitors": 131,
       "members": [
         "United States"
       ]
@@ -221,7 +221,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 130,
+      "visitors": 131,
       "members": [
         "United States"
       ],
@@ -291,20 +291,20 @@
       "is_focus_region": false
     },
     {
+      "code": "FR",
+      "country": "France",
+      "visitors": 5,
+      "members": [
+        "France"
+      ],
+      "is_focus_region": false
+    },
+    {
       "code": "CY",
       "country": "Cyprus",
       "visitors": 4,
       "members": [
         "Cyprus"
-      ],
-      "is_focus_region": false
-    },
-    {
-      "code": "FR",
-      "country": "France",
-      "visitors": 3,
-      "members": [
-        "France"
       ],
       "is_focus_region": false
     },
