@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-13T00:46:00.171646+00:00",
+  "generated_at": "2026-08-13T03:14:35.633085+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -9,10 +9,10 @@
     "Hong Kong",
     "Macao"
   ],
-  "total_countries": 19,
-  "flags_collected": 33,
-  "total_views": 849,
-  "total_visitors": 354,
+  "total_countries": 21,
+  "flags_collected": 35,
+  "total_views": 858,
+  "total_visitors": 363,
   "visitors_yesterday": 16,
   "visitors_30d_average": 5,
   "visitors_record": 59,
@@ -25,7 +25,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 135,
+      "visitors": 140,
       "members": [
         "United States"
       ]
@@ -95,6 +95,14 @@
       ]
     },
     {
+      "code": "NL",
+      "country": "Netherlands",
+      "visitors": 5,
+      "members": [
+        "Netherlands"
+      ]
+    },
+    {
       "code": "CY",
       "country": "Cyprus",
       "visitors": 4,
@@ -119,14 +127,6 @@
       ]
     },
     {
-      "code": "NL",
-      "country": "Netherlands",
-      "visitors": 3,
-      "members": [
-        "Netherlands"
-      ]
-    },
-    {
       "code": "CH",
       "country": "Switzerland",
       "visitors": 3,
@@ -140,6 +140,22 @@
       "visitors": 2,
       "members": [
         "South Korea"
+      ]
+    },
+    {
+      "code": "AU",
+      "country": "Australia",
+      "visitors": 1,
+      "members": [
+        "Australia"
+      ]
+    },
+    {
+      "code": "AT",
+      "country": "Austria",
+      "visitors": 1,
+      "members": [
+        "Austria"
       ]
     },
     {
@@ -179,7 +195,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 135,
+      "visitors": 140,
       "members": [
         "United States"
       ]
@@ -221,7 +237,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 135,
+      "visitors": 140,
       "members": [
         "United States"
       ],
@@ -300,6 +316,15 @@
       "is_focus_region": false
     },
     {
+      "code": "NL",
+      "country": "Netherlands",
+      "visitors": 5,
+      "members": [
+        "Netherlands"
+      ],
+      "is_focus_region": false
+    },
+    {
       "code": "CY",
       "country": "Cyprus",
       "visitors": 4,
@@ -314,15 +339,6 @@
       "visitors": 4,
       "members": [
         "Germany"
-      ],
-      "is_focus_region": false
-    },
-    {
-      "code": "CA",
-      "country": "Canada",
-      "visitors": 3,
-      "members": [
-        "Canada"
       ],
       "is_focus_region": false
     }
