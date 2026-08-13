@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-13T14:10:26.035712+00:00",
+  "generated_at": "2026-08-13T17:07:39.669800+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 21,
   "flags_collected": 35,
-  "total_views": 865,
-  "total_visitors": 368,
+  "total_views": 867,
+  "total_visitors": 370,
   "visitors_yesterday": 16,
   "visitors_30d_average": 5,
   "visitors_record": 59,
@@ -33,7 +33,7 @@
     {
       "code": "CN",
       "country": "Mainland China",
-      "visitors": 59,
+      "visitors": 61,
       "members": [
         "China"
       ]
@@ -203,7 +203,7 @@
     {
       "code": "CN",
       "country": "Mainland China",
-      "visitors": 59,
+      "visitors": 61,
       "members": [
         "China"
       ]
@@ -246,7 +246,7 @@
     {
       "code": "CN",
       "country": "Mainland China",
-      "visitors": 59,
+      "visitors": 61,
       "members": [
         "China"
       ],
