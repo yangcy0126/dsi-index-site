@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-13T10:17:52.452322+00:00",
+  "generated_at": "2026-08-13T11:57:21.710564+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 21,
   "flags_collected": 35,
-  "total_views": 862,
-  "total_visitors": 365,
+  "total_views": 864,
+  "total_visitors": 367,
   "visitors_yesterday": 16,
   "visitors_30d_average": 5,
   "visitors_record": 59,
@@ -25,7 +25,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 142,
+      "visitors": 143,
       "members": [
         "United States"
       ]
@@ -103,6 +103,14 @@
       ]
     },
     {
+      "code": "CA",
+      "country": "Canada",
+      "visitors": 4,
+      "members": [
+        "Canada"
+      ]
+    },
+    {
       "code": "CY",
       "country": "Cyprus",
       "visitors": 4,
@@ -116,14 +124,6 @@
       "visitors": 4,
       "members": [
         "Germany"
-      ]
-    },
-    {
-      "code": "CA",
-      "country": "Canada",
-      "visitors": 3,
-      "members": [
-        "Canada"
       ]
     },
     {
@@ -195,7 +195,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 142,
+      "visitors": 143,
       "members": [
         "United States"
       ]
@@ -237,7 +237,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 142,
+      "visitors": 143,
       "members": [
         "United States"
       ],
@@ -325,20 +325,20 @@
       "is_focus_region": false
     },
     {
+      "code": "CA",
+      "country": "Canada",
+      "visitors": 4,
+      "members": [
+        "Canada"
+      ],
+      "is_focus_region": false
+    },
+    {
       "code": "CY",
       "country": "Cyprus",
       "visitors": 4,
       "members": [
         "Cyprus"
-      ],
-      "is_focus_region": false
-    },
-    {
-      "code": "DE",
-      "country": "Germany",
-      "visitors": 4,
-      "members": [
-        "Germany"
       ],
       "is_focus_region": false
     }
