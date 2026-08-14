@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-14T19:07:54.271738+00:00",
+  "generated_at": "2026-08-14T23:26:47.698054+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 21,
   "flags_collected": 35,
-  "total_views": 878,
-  "total_visitors": 381,
+  "total_views": 879,
+  "total_visitors": 382,
   "visitors_yesterday": 17,
   "visitors_30d_average": 6,
   "visitors_record": 59,
@@ -95,19 +95,19 @@
       ]
     },
     {
+      "code": "CA",
+      "country": "Canada",
+      "visitors": 5,
+      "members": [
+        "Canada"
+      ]
+    },
+    {
       "code": "NL",
       "country": "Netherlands",
       "visitors": 5,
       "members": [
         "Netherlands"
-      ]
-    },
-    {
-      "code": "CA",
-      "country": "Canada",
-      "visitors": 4,
-      "members": [
-        "Canada"
       ]
     },
     {
@@ -316,20 +316,20 @@
       "is_focus_region": false
     },
     {
+      "code": "CA",
+      "country": "Canada",
+      "visitors": 5,
+      "members": [
+        "Canada"
+      ],
+      "is_focus_region": false
+    },
+    {
       "code": "NL",
       "country": "Netherlands",
       "visitors": 5,
       "members": [
         "Netherlands"
-      ],
-      "is_focus_region": false
-    },
-    {
-      "code": "CA",
-      "country": "Canada",
-      "visitors": 4,
-      "members": [
-        "Canada"
       ],
       "is_focus_region": false
     },
