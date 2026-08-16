@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-16T19:10:06.330292+00:00",
+  "generated_at": "2026-08-16T21:47:42.743404+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 21,
   "flags_collected": 35,
-  "total_views": 892,
-  "total_visitors": 394,
+  "total_views": 893,
+  "total_visitors": 395,
   "visitors_yesterday": 3,
   "visitors_30d_average": 6,
   "visitors_record": 59,
@@ -135,6 +135,14 @@
       ]
     },
     {
+      "code": "AT",
+      "country": "Austria",
+      "visitors": 2,
+      "members": [
+        "Austria"
+      ]
+    },
+    {
       "code": "KR",
       "country": "South Korea",
       "visitors": 2,
@@ -156,14 +164,6 @@
       "visitors": 1,
       "members": [
         "Australia"
-      ]
-    },
-    {
-      "code": "AT",
-      "country": "Austria",
-      "visitors": 1,
-      "members": [
-        "Austria"
       ]
     },
     {
