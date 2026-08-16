@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-16T01:26:41.715350+00:00",
+  "generated_at": "2026-08-16T02:37:49.164567+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 21,
   "flags_collected": 35,
-  "total_views": 883,
-  "total_visitors": 385,
+  "total_views": 885,
+  "total_visitors": 387,
   "visitors_yesterday": 3,
   "visitors_30d_average": 6,
   "visitors_record": 59,
@@ -95,6 +95,14 @@
       ]
     },
     {
+      "code": "NL",
+      "country": "Netherlands",
+      "visitors": 6,
+      "members": [
+        "Netherlands"
+      ]
+    },
+    {
       "code": "CA",
       "country": "Canada",
       "visitors": 5,
@@ -103,11 +111,11 @@
       ]
     },
     {
-      "code": "NL",
-      "country": "Netherlands",
+      "code": "DE",
+      "country": "Germany",
       "visitors": 5,
       "members": [
-        "Netherlands"
+        "Germany"
       ]
     },
     {
@@ -116,14 +124,6 @@
       "visitors": 4,
       "members": [
         "Cyprus"
-      ]
-    },
-    {
-      "code": "DE",
-      "country": "Germany",
-      "visitors": 4,
-      "members": [
-        "Germany"
       ]
     },
     {
@@ -316,6 +316,15 @@
       "is_focus_region": false
     },
     {
+      "code": "NL",
+      "country": "Netherlands",
+      "visitors": 6,
+      "members": [
+        "Netherlands"
+      ],
+      "is_focus_region": false
+    },
+    {
       "code": "CA",
       "country": "Canada",
       "visitors": 5,
@@ -325,20 +334,11 @@
       "is_focus_region": false
     },
     {
-      "code": "NL",
-      "country": "Netherlands",
+      "code": "DE",
+      "country": "Germany",
       "visitors": 5,
       "members": [
-        "Netherlands"
-      ],
-      "is_focus_region": false
-    },
-    {
-      "code": "CY",
-      "country": "Cyprus",
-      "visitors": 4,
-      "members": [
-        "Cyprus"
+        "Germany"
       ],
       "is_focus_region": false
     }
