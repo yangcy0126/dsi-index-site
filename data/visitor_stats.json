@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-16T02:37:49.164567+00:00",
+  "generated_at": "2026-08-16T05:07:30.033316+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 21,
   "flags_collected": 35,
-  "total_views": 885,
-  "total_visitors": 387,
+  "total_views": 886,
+  "total_visitors": 388,
   "visitors_yesterday": 3,
   "visitors_30d_average": 6,
   "visitors_record": 59,
@@ -143,6 +143,14 @@
       ]
     },
     {
+      "code": "TH",
+      "country": "Thailand",
+      "visitors": 2,
+      "members": [
+        "Thailand"
+      ]
+    },
+    {
       "code": "AU",
       "country": "Australia",
       "visitors": 1,
@@ -180,14 +188,6 @@
       "visitors": 1,
       "members": [
         "Spain"
-      ]
-    },
-    {
-      "code": "TH",
-      "country": "Thailand",
-      "visitors": 1,
-      "members": [
-        "Thailand"
       ]
     }
   ],
