@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-16T06:28:33.269124+00:00",
+  "generated_at": "2026-08-16T09:38:24.063981+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 21,
   "flags_collected": 35,
-  "total_views": 887,
-  "total_visitors": 389,
+  "total_views": 888,
+  "total_visitors": 390,
   "visitors_yesterday": 3,
   "visitors_30d_average": 6,
   "visitors_record": 59,
@@ -129,7 +129,7 @@
     {
       "code": "CH",
       "country": "Switzerland",
-      "visitors": 3,
+      "visitors": 4,
       "members": [
         "Switzerland"
       ]
