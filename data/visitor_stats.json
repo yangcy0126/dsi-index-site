@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-19T00:47:14.273063+00:00",
+  "generated_at": "2026-08-19T03:54:49.242041+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 22,
   "flags_collected": 36,
-  "total_views": 908,
-  "total_visitors": 410,
+  "total_views": 913,
+  "total_visitors": 415,
   "visitors_yesterday": 4,
   "visitors_30d_average": 7,
   "visitors_record": 59,
@@ -25,7 +25,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 165,
+      "visitors": 166,
       "members": [
         "United States"
       ]
@@ -47,19 +47,19 @@
       ]
     },
     {
+      "code": "GB",
+      "country": "United Kingdom",
+      "visitors": 36,
+      "members": [
+        "United Kingdom"
+      ]
+    },
+    {
       "code": "SG",
       "country": "Singapore",
       "visitors": 35,
       "members": [
         "Singapore"
-      ]
-    },
-    {
-      "code": "GB",
-      "country": "United Kingdom",
-      "visitors": 35,
-      "members": [
-        "United Kingdom"
       ]
     },
     {
@@ -79,19 +79,19 @@
       ]
     },
     {
+      "code": "FR",
+      "country": "France",
+      "visitors": 8,
+      "members": [
+        "France"
+      ]
+    },
+    {
       "code": "HK",
       "country": "Hong Kong",
       "visitors": 8,
       "members": [
         "Hong Kong"
-      ]
-    },
-    {
-      "code": "FR",
-      "country": "France",
-      "visitors": 7,
-      "members": [
-        "France"
       ]
     },
     {
@@ -119,6 +119,14 @@
       ]
     },
     {
+      "code": "AT",
+      "country": "Austria",
+      "visitors": 4,
+      "members": [
+        "Austria"
+      ]
+    },
+    {
       "code": "CY",
       "country": "Cyprus",
       "visitors": 4,
@@ -135,19 +143,19 @@
       ]
     },
     {
-      "code": "AT",
-      "country": "Austria",
-      "visitors": 3,
-      "members": [
-        "Austria"
-      ]
-    },
-    {
       "code": "KR",
       "country": "South Korea",
       "visitors": 3,
       "members": [
         "South Korea"
+      ]
+    },
+    {
+      "code": "AU",
+      "country": "Australia",
+      "visitors": 2,
+      "members": [
+        "Australia"
       ]
     },
     {
@@ -164,14 +172,6 @@
       "visitors": 1,
       "members": [
         "Algeria"
-      ]
-    },
-    {
-      "code": "AU",
-      "country": "Australia",
-      "visitors": 1,
-      "members": [
-        "Australia"
       ]
     },
     {
@@ -203,7 +203,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 165,
+      "visitors": 166,
       "members": [
         "United States"
       ]
@@ -225,19 +225,19 @@
       ]
     },
     {
+      "code": "GB",
+      "country": "United Kingdom",
+      "visitors": 36,
+      "members": [
+        "United Kingdom"
+      ]
+    },
+    {
       "code": "SG",
       "country": "Singapore",
       "visitors": 35,
       "members": [
         "Singapore"
-      ]
-    },
-    {
-      "code": "GB",
-      "country": "United Kingdom",
-      "visitors": 35,
-      "members": [
-        "United Kingdom"
       ]
     }
   ],
@@ -245,7 +245,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 165,
+      "visitors": 166,
       "members": [
         "United States"
       ],
@@ -270,20 +270,20 @@
       "is_focus_region": true
     },
     {
+      "code": "GB",
+      "country": "United Kingdom",
+      "visitors": 36,
+      "members": [
+        "United Kingdom"
+      ],
+      "is_focus_region": false
+    },
+    {
       "code": "SG",
       "country": "Singapore",
       "visitors": 35,
       "members": [
         "Singapore"
-      ],
-      "is_focus_region": false
-    },
-    {
-      "code": "GB",
-      "country": "United Kingdom",
-      "visitors": 35,
-      "members": [
-        "United Kingdom"
       ],
       "is_focus_region": false
     },
@@ -306,6 +306,15 @@
       "is_focus_region": false
     },
     {
+      "code": "FR",
+      "country": "France",
+      "visitors": 8,
+      "members": [
+        "France"
+      ],
+      "is_focus_region": false
+    },
+    {
       "code": "HK",
       "country": "Hong Kong",
       "visitors": 8,
@@ -313,15 +322,6 @@
         "Hong Kong"
       ],
       "is_focus_region": true
-    },
-    {
-      "code": "FR",
-      "country": "France",
-      "visitors": 7,
-      "members": [
-        "France"
-      ],
-      "is_focus_region": false
     },
     {
       "code": "CA",
