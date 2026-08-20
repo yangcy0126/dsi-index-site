@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-20T02:07:28.450572+00:00",
+  "generated_at": "2026-08-20T07:09:02.231259+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 22,
   "flags_collected": 36,
-  "total_views": 917,
-  "total_visitors": 419,
+  "total_views": 918,
+  "total_visitors": 420,
   "visitors_yesterday": 8,
   "visitors_30d_average": 7,
   "visitors_record": 59,
@@ -25,7 +25,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 169,
+      "visitors": 170,
       "members": [
         "United States"
       ]
@@ -203,7 +203,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 169,
+      "visitors": 170,
       "members": [
         "United States"
       ]
@@ -245,7 +245,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 169,
+      "visitors": 170,
       "members": [
         "United States"
       ],
