@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-20T16:51:21.633672+00:00",
+  "generated_at": "2026-08-20T17:14:22.888332+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 22,
   "flags_collected": 36,
-  "total_views": 920,
-  "total_visitors": 422,
+  "total_views": 921,
+  "total_visitors": 423,
   "visitors_yesterday": 8,
   "visitors_30d_average": 7,
   "visitors_record": 59,
@@ -95,6 +95,14 @@
       ]
     },
     {
+      "code": "AT",
+      "country": "Austria",
+      "visitors": 6,
+      "members": [
+        "Austria"
+      ]
+    },
+    {
       "code": "CA",
       "country": "Canada",
       "visitors": 6,
@@ -108,14 +116,6 @@
       "visitors": 6,
       "members": [
         "Netherlands"
-      ]
-    },
-    {
-      "code": "AT",
-      "country": "Austria",
-      "visitors": 5,
-      "members": [
-        "Austria"
       ]
     },
     {
@@ -324,6 +324,15 @@
       "is_focus_region": true
     },
     {
+      "code": "AT",
+      "country": "Austria",
+      "visitors": 6,
+      "members": [
+        "Austria"
+      ],
+      "is_focus_region": false
+    },
+    {
       "code": "CA",
       "country": "Canada",
       "visitors": 6,
@@ -338,15 +347,6 @@
       "visitors": 6,
       "members": [
         "Netherlands"
-      ],
-      "is_focus_region": false
-    },
-    {
-      "code": "AT",
-      "country": "Austria",
-      "visitors": 5,
-      "members": [
-        "Austria"
       ],
       "is_focus_region": false
     }
