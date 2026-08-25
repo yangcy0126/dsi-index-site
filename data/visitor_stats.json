@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-25T00:39:14.823330+00:00",
+  "generated_at": "2026-08-25T04:25:30.260236+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 22,
   "flags_collected": 37,
-  "total_views": 938,
-  "total_visitors": 439,
+  "total_views": 939,
+  "total_visitors": 440,
   "visitors_yesterday": 3,
   "visitors_30d_average": 8,
   "visitors_record": 59,
@@ -47,19 +47,19 @@
       ]
     },
     {
+      "code": "SG",
+      "country": "Singapore",
+      "visitors": 36,
+      "members": [
+        "Singapore"
+      ]
+    },
+    {
       "code": "GB",
       "country": "United Kingdom",
       "visitors": 36,
       "members": [
         "United Kingdom"
-      ]
-    },
-    {
-      "code": "SG",
-      "country": "Singapore",
-      "visitors": 35,
-      "members": [
-        "Singapore"
       ]
     },
     {
@@ -225,19 +225,19 @@
       ]
     },
     {
+      "code": "SG",
+      "country": "Singapore",
+      "visitors": 36,
+      "members": [
+        "Singapore"
+      ]
+    },
+    {
       "code": "GB",
       "country": "United Kingdom",
       "visitors": 36,
       "members": [
         "United Kingdom"
-      ]
-    },
-    {
-      "code": "SG",
-      "country": "Singapore",
-      "visitors": 35,
-      "members": [
-        "Singapore"
       ]
     }
   ],
@@ -270,20 +270,20 @@
       "is_focus_region": true
     },
     {
+      "code": "SG",
+      "country": "Singapore",
+      "visitors": 36,
+      "members": [
+        "Singapore"
+      ],
+      "is_focus_region": false
+    },
+    {
       "code": "GB",
       "country": "United Kingdom",
       "visitors": 36,
       "members": [
         "United Kingdom"
-      ],
-      "is_focus_region": false
-    },
-    {
-      "code": "SG",
-      "country": "Singapore",
-      "visitors": 35,
-      "members": [
-        "Singapore"
       ],
       "is_focus_region": false
     },
