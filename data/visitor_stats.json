@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-25T04:25:30.260236+00:00",
+  "generated_at": "2026-08-25T14:23:09.918514+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 22,
   "flags_collected": 37,
-  "total_views": 939,
-  "total_visitors": 440,
+  "total_views": 940,
+  "total_visitors": 441,
   "visitors_yesterday": 3,
   "visitors_30d_average": 8,
   "visitors_record": 59,
@@ -159,6 +159,14 @@
       ]
     },
     {
+      "code": "IN",
+      "country": "India",
+      "visitors": 2,
+      "members": [
+        "India"
+      ]
+    },
+    {
       "code": "TH",
       "country": "Thailand",
       "visitors": 2,
@@ -172,14 +180,6 @@
       "visitors": 1,
       "members": [
         "Algeria"
-      ]
-    },
-    {
-      "code": "IN",
-      "country": "India",
-      "visitors": 1,
-      "members": [
-        "India"
       ]
     },
     {
