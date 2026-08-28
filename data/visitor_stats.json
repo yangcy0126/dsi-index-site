@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-28T01:00:46.282699+00:00",
+  "generated_at": "2026-08-28T12:32:35.122778+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 22,
   "flags_collected": 37,
-  "total_views": 950,
-  "total_visitors": 451,
+  "total_views": 951,
+  "total_visitors": 452,
   "visitors_yesterday": 4,
   "visitors_30d_average": 8,
   "visitors_record": 59,
@@ -81,7 +81,7 @@
     {
       "code": "FR",
       "country": "France",
-      "visitors": 8,
+      "visitors": 9,
       "members": [
         "France"
       ]
@@ -308,7 +308,7 @@
     {
       "code": "FR",
       "country": "France",
-      "visitors": 8,
+      "visitors": 9,
       "members": [
         "France"
       ],
