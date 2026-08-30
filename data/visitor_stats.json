@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-30T06:37:09.993847+00:00",
+  "generated_at": "2026-08-30T16:38:06.539553+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 22,
   "flags_collected": 37,
-  "total_views": 960,
-  "total_visitors": 460,
+  "total_views": 961,
+  "total_visitors": 461,
   "visitors_yesterday": 6,
   "visitors_30d_average": 9,
   "visitors_record": 59,
@@ -39,19 +39,19 @@
       ]
     },
     {
+      "code": "SG",
+      "country": "Singapore",
+      "visitors": 38,
+      "members": [
+        "Singapore"
+      ]
+    },
+    {
       "code": "TW",
       "country": "Taiwan",
       "visitors": 38,
       "members": [
         "Taiwan"
-      ]
-    },
-    {
-      "code": "SG",
-      "country": "Singapore",
-      "visitors": 37,
-      "members": [
-        "Singapore"
       ]
     },
     {
@@ -217,19 +217,19 @@
       ]
     },
     {
+      "code": "SG",
+      "country": "Singapore",
+      "visitors": 38,
+      "members": [
+        "Singapore"
+      ]
+    },
+    {
       "code": "TW",
       "country": "Taiwan",
       "visitors": 38,
       "members": [
         "Taiwan"
-      ]
-    },
-    {
-      "code": "SG",
-      "country": "Singapore",
-      "visitors": 37,
-      "members": [
-        "Singapore"
       ]
     },
     {
@@ -261,6 +261,15 @@
       "is_focus_region": true
     },
     {
+      "code": "SG",
+      "country": "Singapore",
+      "visitors": 38,
+      "members": [
+        "Singapore"
+      ],
+      "is_focus_region": false
+    },
+    {
       "code": "TW",
       "country": "Taiwan",
       "visitors": 38,
@@ -268,15 +277,6 @@
         "Taiwan"
       ],
       "is_focus_region": true
-    },
-    {
-      "code": "SG",
-      "country": "Singapore",
-      "visitors": 37,
-      "members": [
-        "Singapore"
-      ],
-      "is_focus_region": false
     },
     {
       "code": "GB",
