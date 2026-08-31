@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-30T21:56:15.630559+00:00",
+  "generated_at": "2026-08-31T03:59:46.819726+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,13 +11,13 @@
   ],
   "total_countries": 22,
   "flags_collected": 37,
-  "total_views": 963,
-  "total_visitors": 463,
-  "visitors_yesterday": 6,
+  "total_views": 964,
+  "total_visitors": 464,
+  "visitors_yesterday": 3,
   "visitors_30d_average": 9,
   "visitors_record": 59,
   "visitors_record_date": "August 9, 2026",
-  "views_yesterday": 6,
+  "views_yesterday": 4,
   "views_30d_average": 11,
   "views_record": 108,
   "views_record_date": "March 22, 2026",
@@ -135,19 +135,19 @@
       ]
     },
     {
+      "code": "KR",
+      "country": "South Korea",
+      "visitors": 4,
+      "members": [
+        "South Korea"
+      ]
+    },
+    {
       "code": "CH",
       "country": "Switzerland",
       "visitors": 4,
       "members": [
         "Switzerland"
-      ]
-    },
-    {
-      "code": "KR",
-      "country": "South Korea",
-      "visitors": 3,
-      "members": [
-        "South Korea"
       ]
     },
     {
