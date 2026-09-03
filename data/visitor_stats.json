@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-03T02:20:31.479859+00:00",
+  "generated_at": "2026-09-03T07:15:09.011339+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 22,
   "flags_collected": 37,
-  "total_views": 987,
-  "total_visitors": 482,
+  "total_views": 989,
+  "total_visitors": 483,
   "visitors_yesterday": 5,
   "visitors_30d_average": 9,
   "visitors_record": 59,
@@ -127,19 +127,19 @@
       ]
     },
     {
+      "code": "KR",
+      "country": "South Korea",
+      "visitors": 5,
+      "members": [
+        "South Korea"
+      ]
+    },
+    {
       "code": "CY",
       "country": "Cyprus",
       "visitors": 4,
       "members": [
         "Cyprus"
-      ]
-    },
-    {
-      "code": "KR",
-      "country": "South Korea",
-      "visitors": 4,
-      "members": [
-        "South Korea"
       ]
     },
     {
