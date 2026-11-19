@@ -34,6 +34,7 @@
     "wdsi_site_periods": "data/wdsi_site_periods.csv",
     "wdsi_paper_periods": "data/wdsi_paper_periods.csv",
     "wdsi_replication": "data/wdsi_paper_replication.xlsx",
+    "wdsi_weighting_comparison": "data/wdsi_weighting_comparison_20261119.zip",
     "edsi_xlsx": "data/edsi_all_countries.xlsx",
     "edsi_csv": "data/edsi_all_countries.csv",
     "odsi_xlsx": "data/odsi_all_countries.xlsx",

@@ -2,6 +2,7 @@
 import argparse
 import json
 from pathlib import Path
+from zipfile import ZipFile
 
 import numpy as np
 import pandas as pd
@@ -133,6 +134,15 @@ def main():
     frozen = pd.read_csv(INPUTS / "paper_countryday.csv.gz")
     frozen["value"] = frozen.groupby("country_code").legacy_filled.transform(lambda s: -windows(s, 14) / 14)
     check_periods(paper, frozen, "wdsi14_countryday")
+    with ZipFile(SITE_DATA_DIR.parent / summary["downloads"]["wdsi_weighting_comparison"]) as comparison:
+        assert comparison.testzip() is None
+        paired_periods = pd.read_csv(comparison.open("historical_index_periods.csv"))
+        keys = ["country_code", "frequency", "period"]
+        compare_table(paired_periods[paper.columns].sort_values(keys), paper.sort_values(keys))
+        assert paired_periods.wdsi14_document.notna().equals(paired_periods.wdsi14_countryday.notna())
+        for filename, expected in (("transaction_estimates.csv", 696), ("us_own_holdings.csv", 6), ("us_holdings_components.csv", 36)):
+            estimates = pd.read_csv(comparison.open(filename))
+            assert len(estimates) == expected and estimates[["paper_day_p", "document_p"]].notna().all().all()
     source_docs = pd.read_csv(INPUTS / "paper_document_days.csv.gz")
     assert pd.to_datetime(source_docs.date).diff().dropna().eq(pd.Timedelta(days=1)).all()
     for n in (7, 14, 30):

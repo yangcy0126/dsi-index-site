@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="styles.css?v=20260808-neutral-visitors">
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
     <script src="script.js?v=20261119-wdsi14" defer></script>
-    <script src="dsi-site.js?v=20261119-doc14" defer></script>
+    <script src="dsi-site.js?v=20261119-doc14-results" defer></script>
   </head>
   <body>
     <div class="page-shell">
@@ -226,7 +226,7 @@
             <p class="eyebrow">Method</p>
             <h2>How Diplomatic Text Becomes DSI</h2>
             <p>
-              The observatory weights documents equally for all 15 economies. The paper's international regressions instead weight calendar days equally; their original series remain available in the replication download.
+              The site weights documents equally for WDSI in all 15 economies. The paper's international WDSI averages 14 daily scores, taking the most adverse score on each publication day and carrying it forward on silent days. Both are labeled in <a href="#download">Data Downloads</a>. EDSI and ODSI retain their original definitions.
             </p>
           </div>
 
@@ -244,12 +244,12 @@
             <article class="method-card">
               <span class="method-index">03</span>
               <h3>Give each document equal weight</h3>
-              <p>For each country, sum the scores of all accepted documents published in the 14 calendar days ending on the date shown, then divide by the number of documents. A zero score counts; a day without a document adds nothing.</p>
+              <p>Sum the scores of all accepted documents from the date shown and the preceding 13 calendar days, then divide by the number of documents. A day with three releases contributes three scores. A zero score counts; a day without a release adds no observation.</p>
             </article>
             <article class="method-card">
               <span class="method-index">04</span>
               <h3>Report daily and period values</h3>
-              <p>The first 13 dates are blank. Once a full window exists, a wholly empty window keeps the last available index. The raw reading averages only that day's documents. Monthly and quarterly figures average available daily indices; downloads flag partial periods.</p>
+              <p>The first 13 dates are blank. If a full window contains no documents, the last available index carries forward. The raw series averages only that day's documents. Monthly and quarterly values average the available daily indices, not all documents pooled across the month or quarter. Partial periods are flagged.</p>
             </article>
           </div>
         </section>
@@ -259,26 +259,26 @@
             <p class="eyebrow">Why It Matters</p>
             <h2>What the Paper Finds</h2>
             <p>
-              These are the November 19 paper's estimates: Stock Connect uses document weights; the international tables use day weights. The site's document-weighted series do not replace the paper's regression inputs.
+              The November 19 paper weights documents equally for Stock Connect and days equally in its international tables. The <a href="data/wdsi_weighting_comparison_20261119.zip" download>international weighting comparison</a> applies document weights to the same historical samples, with the same outcomes, controls and inference. It is a separate check, not a revision to the paper.
             </p>
           </div>
 
           <div class="research-grid">
             <article class="research-card">
               <h3>Stock Connect transactions</h3>
-              <p>In the paper's document-weighted analysis, a one-standard-deviation deterioration is associated with about USD 24 million less in northbound net purchases and USD 35 million less in net flow per trading day at sample means. The daily southbound estimate is not significant; within press conferences, more adverse answers are followed by faster southbound accumulation (Tables 4 and 5).</p>
+              <p>Table 4 already uses document weights. At sample means, a one-standard-deviation deterioration is associated with about USD 24 million less in northbound net purchases and USD 35 million less in net flow per trading day. The daily southbound estimate is not significant. Within press conferences, more adverse answers are followed by faster southbound accumulation (Table 5).</p>
             </article>
             <article class="research-card">
               <h3>Equity transactions</h3>
-              <p>Monthly and quarterly equity transactions show outward reallocation in selected markets. The associations vary by country and by whether the transactions involve domestic equities or residents' purchases abroad (Table 8).</p>
+              <p>Under either weighting, more adverse rhetoric accompanies lower quarterly net equity inflows in Australia and larger quarterly purchases of foreign equities by Brazilian residents. Spain's monthly net inflow estimate remains negative, but is no longer significant in the main specification: p = 0.009 in Table 8 and 0.111 with document weights.</p>
             </article>
             <article class="research-card">
               <h3>Debt transactions</h3>
-              <p>More adverse rhetoric is associated with residents reducing their purchases of foreign debt in some markets. Germany and Japan show this pattern in monthly data; a rise in net inflows need not mean stronger foreign demand for domestic debt (Table 9).</p>
+              <p>Germany's net debt inflows rise at both frequencies under either weighting. The declines in South Korea and Brazil reported in Table 9 remain significant quarterly, but not monthly, with document weights. Among the main equity and debt net-flow tests, only German quarterly debt passes both cross-country corrections at 5% (BH and Holm; adjusted p = 0.034).</p>
             </article>
             <article class="research-card research-card-teaser">
               <h3>U.S. cross-border equity holdings</h3>
-              <p>More adverse common rhetoric outside the United States is associated with a larger U.S. net cross-border equity holdings balance: foreign holdings of U.S. equity less U.S. holdings of foreign equity. This is a market-value balance, not a measure of new transactions (Table 10).</p>
+              <p>Adverse global rhetoric is more strongly associated with higher U.S. net equity holdings than U.S.-specific rhetoric. Using the equal-weight factor from the other 14 economies, the difference between the two coefficients is 25.68 in Table 10 and 19.06 with document weights (p = 0.003). These are holdings at market value, not new purchases.</p>
             </article>
           </div>
         </section>
@@ -288,7 +288,7 @@
             <p class="eyebrow">Download</p>
             <h2>Data Downloads</h2>
             <p>
-              The 15 country files include daily WDSI document counts and score sums. The cross-country workbook also contains monthly and quarterly means. The separate paper replication files retain the original historical signals.
+              For the charts above, use the site's document-weighted daily or period WDSI. To reproduce the paper, use the frozen historical signals. The weighting comparison pairs the original international estimates with the document-weighted estimates on the same samples.
             </p>
           </div>
 

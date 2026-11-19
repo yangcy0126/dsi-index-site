@@ -10,7 +10,7 @@ const DSI_SITE_STATE = {
 
 const dsiSummaryPath = "data/summary.json";
 const dsiEventsPath = "data/events.json";
-const dsiAssetVersion = "20261119-doc14";
+const dsiAssetVersion = "20261119-doc14-results";
 
 const DSI_INDICATOR_META = {
   c1: {
@@ -327,21 +327,26 @@ function dsiRenderDownloadList() {
       csv: downloads.dsi_csv,
     },
     {
-      title: "WDSI cross-country panel",
-      meta: "Document-weighted daily WDSI, document counts and score sums for all 15 countries; the workbook includes monthly and quarterly means.",
+      title: "Site WDSI: daily panel",
+      meta: "Use ma14 for the 14-day chart. Daily document counts and score sums are included for all 15 economies; the workbook also includes period means.",
       href: downloads.wdsi_xlsx || "data/wdsi_all_countries.xlsx",
       csv: downloads.wdsi_csv,
     },
     {
-      title: "WDSI by month and quarter: site series",
-      meta: "Means of available daily indices, with coverage counts and partial-period flags.",
+      title: "Site WDSI: monthly and quarterly means",
+      meta: "Use wdsi14_document for the mean of daily site readings. Coverage counts and full-period flags identify incomplete months or quarters.",
       href: downloads.wdsi_site_periods,
     },
     {
-      title: "Paper replication data",
-      meta: "Original paper series, including the day-weighted international WDSI. CSV contains its monthly and quarterly means.",
+      title: "Paper replication: original signals",
+      meta: "The workbook contains the Stock Connect and international series. The CSV contains the paper's day-weighted international period means (wdsi14_countryday).",
       href: downloads.wdsi_replication,
       csv: downloads.wdsi_paper_periods,
+    },
+    {
+      title: "International regressions: weighting comparison",
+      meta: "Original and document-weighted estimates for equity flows, debt flows, total portfolio flows and U.S. holdings, with paired historical index inputs and a data dictionary (CSV files in ZIP).",
+      href: downloads.wdsi_weighting_comparison || "data/wdsi_weighting_comparison_20261119.zip",
     },
     {
       title: "EDSI cross-country panel",

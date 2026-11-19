@@ -11,7 +11,7 @@ website release date is not the end of the observation or regression sample.
 | `c1_raw`, `c1` | Mean score of that day's documents; missing without documents. The carried daily value is supplied for reference, not used to compute rolling means. | Publication-day view and daily downloads. |
 | `c1_14`, `rolling14`, `ma14` | Sum of document scores divided by number of documents in the last 14 consecutive calendar days. Carry the last valid window mean only when the whole window is empty. The 3-, 7- and 30-day WDSI use the same rule. | Website baseline for every country. |
 | `wdsi14_document` | Arithmetic mean of available daily 14-day document indices in each calendar month or quarter. Each valid day has equal weight at this second stage. | Site period panels; filter `full_signal_period` for complete periods. |
-| `wdsi14_countryday` | Period mean of the paper's 14-day equal-day series. | Frozen paper replication files only. |
+| `wdsi14_countryday` | Period mean of the paper's 14-day equal-day series. | Frozen paper replication files and the day-weighted comparator in the historical comparison ZIP. |
 
 All windows end on and include the date shown; require a full calendar window at
 the start, and publish no dates after the country's reviewed coverage. In all
@@ -20,6 +20,13 @@ record scale is the reverse: negate once. EDSI and ODSI retain their historical
 scale (higher = more conciliatory), same-day minimum, forward fill and 3/7/30-day means.
 
 ## Rebuilding and reproducing the data
+
+The [international weighting comparison](data/wdsi_weighting_comparison_20261119.zip)
+pairs the paper's estimates with document-weighted estimates on the same financial
+samples. Its period signals use the historical text vintage, not the extended site
+vintage. It contains estimates and index inputs, not raw financial observations.
+To regenerate the frozen download, run `python scripts/export_wdsi_weighting_comparison.py PATH_TO_VERIFIED_RERUN`;
+routine index updates do not change it.
 
 - `inputs/reviewed_daily.csv.gz`: original three-branch calendar/minima plus the WDSI sums and counts from the final active country score files on that calendar. Use the score record's assigned date (`time`). In the combined three-branch files, `publication` retains its historical meaning; in WDSI-only data it means `doc_count > 0`. For instance, 33 historical Canadian publication dates have no accepted document in the current score store. We do not reconstruct documents from an old daily score or append superseded records.
 - `inputs/paper_countryday.csv.gz`: frozen international regression input (legacy polarity), using the shared paper country-day source except for Korea, where the paper uses its own archived `k1` series. Do not refresh this file when extending the site data.
