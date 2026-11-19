@@ -17,8 +17,8 @@
     >
     <link rel="stylesheet" href="styles.css?v=20260808-neutral-visitors">
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
-    <script src="script.js?v=20260808-neutral-visitors" defer></script>
-    <script src="dsi-site.js?v=20260807-flags" defer></script>
+    <script src="script.js?v=20261119-wdsi14" defer></script>
+    <script src="dsi-site.js?v=20261119-wdsi14" defer></script>
   </head>
   <body>
     <div class="page-shell">
@@ -42,7 +42,7 @@
             <p class="eyebrow">Official diplomatic text series</p>
             <h1>Diplomatic Sentiment Observatory</h1>
             <p class="hero-lede">
-              Daily country-level indices derived from official foreign-ministry publications. Three parallel series measure war-related, economic, and other diplomatic sentiment on a common -3 to 3 scale.
+              Daily indices from official diplomatic communications in 15 economies. Higher war-related sentiment (WDSI) means more adverse rhetoric. The economic (EDSI) and other diplomatic (ODSI) series retain their original scale, with higher values indicating more conciliatory language.
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href="#explorer">View the series</a>
@@ -96,7 +96,7 @@
           <div class="hero-panel">
             <div class="metric-grid">
               <article class="metric-card metric-card-primary">
-                <p class="metric-label" id="selected-current-label">Selected branch - 7-day</p>
+                <p class="metric-label" id="selected-current-label">WDSI · 14-day mean</p>
                 <h2 id="selected-country-name">Loading</h2>
                 <p class="metric-value" id="selected-latest-score">--</p>
                 <p class="metric-detail" id="selected-score-caption">Loading summary data...</p>
@@ -145,7 +145,7 @@
             <p class="eyebrow">Overview</p>
             <h2>Cross-Country DSI Signal Board</h2>
             <p>
-              Latest seven-day readings for the fifteen-country panel. Each series uses the same construction rules and common score range.
+              WDSI readings use the same 14-day, equal-day measure for all 15 countries. Higher values indicate more adverse rhetoric. EDSI and ODSI show seven-day readings on their original scale.
             </p>
           </div>
           <div class="signal-board-toolbar">
@@ -171,7 +171,7 @@
             <p class="eyebrow">Explorer</p>
             <h2>Index Explorer</h2>
             <p>
-              Country-level publication-day scores with seven-day and thirty-day smoothed series for each DSI branch.
+              Compare the same daily WDSI across economies. The 14-day mean is the benchmark; the 7-day and 30-day means show how the signal changes with the window.
             </p>
           </div>
 
@@ -194,14 +194,15 @@
               <div class="toggle-stack">
                 <p class="toggle-caption">Smoothing</p>
                 <div class="series-toggle" id="series-toggle" aria-label="Series selector">
-                  <button class="toggle-button is-active" data-series="rolling7" type="button">
-                    7-day smoothed
+                  <button class="toggle-button is-active" data-series="rolling14" type="button">14-day baseline</button>
+                  <button class="toggle-button" data-series="rolling7" type="button">
+                    7-day
                   </button>
                   <button class="toggle-button" data-series="rolling30" type="button">
-                    30-day smoothed
+                    30-day
                   </button>
                   <button class="toggle-button" data-series="raw" type="button">
-                    Raw publication-day score
+                    Publication-day score
                   </button>
                 </div>
               </div>
@@ -225,7 +226,7 @@
             <p class="eyebrow">Method</p>
             <h2>How Diplomatic Text Becomes DSI</h2>
             <p>
-              DSI is neither keyword counting nor one-shot sentiment scoring. It comes from cleaning official diplomatic texts, scoring them across three diplomatic dimensions, validating the results through consensus checks, and aggregating them into daily high-frequency indices.
+              The observatory follows the cross-country construction in Section 2.2.3 of the November 19, 2026 paper. The same rule applies to every country, from the publication-day score to the monthly and quarterly series.
             </p>
           </div>
 
@@ -233,22 +234,22 @@
             <article class="method-card">
               <span class="method-index">01</span>
               <h3>Collect and clean official texts</h3>
-              <p>The paper starts from official releases by multiple foreign ministries, including press-conference transcripts, statements, briefings, and written responses. These texts are segmented, stripped of greetings and procedural language, and reorganized into comparable daily series.</p>
+              <p>The panel draws on official foreign-ministry and foreign-office communications: press briefings, statements, written responses, and other official releases. The source formats and periods of coverage vary by country.</p>
             </article>
             <article class="method-card">
               <span class="method-index">02</span>
-              <h3>Identify sentiment in three stages</h3>
-              <p>The paper scores official texts across three diplomatic dimensions: war-related, economic, and other diplomatic sentiment. Each dimension is converted into a discrete score from -3 to 3 before daily aggregation.</p>
+              <h3>Score war-related rhetoric</h3>
+              <p>Repeated judgments identify war relevance, direction, and intensity, with reconciliation and human validation. WDSI ranges from -3 (most conciliatory) to +3 (most adverse). Non-war content receives zero.</p>
             </article>
             <article class="method-card">
               <span class="method-index">03</span>
-              <h3>Run consensus checks and manual audits</h3>
-              <p>To reduce misclassification, the paper repeats each judgement multiple times. Only matching results pass directly; disagreements are reviewed before moving on. The pipeline is also audited against manually labelled samples to keep the classifications close to researcher judgement.</p>
+              <h3>Form a country-day score</h3>
+              <p>On each publication day, take the most adverse score among that country's official records. On a day without a publication, carry the previous score forward. The raw series marks only dates on which a publication was observed.</p>
             </article>
             <article class="method-card">
               <span class="method-index">04</span>
-              <h3>Construct the daily index series</h3>
-              <p>The paper first forms a raw score on each publication day for each DSI branch. When multiple texts appear on the same day, the raw daily value takes the lowest score observed that day rather than an average. Missing days are then forward-filled, and the 3-day, 7-day, and 30-day series are computed as rolling means on that filled daily path.</p>
+              <h3>Average over calendar time</h3>
+              <p>Average the 14 daily scores ending on the date shown, giving each day equal weight. The first 13 days are blank. Monthly and quarterly signals average the available daily indices, and downloads identify partial periods. The paper replication workbook preserves study-specific historical signals.</p>
             </article>
           </div>
         </section>
@@ -256,28 +257,28 @@
         <section class="research" id="research">
           <div class="section-heading">
             <p class="eyebrow">Why It Matters</p>
-            <h2>What We Have Already Found in the DSI Data</h2>
+            <h2>What the Paper Finds</h2>
             <p>
-              Our current paper evidence is strongest on the war-related branch, but the broader DSI family is designed to support parallel work on geopolitical expectations, cross-border capital flows, market responses, and future branch-specific extensions.
+              These estimates use the paper's historical samples. The site extends the index series beyond those samples; the financial regressions are not re-estimated with each data release.
             </p>
           </div>
 
           <div class="research-grid">
             <article class="research-card">
-              <h3>It moves before conventional risk measures</h3>
-              <p>Our paper finds that war-related diplomatic wording often shifts before standard geopolitical risk indicators do, making it useful for detecting changes in market expectations around escalation or de-escalation earlier.</p>
+              <h3>Stock Connect transactions</h3>
+              <p>In the paper's document-weighted analysis, a one-standard-deviation deterioration is associated with about USD 24 million less in northbound net purchases and USD 35 million less in net flow per trading day at sample means. The daily southbound estimate is not significant; within press conferences, more adverse answers are followed by faster southbound accumulation (Tables 4 and 5).</p>
             </article>
             <article class="research-card">
-              <h3>It changes the direction of cross-border flows</h3>
-              <p>In the China sample, more negative war-related diplomatic sentiment is associated with stronger capital outflow pressure. Our estimates show that a one-unit decline in China's war-related DSI corresponds to roughly a 35.6 million USD shift in daily net flows toward outflows.</p>
+              <h3>Equity transactions</h3>
+              <p>Monthly and quarterly equity transactions show outward reallocation in selected markets. The associations vary by country and by whether the transactions involve domestic equities or residents' purchases abroad (Table 8).</p>
             </article>
             <article class="research-card">
-              <h3>It carries both safe-haven and spillover effects</h3>
-              <p>Our paper also finds that more negative U.S. diplomatic sentiment is associated with stronger safe-haven demand for U.S. equities. Negative sentiment from the United Kingdom, Japan, and South Korea also spills over into the Chinese market, with clearer effects on returns and trading activity.</p>
+              <h3>Debt transactions</h3>
+              <p>More adverse rhetoric is associated with residents reducing their purchases of foreign debt in some markets. Germany and Japan show this pattern in monthly data; a rise in net inflows need not mean stronger foreign demand for domestic debt (Table 9).</p>
             </article>
             <article class="research-card research-card-teaser">
-              <h3>Research extensions</h3>
-              <p>The raw, 7-day, and 30-day series support event studies, cross-country comparisons, asset-pricing applications, and capital-flow analysis.</p>
+              <h3>U.S. cross-border equity holdings</h3>
+              <p>More adverse common rhetoric outside the United States is associated with a larger U.S. net cross-border equity holdings balance: foreign holdings of U.S. equity less U.S. holdings of foreign equity. This is a market-value balance, not a measure of new transactions (Table 10).</p>
             </article>
           </div>
         </section>
@@ -287,7 +288,7 @@
             <p class="eyebrow">Download</p>
             <h2>Data Downloads</h2>
             <p>
-              This section provides a combined DSI workbook, branch-specific cross-country panels, and country-level workbooks that include all three DSI branches together with raw publication-day values and 3-day, 7-day, and 30-day smoothed series.
+              All 15 country workbooks use the same fields, weights, and windows. The cross-country WDSI workbook includes the daily and period series. A separate replication workbook preserves the historical signals used in the paper.
             </p>
           </div>
 

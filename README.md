@@ -62,7 +62,7 @@ set WDSI_RU_OFFICIAL_TELEGRAM_ONLY=1
 python scripts/update_three_category_sources.py --countries RU --start-date 2026-04-12 --end-date 2026-08-06 --max-pages 120
 ```
 
-For the full three-category research refresh, use `update_three_category_sources.py` to update the local corpus, run the sibling DSI-ICF scorer, then use `rebuild_three_category_daily.py`, `sync_three_category_records.py`, and `build_dsi_site_data.py` in that order. The Brazil election-period migration gap has a dedicated reproducible recovery command:
+For a reviewed three-category research refresh, use `update_three_category_sources.py` to update the local corpus, run the sibling DSI-ICF scorer, then use `rebuild_three_category_daily.py`, `sync_three_category_records.py`, `import_wdsi_inputs.py`, and `build_dsi_site_data.py` in that order. The Brazil election-period migration gap has a dedicated reproducible recovery command:
 
 ```bash
 python scripts/recover_brazil_migration_gap.py --start-date 2026-04-20 --end-date 2026-07-02
@@ -78,14 +78,10 @@ Then open `http://127.0.0.1:8000`.
 
 ## Data flow
 
-1. Historical baseline is imported into `records/*.csv`.
-2. `scripts/update_wdsi_records.py` refreshes recent official texts for the currently automated sources.
-3. `scripts/build_dsi_site_data.py` rebuilds the public site assets from the latest three-branch DSI panels and score metadata.
-4. The public DSI series keep the original DSI-ICF construction rule:
-   same-day raw score = daily minimum, then forward-fill, then rolling 3-day / 7-day / 30-day means.
-5. `scripts/check_method_lock.py` verifies that the exported series still obey that rule.
-6. GitHub Actions commits the changed `records/` and `data/` files.
-7. The existing Pages workflow deploys the refreshed site.
+1. The reviewed country panel supplies the aggregate inputs under `inputs/`. Study-specific historical inputs are frozen separately.
+2. `scripts/build_dsi_site_data.py` rebuilds the public panels under the same 14-day, equal-day WDSI benchmark for every country. Higher means more adverse. The separate paper replication workbook preserves the paper's original empirical measures. EDSI and ODSI are unchanged.
+3. Run `python scripts/check_method_lock.py --workbooks` before publication. See [the method lock](METHODOLOGY_LOCK.md) for fields, weights, coverage and provenance.
+4. Push reviewed inputs and public assets to the main branch to deploy to dsi-index.org.
 
 ## GitHub Actions setup
 
@@ -99,11 +95,11 @@ Add these repository settings before relying on daily updates:
 - Backward-compatible variable: `WDSI_OPENAI_MODEL`
 - Optional repository variable: `WDSI_REASONING_EFFORT`
 
-The scheduled workflow lives at:
+The records workflow lives at:
 
 - `.github/workflows/update-data.yml`
 
-It runs daily at `15:20 UTC`.
+It is manually dispatched. A new publication date requires a reviewed source import before the site panel advances.
 
 ## Using Qwen instead of OpenAI
 
@@ -122,7 +118,8 @@ When `WDSI_API_BASE_URL` is set, the pipeline automatically uses the OpenAI-comp
 
 ## Important directories
 
-- `records/`: canonical scored records used by the website build
+- `records/`: historical and incremental record-level extracts, not the full Chinese document corpus
+- `inputs/`: sufficient statistics for reproducible public panels and the frozen international paper vintage
 - `data/`: static assets served by the site
 - `METHODOLOGY_LOCK.md`: authoritative DSI construction rule for this repo
 - `scripts/bootstrap_records.py`: one-time baseline import

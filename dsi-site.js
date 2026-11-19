@@ -3,14 +3,14 @@ const DSI_SITE_STATE = {
   events: [],
   selectedCode: null,
   indicatorMode: "c1",
-  seriesMode: "rolling7",
+  seriesMode: "rolling14",
   cache: new Map(),
   dataVersion: null,
 };
 
 const dsiSummaryPath = "data/summary.json";
 const dsiEventsPath = "data/events.json";
-const dsiAssetVersion = "20260420-dsi-8";
+const dsiAssetVersion = "20261119-wdsi14";
 
 const DSI_INDICATOR_META = {
   c1: {
@@ -120,6 +120,7 @@ function dsiToneMeta(score) {
   if (!dsiHasNumericValue(score)) {
     return { label: "no recent signal", className: "tone-muted" };
   }
+  if (DSI_SITE_STATE.indicatorMode === "c1") score = -score;
   if (score <= -1.5) {
     return { label: "markedly tense", className: "tone-negative" };
   }
@@ -161,12 +162,13 @@ function dsiGetCountryIndicator(country) {
 
 function dsiScoreSentence(country, indicatorSummary) {
   const meta = dsiGetIndicatorMeta();
-  const score = indicatorSummary.latest_7d;
+  const wdsi = DSI_SITE_STATE.indicatorMode === "c1";
+  const score = wdsi ? indicatorSummary.latest_14d : indicatorSummary.latest_7d;
   const tone = dsiToneMeta(score);
   if (!dsiHasNumericValue(score)) {
     return `${country.label} does not yet have a recent ${meta.shortLabel} signal.`;
   }
-  return `${country.label} currently has a 7-day ${meta.shortLabel} of ${dsiFormatScore(score)}, which sits in the ${tone.label} range.`;
+  return `${country.label}: ${wdsi ? "14-day country-day" : "7-day"} ${meta.shortLabel}, ${tone.label}.`;
 }
 
 function dsiDeltaSentence(delta, dayCount) {
@@ -176,19 +178,9 @@ function dsiDeltaSentence(delta, dayCount) {
   if (Math.abs(Number(delta)) < 0.05) {
     return `Little net change over the past ${dayCount} days.`;
   }
-  return Number(delta) < 0
+  return (DSI_SITE_STATE.indicatorMode === "c1" ? -Number(delta) : Number(delta)) < 0
     ? `More tense over the past ${dayCount} days.`
     : `More conciliatory over the past ${dayCount} days.`;
-}
-
-function dsiReplaceNode(id) {
-  const original = document.getElementById(id);
-  if (!original || !original.parentNode) {
-    return original;
-  }
-  const clone = original.cloneNode(true);
-  original.parentNode.replaceChild(clone, original);
-  return clone;
 }
 
 function dsiRenderGlobalMeta() {
@@ -230,7 +222,8 @@ function dsiRenderCountryBoard() {
 
   DSI_SITE_STATE.summary.countries.forEach((country, index) => {
     const indicatorSummary = dsiGetCountryIndicator(country);
-    const tone = dsiToneMeta(indicatorSummary.latest_7d);
+    const value = DSI_SITE_STATE.indicatorMode === "c1" ? indicatorSummary.latest_14d : indicatorSummary.latest_7d;
+    const tone = dsiToneMeta(value);
     const button = document.createElement("button");
     button.type = "button";
     button.dataset.countryCode = country.code;
@@ -246,7 +239,7 @@ function dsiRenderCountryBoard() {
         <span>${dsiEscapeHtml(country.code)}</span>
         <span>${meta.shortLabel} | ${dsiFormatDate(country.latest_publication_date)}</span>
       </div>
-      <div class="country-score ${tone.className}">${dsiFormatScore(indicatorSummary.latest_7d)}</div>
+      <div class="country-score ${tone.className}">${dsiFormatScore(value)}</div>
       <div class="country-tone">${dsiEscapeHtml(tone.label)}</div>
     `;
     board.appendChild(button);
@@ -275,26 +268,29 @@ function dsiRenderSelectedMetrics(country) {
   }
   const meta = dsiGetIndicatorMeta();
   const indicatorSummary = dsiGetCountryIndicator(country);
-  const latestTone = dsiToneMeta(indicatorSummary.latest_7d);
+  const wdsi = DSI_SITE_STATE.indicatorMode === "c1";
+  const latest = wdsi ? indicatorSummary.latest_14d : indicatorSummary.latest_7d;
+  const latestTone = dsiToneMeta(latest);
   const rolling30Tone = dsiToneMeta(indicatorSummary.latest_30d);
   const latestValueEl = document.getElementById("selected-latest-score");
   const rolling30El = document.getElementById("selected-rolling30-score");
   const changeEl = document.getElementById("selected-change-score");
   const changeValue = indicatorSummary.change_30d;
+  const toneChange = wdsi ? -changeValue : changeValue;
   const changeClass = !dsiHasNumericValue(changeValue)
     ? "tone-muted"
-    : Number(changeValue) < -0.05
+    : toneChange < -0.05
       ? "tone-negative"
-      : Number(changeValue) > 0.05
+      : toneChange > 0.05
         ? "tone-positive"
         : "tone-neutral";
 
   document.getElementById("selected-country-name").textContent = country.label;
-  document.getElementById("selected-current-label").textContent = `${meta.shortLabel} 7-day`;
+  document.getElementById("selected-current-label").textContent = `${meta.shortLabel} ${wdsi ? "14-day" : "7-day"}`;
   document.getElementById("selected-rolling30-label").textContent = `${meta.shortLabel} 30-day`;
   document.getElementById("selected-change-label").textContent = `${meta.shortLabel} 30-day change`;
 
-  latestValueEl.textContent = dsiFormatScore(indicatorSummary.latest_7d);
+  latestValueEl.textContent = dsiFormatScore(latest);
   latestValueEl.className = `metric-value ${latestTone.className}`;
   document.getElementById("selected-score-caption").textContent = dsiScoreSentence(country, indicatorSummary);
 
@@ -310,7 +306,7 @@ function dsiRenderSelectedMetrics(country) {
 
   document.getElementById("selected-publication-date").textContent = dsiFormatDate(country.latest_publication_date);
   document.getElementById("selected-publication-score").textContent =
-    `${country.latest_title || "Latest official publication"} | raw ${meta.shortLabel}: ${dsiFormatScore(indicatorSummary.latest_raw)} | ${dsiDeltaSentence(changeValue, 30)}`;
+    `${country.latest_title || "Latest official publication"} | publication-day ${meta.shortLabel}: ${dsiFormatScore(indicatorSummary.latest_raw)} | ${dsiDeltaSentence(changeValue, 30)}`;
   document.getElementById("selected-coverage").textContent =
     `${dsiFormatDate(country.start_date)} to ${dsiFormatDate(country.latest_date)}`;
   document.getElementById("selected-publication-days").textContent =
@@ -328,11 +324,24 @@ function dsiRenderDownloadList() {
       title: "Full DSI daily dataset",
       meta: "Combined cross-country workbook covering all three DSI branches and variable definitions.",
       href: downloads.dsi_xlsx || "data/dsi_all_countries.xlsx",
+      csv: downloads.dsi_csv,
     },
     {
       title: "WDSI cross-country panel",
-      meta: "Cross-country workbook for the war-related DSI branch only.",
+      meta: "Same daily fields for all 15 countries. The workbook also includes site monthly and quarterly means.",
       href: downloads.wdsi_xlsx || "data/wdsi_all_countries.xlsx",
+      csv: downloads.wdsi_csv,
+    },
+    {
+      title: "WDSI by month and quarter: site series",
+      meta: "Means of available daily indices, with coverage counts and partial-period flags.",
+      href: downloads.wdsi_site_periods,
+    },
+    {
+      title: "Paper replication data",
+      meta: "Frozen daily and period signals for the paper's analyses. CSV contains international period means.",
+      href: downloads.wdsi_replication,
+      csv: downloads.wdsi_paper_periods,
     },
     {
       title: "EDSI cross-country panel",
@@ -353,6 +362,7 @@ function dsiRenderDownloadList() {
       title: `${country.label} data`,
       meta: `${country.code} | ${country.publication_days} publication days | workbook contains all three DSI branches`,
       href: country.file_xlsx || country.file_csv,
+      csv: country.file_csv,
     })),
   ];
 
@@ -365,7 +375,8 @@ function dsiRenderDownloadList() {
         <strong>${dsiEscapeHtml(item.title)}</strong>
         <div class="download-meta">${dsiEscapeHtml(item.meta)}</div>
       </div>
-      <a class="download-link" href="${item.href}" target="_blank" rel="noreferrer">Download</a>
+      <div><a class="download-link" href="${dsiVersionedPath(item.href, DSI_SITE_STATE.dataVersion)}" download>${item.href.split(".").pop().toUpperCase()}</a>
+      ${item.csv ? `<a class="download-link" href="${dsiVersionedPath(item.csv, DSI_SITE_STATE.dataVersion)}" download>CSV</a>` : ""}</div>
     `;
     list.appendChild(row);
   });
@@ -393,7 +404,7 @@ function dsiBuildChartLayout(country, records) {
       tickfont: { color: "#5c6672" },
     },
     yaxis: {
-      title: meta.shortLabel,
+      title: DSI_SITE_STATE.indicatorMode === "c1" ? "WDSI (+ adverse)" : meta.shortLabel,
       range: [-3.2, 3.2],
       showgrid: true,
       gridcolor: "rgba(24, 33, 43, 0.10)",
@@ -502,7 +513,21 @@ function dsiRenderChart(country, countryData) {
     },
   ];
 
-  Plotly.react("wdsi-chart", traces, dsiBuildChartLayout(country, records), {
+  const wdsi = DSI_SITE_STATE.indicatorMode === "c1";
+  let chartTraces = traces;
+  let view = showRolling7 ? "7-day smoothed trend" : showRolling30 ? "30-day smoothed trend" : "publication-day raw moves";
+  if (wdsi) {
+    const mode = DSI_SITE_STATE.seriesMode;
+    const keys = { rolling14: "c1_14", rolling7: "c1_7", rolling30: "c1_30", raw: "c1_raw" };
+    const labels = { rolling14: "14-day country-day WDSI",
+      rolling7: "7-day country-day WDSI", rolling30: "30-day country-day WDSI", raw: "Most adverse publication-day score" };
+    const rows = showRaw ? rawRecords : records;
+    view = labels[mode];
+    chartTraces = [{ x: rows.map(r => r.date), y: rows.map(r => r[keys[mode]]), name: view,
+      type: "scatter", mode: showRaw ? "markers" : "lines", line: { color: country.color, width: 2 },
+      marker: { color: country.color, size: 5 }, hovertemplate: `%{x}<br>${view}: %{y:.3f}<extra></extra>` }];
+  }
+  Plotly.react("wdsi-chart", chartTraces, dsiBuildChartLayout(country, records), {
     displayModeBar: true,
     responsive: true,
     displaylogo: false,
@@ -510,9 +535,7 @@ function dsiRenderChart(country, countryData) {
   });
 
   document.getElementById("chart-caption").textContent =
-    `${country.label} is shown here through ${meta.longLabel}. Current view: ${
-      showRolling7 ? "7-day smoothed trend" : showRolling30 ? "30-day smoothed trend" : "publication-day raw moves"
-    }. This site presents the three DSI branches on equal footing.`;
+    `${country.label}: ${view}. ${wdsi ? "Higher values indicate more adverse rhetoric." : "Higher values indicate more conciliatory rhetoric."}`;
 
   dsiUpdateEventChips(records);
 }
@@ -528,6 +551,13 @@ async function dsiLoadCountryData(code) {
 
 async function dsiSetSelectedCountry(code) {
   DSI_SITE_STATE.selectedCode = code;
+  const wdsi = DSI_SITE_STATE.indicatorMode === "c1";
+  document.querySelectorAll("#series-toggle [data-series]").forEach(node => {
+    const mode = node.dataset.series;
+    node.hidden = mode === "rolling14" && !wdsi;
+    node.classList.toggle("is-active", mode === DSI_SITE_STATE.seriesMode);
+    node.setAttribute("aria-pressed", String(mode === DSI_SITE_STATE.seriesMode));
+  });
   dsiRenderCountryBoard();
   dsiRenderCountryTabs();
   const country = dsiGetCountry(code);
@@ -536,7 +566,7 @@ async function dsiSetSelectedCountry(code) {
   }
   dsiRenderSelectedMetrics(country);
   const countryData = await dsiLoadCountryData(code);
-  dsiRenderChart(country, countryData);
+  if (DSI_SITE_STATE.selectedCode === code) dsiRenderChart(country, countryData);
 }
 
 function dsiBindCountrySelectors() {
@@ -572,7 +602,10 @@ function dsiBindIndicatorToggle() {
       if (!button) {
         return;
       }
-      DSI_SITE_STATE.indicatorMode = button.dataset.indicator;
+      if (DSI_SITE_STATE.indicatorMode !== button.dataset.indicator) {
+        DSI_SITE_STATE.indicatorMode = button.dataset.indicator;
+        DSI_SITE_STATE.seriesMode = button.dataset.indicator === "c1" ? "rolling14" : "rolling7";
+      }
       dsiSyncIndicatorToggles();
       if (DSI_SITE_STATE.selectedCode) {
         await dsiSetSelectedCountry(DSI_SITE_STATE.selectedCode);
@@ -582,7 +615,7 @@ function dsiBindIndicatorToggle() {
 }
 
 function dsiBindSeriesToggle() {
-  const container = dsiReplaceNode("series-toggle");
+  const container = document.getElementById("series-toggle");
   if (!container) {
     return;
   }

@@ -1,20 +1,15 @@
 const state = {
   summary: null,
-  events: [],
   trump: null,
   trumpDirected: null,
   visitors: null,
-  selectedCode: null,
-  seriesMode: "rolling7",
   trumpSeriesMode: "7d",
   trumpDirectedSeriesMode: "30d",
   trumpDirectedSelectedCode: null,
-  cache: new Map(),
   trumpDirectedCache: new Map(),
 };
 
 const summaryPath = "data/summary.json";
-const eventsPath = "data/events.json";
 const trumpPath = "data/trump_indices.json";
 const trumpDirectedSummaryPath = "data/trump_directed_summary.json";
 const trumpDirectedBasePath = "data/trump_directed";
@@ -65,17 +60,6 @@ function countryFlagMarkup(code, extraClass = "") {
   const flagCode = code === "UK" ? "gb" : String(code || "").toLowerCase();
   const className = ["country-flag", extraClass].filter(Boolean).join(" ");
   return `<img class="${className}" src="assets/flags/${flagCode}.svg" alt="" aria-hidden="true" width="26" height="18" loading="lazy" decoding="async">`;
-}
-
-function formatBuildTime(dateText) {
-  const date = new Date(dateText);
-  return date.toLocaleString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function formatScore(value, digits = 3) {
@@ -223,45 +207,6 @@ function trumpShockMeta(score) {
   return { label: "subdued", className: "signal-cool" };
 }
 
-function toneMeta(score) {
-  if (!hasNumericValue(score)) {
-    return { label: "placeholder", className: "tone-muted" };
-  }
-  if (score <= -1.5) {
-    return { label: "markedly tense", className: "tone-negative" };
-  }
-  if (score <= -0.5) {
-    return { label: "somewhat tense", className: "tone-negative" };
-  }
-  if (score < 0.5) {
-    return { label: "near neutral", className: "tone-neutral" };
-  }
-  if (score < 1.5) {
-    return { label: "somewhat conciliatory", className: "tone-positive" };
-  }
-  return { label: "markedly conciliatory", className: "tone-positive" };
-}
-
-function scoreSentence(label, score, windowLabel) {
-  if (!hasNumericValue(score)) {
-    return `${label} is currently reserved as a top-15 GDP placeholder while source onboarding is in progress.`;
-  }
-  const tone = toneMeta(score);
-  return `${label} currently has a ${windowLabel} smoothed value of ${formatScore(score)}, placing it in the ${tone.label} range.`;
-}
-
-function scoreDeltaSentence(delta, dayCount = 30) {
-  if (delta === null || delta === undefined || Number.isNaN(delta)) {
-    return "Not enough observations yet.";
-  }
-  if (Math.abs(delta) < 0.05) {
-    return `Little net change over the past ${dayCount} days.`;
-  }
-  return delta < 0
-    ? `More tense over the past ${dayCount} days.`
-    : `More conciliatory over the past ${dayCount} days.`;
-}
-
 function getCountryByCode(code) {
   return state.summary.countries.find((country) => country.code === code);
 }
@@ -303,13 +248,6 @@ function startVisitorsAutoRefresh() {
   visitorsRefreshTimer = window.setInterval(() => {
     void refreshVisitorsCardLive();
   }, VISITORS_REFRESH_INTERVAL_MS);
-}
-
-async function loadCountryData(code) {
-  if (!state.cache.has(code)) {
-    state.cache.set(code, fetchJson(`data/${code}.json`));
-  }
-  return state.cache.get(code);
 }
 
 async function loadTrumpDirectedCountryData(code) {
@@ -387,135 +325,6 @@ function renderVisitorsCard() {
     `;
 }
 
-function renderGlobalMeta() {
-  const { overall, generated_at: generatedAt } = state.summary;
-  const liveCount = overall.live_country_count ?? overall.country_count;
-  const placeholderCount = overall.placeholder_count ?? 0;
-  document.getElementById("country-count").textContent =
-    placeholderCount > 0 ? `${overall.country_count} total` : overall.country_count;
-  document.getElementById("overall-start").textContent = formatDate(overall.first_date);
-  document.getElementById("overall-end").textContent = formatDate(overall.last_date);
-  document.getElementById("generated-at").textContent = `Latest build: ${formatBuildTime(generatedAt)}`;
-  document.getElementById("footer-build-note").textContent = placeholderCount > 0
-    ? `Covering ${overall.country_count} countries / regions, with ${liveCount} live series and ${placeholderCount} placeholders, from ${formatDate(overall.first_date)} to ${formatDate(overall.last_date)}.`
-    : `Covering ${overall.country_count} countries / regions, from ${formatDate(overall.first_date)} to ${formatDate(overall.last_date)}.`;
-}
-
-function renderCountryBoard() {
-  const board = document.getElementById("country-board");
-  board.innerHTML = "";
-
-  state.summary.countries.forEach((country, index) => {
-    const isPlaceholder = isPlaceholderCountry(country);
-    const tone = toneMeta(country.latest_7d);
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = `country-card ${country.code === state.selectedCode ? "is-active" : ""} ${isPlaceholder ? "is-placeholder" : ""}`;
-    button.style.setProperty("--country-color", country.color);
-    button.style.animationDelay = `${120 + index * 40}ms`;
-    button.innerHTML = isPlaceholder ? `
-      <div class="country-card-heading">
-        ${countryFlagMarkup(country.code)}
-        <h3>${country.label}</h3>
-      </div>
-      <div class="country-meta">
-        <span>${country.code}</span>
-        <span>GDP top-15 placeholder</span>
-      </div>
-      <div class="country-score tone-muted">Placeholder</div>
-      <div class="country-tone">Source onboarding pending</div>
-    ` : `
-      <div class="country-card-heading">
-        ${countryFlagMarkup(country.code)}
-        <h3>${country.label}</h3>
-      </div>
-      <div class="country-meta">
-        <span>${country.code}</span>
-        <span>Latest publication ${formatDate(country.latest_publication_date)}</span>
-      </div>
-      <div class="country-score ${tone.className}">${formatScore(country.latest_7d)}</div>
-      <div class="country-tone">${tone.label}</div>
-    `;
-    button.addEventListener("click", () => setSelectedCountry(country.code));
-    board.appendChild(button);
-  });
-}
-
-function renderCountryTabs() {
-  const tabs = document.getElementById("country-tabs");
-  tabs.innerHTML = "";
-
-  state.summary.countries.forEach((country) => {
-    const isPlaceholder = isPlaceholderCountry(country);
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = `tab-button ${country.code === state.selectedCode ? "is-active" : ""} ${isPlaceholder ? "is-placeholder" : ""}`;
-    const tabLabel = isPlaceholder
-      ? `${country.label} - ${country.code} placeholder`
-      : `${country.label} - ${country.code}`;
-    button.innerHTML = `${countryFlagMarkup(country.code, "country-flag-tab")}<span>${tabLabel}</span>`;
-    button.addEventListener("click", () => setSelectedCountry(country.code));
-    tabs.appendChild(button);
-  });
-}
-
-function renderSelectedMetrics(country) {
-  if (isPlaceholderCountry(country)) {
-    document.getElementById("selected-country-name").textContent = country.label;
-    document.getElementById("selected-latest-score").textContent = "--";
-    document.getElementById("selected-latest-score").className = "metric-value tone-muted";
-    document.getElementById("selected-score-caption").textContent =
-      `${country.label} is currently reserved as a GDP top-15 placeholder.`;
-    document.getElementById("selected-rolling30-score").textContent = "--";
-    document.getElementById("selected-rolling30-score").className = "metric-value tone-muted";
-    document.getElementById("selected-rolling30-caption").textContent =
-      "The 30-day smoothed series will appear here after source onboarding and validation.";
-    document.getElementById("selected-change-score").textContent = "--";
-    document.getElementById("selected-change-score").className = "metric-value tone-muted";
-    document.getElementById("selected-publication-date").textContent = "Pending";
-    document.getElementById("selected-publication-score").textContent =
-      country.placeholder_note || "No DSI series has been published yet for this slot.";
-    document.getElementById("selected-coverage").textContent = "Reserved slot";
-    document.getElementById("selected-publication-days").textContent = "Official-source pipeline pending";
-    return;
-  }
-
-  const tone = toneMeta(country.latest_7d);
-  const rolling30Tone = toneMeta(country.latest_30d);
-  const latestDelta = country.change_30d ?? 0;
-  const deltaTone =
-    latestDelta < -0.05 ? "tone-negative" : latestDelta > 0.05 ? "tone-positive" : "tone-neutral";
-
-  document.getElementById("selected-country-name").textContent = country.label;
-  document.getElementById("selected-latest-score").textContent = formatScore(country.latest_7d);
-  document.getElementById("selected-latest-score").className = `metric-value ${tone.className}`;
-  document.getElementById("selected-score-caption").textContent = scoreSentence(
-    country.label,
-    country.latest_7d,
-    "7-day",
-  );
-
-  const rolling30El = document.getElementById("selected-rolling30-score");
-  rolling30El.textContent = formatScore(country.latest_30d);
-  rolling30El.className = `metric-value ${rolling30Tone.className}`;
-  document.getElementById("selected-rolling30-caption").textContent = scoreSentence(
-    country.label,
-    country.latest_30d,
-    "30-day",
-  );
-
-  const deltaEl = document.getElementById("selected-change-score");
-  deltaEl.textContent = `${latestDelta >= 0 ? "+" : ""}${formatScore(latestDelta)}`;
-  deltaEl.className = `metric-value ${deltaTone}`;
-  document.getElementById("selected-publication-date").textContent = formatDate(country.latest_publication_date);
-  document.getElementById("selected-publication-score").textContent =
-    `Latest publication-day raw score: ${formatScore(country.latest_raw)} - ${scoreDeltaSentence(latestDelta, 30)}`;
-  document.getElementById("selected-coverage").textContent =
-    `${formatDate(country.start_date)} to ${formatDate(country.latest_date)}`;
-  document.getElementById("selected-publication-days").textContent =
-    `${country.publication_days} publication days - ${country.calendar_days} calendar days`;
-}
-
 function renderLegacyDownloadList() {
   const list = document.getElementById("download-list");
   list.innerHTML = "";
@@ -554,42 +363,6 @@ function renderLegacyDownloadList() {
       href: isPlaceholderCountry(country) ? null : country.file_json,
     },
   ]);
-
-  [...masterDownloads, ...countryDownloads].forEach((item) => {
-    const row = document.createElement("div");
-    row.className = `download-item ${item.href === "data/wdsi_all_countries.xlsx" ? "download-item-wide" : ""}`.trim();
-    row.innerHTML = `
-      <div>
-        <strong>${item.title}</strong>
-        <div class="download-meta">${item.meta}</div>
-      </div>
-      ${item.href
-        ? `<a class="download-link" href="${item.href}" target="_blank" rel="noreferrer">Download</a>`
-        : '<span class="download-link is-disabled">Pending</span>'}
-    `;
-    list.appendChild(row);
-  });
-}
-
-function renderCsvOnlyDownloadList() {
-  const list = document.getElementById("download-list");
-  list.innerHTML = "";
-
-  const masterDownloads = [
-    {
-      title: "Full daily dataset",
-      meta: "Excel workbook with the full calendar-day panel and a variable-definitions sheet",
-      href: "data/wdsi_all_countries.xlsx",
-    },
-  ];
-
-  const countryDownloads = state.summary.countries.map((country) => ({
-    title: `${country.label} data`,
-    meta: isPlaceholderCountry(country)
-      ? `${country.code} - placeholder slot, CSV pending`
-      : `${country.code} - ${country.publication_days} publication days`,
-    href: isPlaceholderCountry(country) ? null : country.file_xlsx || country.file_csv,
-  }));
 
   [...masterDownloads, ...countryDownloads].forEach((item) => {
     const row = document.createElement("div");
@@ -1132,223 +905,6 @@ function renderTrumpDirectedSupplement() {
   renderTrumpDirectedBoard();
 }
 
-function updateEventChips(countryData) {
-  const chips = document.getElementById("event-chips");
-  chips.innerHTML = "";
-  if (!countryData.records || !countryData.records.length) {
-    return;
-  }
-
-  const minDate = countryData.records[0].date;
-  const maxDate = countryData.records[countryData.records.length - 1].date;
-  const visibleEvents = state.events.filter((event) => event.date >= minDate && event.date <= maxDate);
-
-  visibleEvents.forEach((event) => {
-    const chip = document.createElement("span");
-    chip.className = "event-chip";
-    chip.textContent = `${event.date} - ${event.title_en}`;
-    chips.appendChild(chip);
-  });
-}
-
-function buildChartLayout(country, countryData) {
-  const start = countryData.records[0].date;
-  const end = countryData.records[countryData.records.length - 1].date;
-  const filteredEvents = state.events.filter((event) => event.date >= start && event.date <= end);
-
-  return {
-    margin: { l: 46, r: 24, t: 36, b: 44 },
-    paper_bgcolor: "rgba(0,0,0,0)",
-    plot_bgcolor: "rgba(255,255,255,0)",
-    hovermode: "x unified",
-    font: {
-      family: '"Source Sans 3", Arial, sans-serif',
-      color: "#18212b",
-    },
-    xaxis: {
-      showgrid: true,
-      gridcolor: "rgba(24, 33, 43, 0.10)",
-      zeroline: false,
-      tickfont: { color: "#5c6672" },
-    },
-    yaxis: {
-      title: "WDSI",
-      range: [-3.2, 3.2],
-      showgrid: true,
-      gridcolor: "rgba(24, 33, 43, 0.10)",
-      zeroline: true,
-      zerolinecolor: "rgba(24, 33, 43, 0.28)",
-      tickfont: { color: "#5c6672" },
-    },
-    legend: {
-      orientation: "h",
-      yanchor: "bottom",
-      y: 1.02,
-      xanchor: "left",
-      x: 0,
-    },
-    shapes: filteredEvents.map((event) => ({
-      type: "line",
-      x0: event.date,
-      x1: event.date,
-      y0: -3.2,
-      y1: 3.2,
-      line: {
-        color: "rgba(150, 59, 52, 0.24)",
-        width: 1.2,
-        dash: "dot",
-      },
-    })),
-  };
-}
-
-function buildPlaceholderChartLayout(country) {
-  return {
-    margin: { l: 24, r: 24, t: 24, b: 24 },
-    paper_bgcolor: "rgba(0,0,0,0)",
-    plot_bgcolor: "rgba(255,255,255,0)",
-    font: {
-      family: '"Source Sans 3", Arial, sans-serif',
-      color: "#18212b",
-    },
-    xaxis: { visible: false },
-    yaxis: { visible: false },
-    annotations: [
-      {
-        x: 0.5,
-        y: 0.58,
-        xref: "paper",
-        yref: "paper",
-        showarrow: false,
-        text: `${country.label} is reserved as a top-15 GDP placeholder`,
-        font: { size: 18, color: "#18212b" },
-      },
-      {
-        x: 0.5,
-        y: 0.42,
-        xref: "paper",
-        yref: "paper",
-        showarrow: false,
-        text: country.placeholder_note || "The time series will appear after official-source onboarding and validation.",
-        font: { size: 13, color: "#5c6672" },
-        align: "center",
-      },
-    ],
-  };
-}
-
-function renderChart(country, countryData) {
-  const records = countryData.records;
-  if (!records.length) {
-    Plotly.react("wdsi-chart", [], buildPlaceholderChartLayout(country), {
-      displayModeBar: false,
-      responsive: true,
-      displaylogo: false,
-    });
-    document.getElementById("chart-caption").textContent =
-      `${country.label} is currently shown as a GDP top-15 placeholder. The chart will populate once DSI collection and validation are complete.`;
-    updateEventChips(countryData);
-    return;
-  }
-  const rollingDates = records.map((record) => record.date);
-  const rolling7Values = records.map((record) => record.rolling7);
-  const rolling30Values = records.map((record) => record.rolling30);
-  const rawRecords = records.filter((record) => record.publication && record.raw !== null);
-  const rawDates = rawRecords.map((record) => record.date);
-  const rawValues = rawRecords.map((record) => record.raw);
-  const showRolling7 = state.seriesMode === "rolling7";
-  const showRolling30 = state.seriesMode === "rolling30";
-  const showRaw = state.seriesMode === "raw";
-
-  const traces = [
-    {
-      x: rollingDates,
-      y: rolling7Values,
-      type: "scatter",
-      mode: "lines",
-      name: "7-day smoothed WDSI",
-      line: {
-        color: country.color,
-        width: showRolling7 ? 2.6 : 1.4,
-        dash: "solid",
-      },
-      opacity: showRolling7 ? 1 : showRaw ? 0.42 : 0.3,
-      hovertemplate: "%{x}<br>7-day smoothed value: %{y:.3f}<extra></extra>",
-    },
-    {
-      x: rollingDates,
-      y: rolling30Values,
-      type: "scatter",
-      mode: "lines",
-      name: "30-day smoothed WDSI",
-      line: {
-        color: country.color,
-        width: showRolling30 ? 2.6 : 1.5,
-        dash: "longdash",
-      },
-      opacity: showRolling30 ? 0.95 : showRaw ? 0.38 : 0.32,
-      hovertemplate: "%{x}<br>30-day smoothed value: %{y:.3f}<extra></extra>",
-    },
-    {
-      x: rawDates,
-      y: rawValues,
-      type: "scatter",
-      mode: "markers",
-      name: "Raw publication-day score",
-      marker: {
-        color: "#963b34",
-        size: showRaw ? 8 : 6,
-        opacity: showRaw ? 0.88 : 0.22,
-      },
-      hovertemplate: "%{x}<br>Raw publication-day score: %{y:.0f}<extra></extra>",
-    },
-  ];
-
-  Plotly.react("wdsi-chart", traces, buildChartLayout(country, countryData), {
-    displayModeBar: true,
-    responsive: true,
-    displaylogo: false,
-    modeBarButtonsToRemove: ["select2d", "lasso2d", "autoScale2d"],
-  });
-
-  document.getElementById("chart-caption").textContent =
-    `${country.label} is available as a raw publication-day score together with 7-day and 30-day smoothed series. Current view: ${
-      showRolling7 ? "7-day smoothed trend" : showRolling30 ? "30-day smoothed trend" : "discrete publication-day moves"
-    }.`;
-
-  updateEventChips(countryData);
-}
-
-async function setSelectedCountry(code) {
-  state.selectedCode = code;
-  renderCountryBoard();
-  renderCountryTabs();
-
-  const country = getCountryByCode(code);
-  renderSelectedMetrics(country);
-  const countryData = await loadCountryData(code);
-  renderChart(country, countryData);
-}
-
-function bindSeriesToggle() {
-  const container = document.getElementById("series-toggle");
-  container.addEventListener("click", async (event) => {
-    const button = event.target.closest("button[data-series]");
-    if (!button) {
-      return;
-    }
-
-    state.seriesMode = button.dataset.series;
-    container.querySelectorAll("button").forEach((node) => {
-      node.classList.toggle("is-active", node === button);
-    });
-
-    const country = getCountryByCode(state.selectedCode);
-    const countryData = await loadCountryData(state.selectedCode);
-    renderChart(country, countryData);
-  });
-}
-
 function bindTrumpSeriesToggle() {
   const container = document.getElementById("trump-series-toggle");
   container.addEventListener("click", (event) => {
@@ -1368,49 +924,33 @@ function bindTrumpSeriesToggle() {
 
 async function init() {
   try {
-    const [summary, events, trump, trumpDirected, visitors] = await Promise.all([
+    const [summary, trump, trumpDirected, visitors] = await Promise.all([
       fetchJson(summaryPath),
-      fetchJson(eventsPath),
       fetchJson(trumpPath).catch(() => null),
       fetchJson(trumpDirectedSummaryPath).catch(() => null),
       fetchJson(visitorsPath).catch(() => null),
     ]);
     state.summary = summary;
-    state.events = events.events || [];
     state.trump = trump;
     state.trumpDirected = trumpDirected;
     state.visitors = visitors;
-    state.selectedCode =
-      state.selectedCode && getCountryByCode(state.selectedCode)
-        ? state.selectedCode
-        : state.summary.countries[0]?.code ?? null;
     const directedCountries = orderedTrumpDirectedCountries();
     state.trumpDirectedSelectedCode =
       state.trumpDirectedSelectedCode && getTrumpDirectedCountryMeta(state.trumpDirectedSelectedCode)
         ? state.trumpDirectedSelectedCode
         : directedCountries[0]?.code ?? null;
 
-    renderGlobalMeta();
     renderVisitorsCard();
     startVisitorsAutoRefresh();
-    renderCountryBoard();
-    renderCountryTabs();
-    renderCsvOnlyDownloadList();
-    bindSeriesToggle();
     bindTrumpSeriesToggle();
     renderTrumpSupplement();
     bindTrumpDirectedSeriesToggle();
     renderTrumpDirectedSupplement();
 
-    if (state.selectedCode) {
-      await setSelectedCountry(state.selectedCode);
-    }
     if (state.trumpDirectedSelectedCode) {
       await setSelectedTrumpDirectedCountry(state.trumpDirectedSelectedCode);
     }
   } catch (error) {
-    document.getElementById("chart-caption").textContent =
-      "Failed to load page data. Please make sure the data files are accessible and try again.";
     console.error(error);
   }
 }

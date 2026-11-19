@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-08-07T08:12:22.171715+00:00",
+  "generated_at": "2026-11-19T19:26:27.042386+00:00",
   "site_title": "Diplomatic Sentiment Observatory",
   "site_short_name": "DSI Observatory",
-  "method_note": "Diplomatic Sentiment Observatory (DSI) site build: each publication-day raw score uses the same-day minimum; missing dates are forward-filled; 3-day, 7-day, and 30-day series are rolling means on the filled daily path. The site presents c1/WDSI, c2/EDSI, and c3/ODSI as parallel branches within the same DSI framework.",
+  "method_note": "November 19, 2026 paper, section 2.2.3. Higher WDSI means more adverse rhetoric. All 15 countries: trailing 14-day mean of the carried-forward most adverse country-day score. Study-specific historical measures are in the paper replication workbook. EDSI and ODSI retain their original direction and windows.",
   "indicators": {
     "c1": {
       "slug": "wdsi",
       "short_label": "WDSI",
       "label": "War-Related DSI",
-      "description": "War-related diplomatic sentiment built from the military-security dimension.",
+      "description": "War-related diplomatic sentiment. Higher is more adverse; the comparative baseline weights 14 calendar days equally.",
       "chart_title": "WDSI"
     },
     "c2": {
@@ -31,6 +31,9 @@
     "dsi_csv": "data/dsi_all_countries.csv",
     "wdsi_xlsx": "data/wdsi_all_countries.xlsx",
     "wdsi_csv": "data/wdsi_all_countries.csv",
+    "wdsi_site_periods": "data/wdsi_site_periods.csv",
+    "wdsi_paper_periods": "data/wdsi_paper_periods.csv",
+    "wdsi_replication": "data/wdsi_paper_replication.xlsx",
     "edsi_xlsx": "data/edsi_all_countries.xlsx",
     "edsi_csv": "data/edsi_all_countries.csv",
     "odsi_xlsx": "data/odsi_all_countries.xlsx",
@@ -69,14 +72,15 @@
           "slug": "wdsi",
           "short_label": "WDSI",
           "label": "War-Related DSI",
-          "latest_raw": -3,
-          "latest_filled": -3,
-          "latest_7d": -1.143,
-          "latest_30d": -1,
-          "change_7d": -0.143,
-          "change_30d": -0.133,
+          "latest_raw": 3,
+          "latest_filled": 3,
+          "latest_7d": 1.143,
+          "latest_30d": 1,
+          "change_7d": 0.143,
+          "change_30d": 0.133,
           "current_year": 2026,
-          "current_year_mean": -0.968
+          "current_year_mean": 0.968,
+          "latest_14d": 1.071428571428571
         },
         "c2": {
           "slug": "edsi",
@@ -105,13 +109,14 @@
           "current_year_mean": -0.275
         }
       },
-      "latest_raw": -3,
-      "latest_7d": -1.143,
-      "latest_30d": -1,
-      "change_7d": -0.143,
-      "change_30d": -0.133,
+      "latest_14d": 1.071428571428571,
+      "latest_raw": 3,
+      "latest_7d": 1.143,
+      "latest_30d": 1,
+      "change_7d": 0.143,
+      "change_30d": 0.133,
       "current_year": 2026,
-      "current_year_mean": -0.968
+      "current_year_mean": 0.968
     },
     {
       "code": "CN",
@@ -136,14 +141,15 @@
           "slug": "wdsi",
           "short_label": "WDSI",
           "label": "War-Related DSI",
-          "latest_raw": -3,
-          "latest_filled": -3,
-          "latest_7d": -2.429,
-          "latest_30d": -2.033,
-          "change_7d": -0.571,
-          "change_30d": -0.7,
+          "latest_raw": 3,
+          "latest_filled": 3,
+          "latest_7d": 2.429,
+          "latest_30d": 2.033,
+          "change_7d": 0.571,
+          "change_30d": 0.7,
           "current_year": 2026,
-          "current_year_mean": -1.812
+          "current_year_mean": 1.812,
+          "latest_14d": 2.142857142857143
         },
         "c2": {
           "slug": "edsi",
@@ -172,13 +178,14 @@
           "current_year_mean": 1.115
         }
       },
-      "latest_raw": -3,
-      "latest_7d": -2.429,
-      "latest_30d": -2.033,
-      "change_7d": -0.571,
-      "change_30d": -0.7,
+      "latest_14d": 2.142857142857143,
+      "latest_raw": 3,
+      "latest_7d": 2.429,
+      "latest_30d": 2.033,
+      "change_7d": 0.571,
+      "change_30d": 0.7,
       "current_year": 2026,
-      "current_year_mean": -1.812
+      "current_year_mean": 1.812
     },
     {
       "code": "DE",
@@ -203,14 +210,15 @@
           "slug": "wdsi",
           "short_label": "WDSI",
           "label": "War-Related DSI",
-          "latest_raw": -3,
-          "latest_filled": -3,
-          "latest_7d": 1.286,
-          "latest_30d": 0.367,
-          "change_7d": 0.143,
-          "change_30d": 0.267,
+          "latest_raw": 3,
+          "latest_filled": 3,
+          "latest_7d": -1.286,
+          "latest_30d": -0.367,
+          "change_7d": -0.143,
+          "change_30d": -0.267,
           "current_year": 2026,
-          "current_year_mean": -0.731
+          "current_year_mean": 0.731,
+          "latest_14d": -1.214285714285714
         },
         "c2": {
           "slug": "edsi",
@@ -239,13 +247,14 @@
           "current_year_mean": 1.019
         }
       },
-      "latest_raw": -3,
-      "latest_7d": 1.286,
-      "latest_30d": 0.367,
-      "change_7d": 0.143,
-      "change_30d": 0.267,
+      "latest_14d": -1.214285714285714,
+      "latest_raw": 3,
+      "latest_7d": -1.286,
+      "latest_30d": -0.367,
+      "change_7d": -0.143,
+      "change_30d": -0.267,
       "current_year": 2026,
-      "current_year_mean": -0.731
+      "current_year_mean": 0.731
     },
     {
       "code": "JP",
@@ -272,12 +281,13 @@
           "label": "War-Related DSI",
           "latest_raw": 0,
           "latest_filled": 0,
-          "latest_7d": -0.286,
-          "latest_30d": -0.433,
+          "latest_7d": 0.286,
+          "latest_30d": 0.433,
           "change_7d": 0,
-          "change_30d": -0.433,
+          "change_30d": 0.433,
           "current_year": 2026,
-          "current_year_mean": -0.509
+          "current_year_mean": 0.509,
+          "latest_14d": 0.285714285714286
         },
         "c2": {
           "slug": "edsi",
@@ -306,13 +316,14 @@
           "current_year_mean": 0.633
         }
       },
+      "latest_14d": 0.285714285714286,
       "latest_raw": 0,
-      "latest_7d": -0.286,
-      "latest_30d": -0.433,
+      "latest_7d": 0.286,
+      "latest_30d": 0.433,
       "change_7d": 0,
-      "change_30d": -0.433,
+      "change_30d": 0.433,
       "current_year": 2026,
-      "current_year_mean": -0.509
+      "current_year_mean": 0.509
     },
     {
       "code": "IN",
@@ -339,12 +350,13 @@
           "label": "War-Related DSI",
           "latest_raw": 0,
           "latest_filled": 0,
-          "latest_7d": -1.143,
-          "latest_30d": -0.933,
-          "change_7d": 0.429,
-          "change_30d": -0.833,
+          "latest_7d": 1.143,
+          "latest_30d": 0.933,
+          "change_7d": -0.429,
+          "change_30d": 0.833,
           "current_year": 2026,
-          "current_year_mean": -0.142
+          "current_year_mean": 0.142,
+          "latest_14d": 1.357142857142857
         },
         "c2": {
           "slug": "edsi",
@@ -373,13 +385,14 @@
           "current_year_mean": 0.661
         }
       },
+      "latest_14d": 1.357142857142857,
       "latest_raw": 0,
-      "latest_7d": -1.143,
-      "latest_30d": -0.933,
-      "change_7d": 0.429,
-      "change_30d": -0.833,
+      "latest_7d": 1.143,
+      "latest_30d": 0.933,
+      "change_7d": -0.429,
+      "change_30d": 0.833,
       "current_year": 2026,
-      "current_year_mean": -0.142
+      "current_year_mean": 0.142
     },
     {
       "code": "UK",
@@ -404,14 +417,15 @@
           "slug": "wdsi",
           "short_label": "WDSI",
           "label": "War-Related DSI",
-          "latest_raw": -2,
-          "latest_filled": -2,
-          "latest_7d": -1.286,
-          "latest_30d": -1.933,
-          "change_7d": 0.714,
-          "change_30d": 0.667,
+          "latest_raw": 2,
+          "latest_filled": 2,
+          "latest_7d": 1.286,
+          "latest_30d": 1.933,
+          "change_7d": -0.714,
+          "change_30d": -0.667,
           "current_year": 2026,
-          "current_year_mean": -1.729
+          "current_year_mean": 1.729,
+          "latest_14d": 1.642857142857143
         },
         "c2": {
           "slug": "edsi",
@@ -440,13 +454,14 @@
           "current_year_mean": -0.206
         }
       },
-      "latest_raw": -2,
-      "latest_7d": -1.286,
-      "latest_30d": -1.933,
-      "change_7d": 0.714,
-      "change_30d": 0.667,
+      "latest_14d": 1.642857142857143,
+      "latest_raw": 2,
+      "latest_7d": 1.286,
+      "latest_30d": 1.933,
+      "change_7d": -0.714,
+      "change_30d": -0.667,
       "current_year": 2026,
-      "current_year_mean": -1.729
+      "current_year_mean": 1.729
     },
     {
       "code": "FR",
@@ -473,12 +488,13 @@
           "label": "War-Related DSI",
           "latest_raw": 0,
           "latest_filled": 0,
-          "latest_7d": -0.714,
-          "latest_30d": -0.167,
-          "change_7d": -1,
-          "change_30d": 0.667,
+          "latest_7d": 0.714,
+          "latest_30d": 0.167,
+          "change_7d": 1,
+          "change_30d": -0.667,
           "current_year": 2026,
-          "current_year_mean": -0.968
+          "current_year_mean": 0.968,
+          "latest_14d": 0.214285714285714
         },
         "c2": {
           "slug": "edsi",
@@ -507,13 +523,14 @@
           "current_year_mean": 0.472
         }
       },
+      "latest_14d": 0.214285714285714,
       "latest_raw": 0,
-      "latest_7d": -0.714,
-      "latest_30d": -0.167,
-      "change_7d": -1,
-      "change_30d": 0.667,
+      "latest_7d": 0.714,
+      "latest_30d": 0.167,
+      "change_7d": 1,
+      "change_30d": -0.667,
       "current_year": 2026,
-      "current_year_mean": -0.968
+      "current_year_mean": 0.968
     },
     {
       "code": "IT",
@@ -538,14 +555,15 @@
           "slug": "wdsi",
           "short_label": "WDSI",
           "label": "War-Related DSI",
-          "latest_raw": -1,
-          "latest_filled": -1,
-          "latest_7d": 0.286,
-          "latest_30d": 0.067,
+          "latest_raw": 1,
+          "latest_filled": 1,
+          "latest_7d": -0.286,
+          "latest_30d": -0.067,
           "change_7d": 0,
-          "change_30d": 0.4,
+          "change_30d": -0.4,
           "current_year": 2026,
-          "current_year_mean": -0.401
+          "current_year_mean": 0.401,
+          "latest_14d": -0.285714285714286
         },
         "c2": {
           "slug": "edsi",
@@ -574,13 +592,14 @@
           "current_year_mean": 0.843
         }
       },
-      "latest_raw": -1,
-      "latest_7d": 0.286,
-      "latest_30d": 0.067,
+      "latest_14d": -0.285714285714286,
+      "latest_raw": 1,
+      "latest_7d": -0.286,
+      "latest_30d": -0.067,
       "change_7d": 0,
-      "change_30d": 0.4,
+      "change_30d": -0.4,
       "current_year": 2026,
-      "current_year_mean": -0.401
+      "current_year_mean": 0.401
     },
     {
       "code": "CA",
@@ -607,12 +626,13 @@
           "label": "War-Related DSI",
           "latest_raw": 0,
           "latest_filled": 0,
-          "latest_7d": -1.429,
-          "latest_30d": -0.2,
-          "change_7d": -1.857,
-          "change_30d": -0.1,
+          "latest_7d": 1.429,
+          "latest_30d": 0.2,
+          "change_7d": 1.857,
+          "change_30d": 0.1,
           "current_year": 2026,
-          "current_year_mean": -0.509
+          "current_year_mean": 0.509,
+          "latest_14d": 0.5
         },
         "c2": {
           "slug": "edsi",
@@ -641,13 +661,14 @@
           "current_year_mean": 0.606
         }
       },
+      "latest_14d": 0.5,
       "latest_raw": 0,
-      "latest_7d": -1.429,
-      "latest_30d": -0.2,
-      "change_7d": -1.857,
-      "change_30d": -0.1,
+      "latest_7d": 1.429,
+      "latest_30d": 0.2,
+      "change_7d": 1.857,
+      "change_30d": 0.1,
       "current_year": 2026,
-      "current_year_mean": -0.509
+      "current_year_mean": 0.509
     },
     {
       "code": "BR",
@@ -674,12 +695,13 @@
           "label": "War-Related DSI",
           "latest_raw": 0,
           "latest_filled": 0,
-          "latest_7d": 0.143,
-          "latest_30d": -0.133,
-          "change_7d": 0.571,
-          "change_30d": -0.133,
+          "latest_7d": -0.143,
+          "latest_30d": 0.133,
+          "change_7d": -0.571,
+          "change_30d": 0.133,
           "current_year": 2026,
-          "current_year_mean": -0.349
+          "current_year_mean": 0.349,
+          "latest_14d": 0.142857142857143
         },
         "c2": {
           "slug": "edsi",
@@ -708,13 +730,14 @@
           "current_year_mean": 0.234
         }
       },
+      "latest_14d": 0.142857142857143,
       "latest_raw": 0,
-      "latest_7d": 0.143,
-      "latest_30d": -0.133,
-      "change_7d": 0.571,
-      "change_30d": -0.133,
+      "latest_7d": -0.143,
+      "latest_30d": 0.133,
+      "change_7d": -0.571,
+      "change_30d": 0.133,
       "current_year": 2026,
-      "current_year_mean": -0.349
+      "current_year_mean": 0.349
     },
     {
       "code": "RU",
@@ -739,14 +762,15 @@
           "slug": "wdsi",
           "short_label": "WDSI",
           "label": "War-Related DSI",
-          "latest_raw": -3,
-          "latest_filled": -3,
-          "latest_7d": -2.714,
-          "latest_30d": -1.933,
-          "change_7d": -0.571,
-          "change_30d": -0.633,
+          "latest_raw": 3,
+          "latest_filled": 3,
+          "latest_7d": 2.714,
+          "latest_30d": 1.933,
+          "change_7d": 0.571,
+          "change_30d": 0.633,
           "current_year": 2026,
-          "current_year_mean": -1.798
+          "current_year_mean": 1.798,
+          "latest_14d": 2.428571428571428
         },
         "c2": {
           "slug": "edsi",
@@ -775,13 +799,14 @@
           "current_year_mean": -0.491
         }
       },
-      "latest_raw": -3,
-      "latest_7d": -2.714,
-      "latest_30d": -1.933,
-      "change_7d": -0.571,
-      "change_30d": -0.633,
+      "latest_14d": 2.428571428571428,
+      "latest_raw": 3,
+      "latest_7d": 2.714,
+      "latest_30d": 1.933,
+      "change_7d": 0.571,
+      "change_30d": 0.633,
       "current_year": 2026,
-      "current_year_mean": -1.798
+      "current_year_mean": 1.798
     },
     {
       "code": "KR",
@@ -806,14 +831,15 @@
           "slug": "wdsi",
           "short_label": "WDSI",
           "label": "War-Related DSI",
-          "latest_raw": -3,
-          "latest_filled": -3,
-          "latest_7d": -0.429,
-          "latest_30d": -0.133,
-          "change_7d": -0.429,
-          "change_30d": -0.133,
+          "latest_raw": 3,
+          "latest_filled": 3,
+          "latest_7d": 0.429,
+          "latest_30d": 0.133,
+          "change_7d": 0.429,
+          "change_30d": 0.133,
           "current_year": 2026,
-          "current_year_mean": -0.324
+          "current_year_mean": 0.324,
+          "latest_14d": 0.214285714285714
         },
         "c2": {
           "slug": "edsi",
@@ -842,13 +868,14 @@
           "current_year_mean": 1.079
         }
       },
-      "latest_raw": -3,
-      "latest_7d": -0.429,
-      "latest_30d": -0.133,
-      "change_7d": -0.429,
-      "change_30d": -0.133,
+      "latest_14d": 0.214285714285714,
+      "latest_raw": 3,
+      "latest_7d": 0.429,
+      "latest_30d": 0.133,
+      "change_7d": 0.429,
+      "change_30d": 0.133,
       "current_year": 2026,
-      "current_year_mean": -0.324
+      "current_year_mean": 0.324
     },
     {
       "code": "MX",
@@ -875,12 +902,13 @@
           "label": "War-Related DSI",
           "latest_raw": 0,
           "latest_filled": 0,
-          "latest_7d": 0.714,
-          "latest_30d": 0.267,
-          "change_7d": 0.714,
+          "latest_7d": -0.714,
+          "latest_30d": -0.267,
+          "change_7d": -0.714,
           "change_30d": 0,
           "current_year": 2026,
-          "current_year_mean": 0.069
+          "current_year_mean": -0.069,
+          "latest_14d": -0.357142857142857
         },
         "c2": {
           "slug": "edsi",
@@ -909,13 +937,14 @@
           "current_year_mean": 1.273
         }
       },
+      "latest_14d": -0.357142857142857,
       "latest_raw": 0,
-      "latest_7d": 0.714,
-      "latest_30d": 0.267,
-      "change_7d": 0.714,
+      "latest_7d": -0.714,
+      "latest_30d": -0.267,
+      "change_7d": -0.714,
       "change_30d": 0,
       "current_year": 2026,
-      "current_year_mean": 0.069
+      "current_year_mean": -0.069
     },
     {
       "code": "AU",
@@ -940,14 +969,15 @@
           "slug": "wdsi",
           "short_label": "WDSI",
           "label": "War-Related DSI",
-          "latest_raw": 2,
-          "latest_filled": 2,
-          "latest_7d": 2,
-          "latest_30d": 1.533,
-          "change_7d": 1.714,
-          "change_30d": 1.233,
+          "latest_raw": -2,
+          "latest_filled": -2,
+          "latest_7d": -2,
+          "latest_30d": -1.533,
+          "change_7d": -1.714,
+          "change_30d": -1.233,
           "current_year": 2026,
-          "current_year_mean": -0.225
+          "current_year_mean": 0.225,
+          "latest_14d": -1.142857142857143
         },
         "c2": {
           "slug": "edsi",
@@ -976,13 +1006,14 @@
           "current_year_mean": 0.729
         }
       },
-      "latest_raw": 2,
-      "latest_7d": 2,
-      "latest_30d": 1.533,
-      "change_7d": 1.714,
-      "change_30d": 1.233,
+      "latest_14d": -1.142857142857143,
+      "latest_raw": -2,
+      "latest_7d": -2,
+      "latest_30d": -1.533,
+      "change_7d": -1.714,
+      "change_30d": -1.233,
       "current_year": 2026,
-      "current_year_mean": -0.225
+      "current_year_mean": 0.225
     },
     {
       "code": "ES",
@@ -1009,12 +1040,13 @@
           "label": "War-Related DSI",
           "latest_raw": 0,
           "latest_filled": 0,
-          "latest_7d": -0.429,
-          "latest_30d": -1.3,
-          "change_7d": 0.429,
-          "change_30d": 0.433,
+          "latest_7d": 0.429,
+          "latest_30d": 1.3,
+          "change_7d": -0.429,
+          "change_30d": -0.433,
           "current_year": 2026,
-          "current_year_mean": -1.741
+          "current_year_mean": 1.741,
+          "latest_14d": 0.642857142857143
         },
         "c2": {
           "slug": "edsi",
@@ -1043,13 +1075,14 @@
           "current_year_mean": 0.547
         }
       },
+      "latest_14d": 0.642857142857143,
       "latest_raw": 0,
-      "latest_7d": -0.429,
-      "latest_30d": -1.3,
-      "change_7d": 0.429,
-      "change_30d": 0.433,
+      "latest_7d": 0.429,
+      "latest_30d": 1.3,
+      "change_7d": -0.429,
+      "change_30d": -0.433,
       "current_year": 2026,
-      "current_year_mean": -1.741
+      "current_year_mean": 1.741
     }
   ]
 }

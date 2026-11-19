@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import json
 import math
-import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
 
+from wdsi_series import INPUTS, daily_indices, frozen_countrydays, paper_documents, period_means
 
 SITE_ROOT = Path(__file__).resolve().parents[1]
 WORKSPACE_ROOT = SITE_ROOT.parent
@@ -16,14 +16,13 @@ THREE_CATEGORY_DIR = WORKSPACE_ROOT / "DSI-ICF" / "data" / "三类指数结果_�
 SCORES_DIR = WORKSPACE_ROOT / "DSI-ICF" / "data" / "情绪测度结果数据_扩展15国"
 
 ALL_COUNTRIES_DAILY_PATH = THREE_CATEGORY_DIR / "all_countries_daily.csv"
-SUMMARY_PATH = THREE_CATEGORY_DIR / "summary.csv"
 
 INDICATORS = {
     "c1": {
         "slug": "wdsi",
         "short_label": "WDSI",
         "label": "War-Related DSI",
-        "description": "War-related diplomatic sentiment built from the military-security dimension.",
+        "description": "War-related diplomatic sentiment. Higher is more adverse; the comparative baseline weights 14 calendar days equally.",
         "chart_title": "WDSI",
     },
     "c2": {
@@ -85,11 +84,11 @@ COUNTRY_WORKBOOK_COLUMNS = [
     "c1_30",
     "c2_30",
     "c3_30",
+    "rolling14",
+    "c1_14",
 ]
 
 MASTER_WORKBOOK_COLUMNS = ["country_code", "country"] + COUNTRY_WORKBOOK_COLUMNS
-
-INDICATOR_PANEL_COLUMNS = ["country_code", "country", "date", "publication", "raw", "filled", "ma3", "ma7", "ma30"]
 
 VARIABLE_DEFINITIONS = [
     {
@@ -132,12 +131,17 @@ VARIABLE_DEFINITIONS = [
         "variable": "c1_30 / c2_30 / c3_30",
         "description": "30-day rolling means on the forward-filled daily paths.",
     },
+    {"variable": "c1_raw / c1", "description": "Higher WDSI is more adverse: +3 most adverse, -3 most conciliatory. Raw is the most adverse score on publication days. EDSI and ODSI keep their original direction (higher is more conciliatory)."},
+    {"variable": "rolling14 / c1_14 / ma14", "description": "Common 15-country baseline: trailing 14 calendar days, equal daily weights on the carried-forward country-day score; first 13 days missing."},
+    {"variable": "wdsi14_countryday", "description": "Monthly or quarterly arithmetic mean of the available comparative daily 14-day WDSI. Higher is more adverse. Quarters weight days, not months."},
+    {"variable": "signal_days / required_days / full_signal_period", "description": "Valid daily 14-day values / calendar days in the full period / whether these counts match. No data after the last observed country date."},
 ]
 
 METHOD_NOTE = (
-    "Diplomatic Sentiment Observatory (DSI) site build: each publication-day raw score uses the same-day minimum; "
-    "missing dates are forward-filled; 3-day, 7-day, and 30-day series are rolling means on the filled daily path. "
-    "The site presents c1/WDSI, c2/EDSI, and c3/ODSI as parallel branches within the same DSI framework."
+    "November 19, 2026 paper, section 2.2.3. Higher WDSI means more adverse rhetoric. "
+    "All 15 countries: trailing 14-day mean of the carried-forward most adverse country-day score. "
+    "Study-specific historical measures are in the paper replication workbook. "
+    "EDSI and ODSI retain their original direction and windows."
 )
 
 
@@ -175,7 +179,7 @@ def sanitize_record(record: dict[str, object]) -> dict[str, object]:
         elif key == "publication":
             cleaned[key] = to_bool(value)
         elif isinstance(value, float):
-            cleaned[key] = clean_number(value)
+            cleaned[key] = clean_number(value, 15 if key.startswith(("c1", "cn_doc", "rolling")) else 3)
         else:
             cleaned[key] = value
     return cleaned
@@ -226,7 +230,7 @@ def write_workbook(path: Path, sheet_name: str, frame: pd.DataFrame) -> None:
         definitions.to_excel(writer, index=False, sheet_name="variable_definitions")
 
 
-def write_indicator_workbook(path: Path, sheet_name: str, frame: pd.DataFrame, indicator_label: str) -> None:
+def write_indicator_workbook(path: Path, sheet_name: str, frame: pd.DataFrame, indicator_label: str, periods=None) -> None:
     definitions = pd.DataFrame(
         [
             {"variable": "country_code", "description": "Two-letter country or region code."},
@@ -240,43 +244,24 @@ def write_indicator_workbook(path: Path, sheet_name: str, frame: pd.DataFrame, i
             {"variable": "ma30", "description": f"30-day rolling mean for {indicator_label}."},
         ]
     )
+    if periods is not None:
+        definitions = pd.concat([definitions, pd.DataFrame(VARIABLE_DEFINITIONS[-4:])], ignore_index=True)
     with pd.ExcelWriter(path, engine="openpyxl") as writer:
         frame.to_excel(writer, index=False, sheet_name=sheet_name)
         definitions.to_excel(writer, index=False, sheet_name="variable_definitions")
+        for name, table in (periods or {}).items():
+            table.to_excel(writer, index=False, sheet_name=name)
 
 
-def load_inputs() -> tuple[pd.DataFrame, pd.DataFrame]:
-    if not ALL_COUNTRIES_DAILY_PATH.exists():
-        raise FileNotFoundError(f"Missing daily panel: {ALL_COUNTRIES_DAILY_PATH}")
-    if not SUMMARY_PATH.exists():
-        raise FileNotFoundError(f"Missing summary file: {SUMMARY_PATH}")
-
-    daily = pd.read_csv(ALL_COUNTRIES_DAILY_PATH, low_memory=False)
-    summary = pd.read_csv(SUMMARY_PATH, low_memory=False)
-
-    daily = daily.rename(columns={"time": "date"})
-    daily["date"] = pd.to_datetime(daily["date"]).dt.strftime("%Y-%m-%d")
-    daily["publication"] = daily["publication"].map(to_bool)
-    for column in [
-        "c1_raw",
-        "c2_raw",
-        "c3_raw",
-        "c1",
-        "c2",
-        "c3",
-        "c1_3",
-        "c2_3",
-        "c3_3",
-        "c1_7",
-        "c2_7",
-        "c3_7",
-        "c1_30",
-        "c2_30",
-        "c3_30",
-    ]:
-        daily[column] = pd.to_numeric(daily[column], errors="coerce")
-
-    return daily, summary
+def load_inputs():
+    daily = pd.read_csv(INPUTS / "reviewed_daily.csv.gz")
+    if set(daily.country_code) != set(COUNTRY_ORDER):
+        raise ValueError("Reviewed input must cover all 15 countries")
+    for code, g in daily.groupby("country_code"):
+        records = pd.read_csv(SITE_ROOT / "records" / f"{code}.csv", usecols=["published_at"])
+        if records.published_at.max()[:10] > g.date.max():
+            raise ValueError(f"{code}: newer records exist. Refresh the reviewed three-branch input with import_wdsi_inputs.py before publishing.")
+    return pd.concat([daily_indices(g) for _, g in daily.groupby("country_code")], ignore_index=True)
 
 
 def build_country_payload(
@@ -288,6 +273,7 @@ def build_country_payload(
     records = frame.sort_values("date").reset_index(drop=True).copy()
     records["raw"] = records["c1_raw"]
     records["rolling7"] = records["c1_7"]
+    records["rolling14"] = records["c1_14"]
     records["rolling30"] = records["c1_30"]
     records = records[COUNTRY_WORKBOOK_COLUMNS].copy()
 
@@ -352,9 +338,12 @@ def build_country_payload(
             "current_year_mean": current_year_mean,
         }
         country_summary["indicators"][indicator] = indicator_summary
+        if indicator == "c1":
+            indicator_summary["latest_14d"] = clean_number(frame["c1_14"].iloc[-1], 15)
 
     # Backward-compatible WDSI aliases for the old front-end and supplements.
     c1_summary = country_summary["indicators"]["c1"]
+    country_summary["latest_14d"] = c1_summary["latest_14d"]
     country_summary["latest_raw"] = c1_summary["latest_raw"]
     country_summary["latest_7d"] = c1_summary["latest_7d"]
     country_summary["latest_30d"] = c1_summary["latest_30d"]
@@ -381,13 +370,15 @@ def build_indicator_panel(master_frame: pd.DataFrame, indicator: str) -> pd.Data
             "ma30": master_frame[f"{indicator}_30"],
         }
     )
-    return panel[INDICATOR_PANEL_COLUMNS]
+    if indicator == "c1":
+        panel["ma14"] = master_frame["c1_14"]
+    return panel
 
 
 def main() -> None:
     SITE_DATA_DIR.mkdir(parents=True, exist_ok=True)
-    daily, _ = load_inputs()
-    latest_lookup = build_latest_publication_lookup()
+    daily = load_inputs()
+    latest_lookup = json.loads((INPUTS / "latest_publications.json").read_text(encoding="utf-8"))
 
     countries: list[dict[str, object]] = []
     master_frames: list[pd.DataFrame] = []
@@ -447,6 +438,9 @@ def main() -> None:
             "dsi_csv": "data/dsi_all_countries.csv",
             "wdsi_xlsx": "data/wdsi_all_countries.xlsx",
             "wdsi_csv": "data/wdsi_all_countries.csv",
+            "wdsi_site_periods": "data/wdsi_site_periods.csv",
+            "wdsi_paper_periods": "data/wdsi_paper_periods.csv",
+            "wdsi_replication": "data/wdsi_paper_replication.xlsx",
             "edsi_xlsx": "data/edsi_all_countries.xlsx",
             "edsi_csv": "data/edsi_all_countries.csv",
             "odsi_xlsx": "data/odsi_all_countries.xlsx",
@@ -468,15 +462,42 @@ def main() -> None:
     master_frame.to_csv(SITE_DATA_DIR / "dsi_all_countries.csv", index=False, encoding="utf-8-sig")
     write_workbook(SITE_DATA_DIR / "dsi_all_countries.xlsx", "daily_panel", master_frame)
 
+    frozen = frozen_countrydays()
+    site_periods, paper_periods = period_means(master_frame), period_means(frozen)
+    for name, table in (("site_periods", site_periods), ("paper_periods", paper_periods)):
+        table.to_csv(SITE_DATA_DIR / f"wdsi_{name}.csv", index=False, encoding="utf-8-sig")
+    docs = paper_documents(pd.read_csv(INPUTS / "paper_document_days.csv.gz"))
+    notes = [
+        ("international_daily", "Frozen country-day series for 15 economies. Higher WDSI is more adverse. The Korean regression source is the archived k1 series; other countries use the shared archived country-day input."),
+        ("international_periods", "Monthly and quarterly means of the available daily c1_14 values. Counts and full_signal_period distinguish complete periods. These are signal panels, not outcome-specific financial regression samples."),
+        ("stock_connect_daily", "Figure 2 / Table 4: historical document-weighted WDSI on the paper plotting calendar. The paper describes ten official Chinese source categories. Warm-up uses the available earlier history."),
+        ("doc_count / doc_sum", "Daily number of accepted source records, including non-war zeros, and sum of adverse-positive scores. Both zero on days without records."),
+        ("wdsi14_document", "Sum of scores / number of records in the trailing 14 calendar days, carried only when the whole window is empty. 7- and 30-day windows are sensitivity measures.")
+    ]
+    with pd.ExcelWriter(SITE_DATA_DIR / "wdsi_paper_replication.xlsx", engine="openpyxl") as writer:
+        pd.DataFrame(notes, columns=["series", "definition"]).to_excel(writer, sheet_name="readme", index=False)
+        frozen.to_excel(writer, sheet_name="international_daily", index=False)
+        paper_periods.to_excel(writer, sheet_name="international_periods", index=False)
+        docs.loc[docs.date.ge("2010-01-01")].to_excel(writer, sheet_name="stock_connect_daily", index=False)
     for indicator, indicator_meta in INDICATORS.items():
         indicator_panel = build_indicator_panel(master_frame, indicator)
         file_slug = indicator_meta["slug"]
+        if indicator != "c1" and (SITE_DATA_DIR / f"{file_slug}_all_countries.xlsx").is_file():
+            path = SITE_DATA_DIR / f"{file_slug}_all_countries.csv"
+            if path.is_file():
+                try:
+                    pd.testing.assert_frame_equal(pd.read_csv(path), indicator_panel, atol=1e-14, rtol=0)
+                except AssertionError:
+                    pass
+                else:
+                    continue
         indicator_panel.to_csv(SITE_DATA_DIR / f"{file_slug}_all_countries.csv", index=False, encoding="utf-8-sig")
         write_indicator_workbook(
             SITE_DATA_DIR / f"{file_slug}_all_countries.xlsx",
             f"{file_slug}_panel",
             indicator_panel,
             indicator_meta["short_label"],
+            {"site_periods": site_periods} if indicator == "c1" else None,
         )
 
 
