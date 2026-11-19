@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="styles.css?v=20260808-neutral-visitors">
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
     <script src="script.js?v=20261119-wdsi14" defer></script>
-    <script src="dsi-site.js?v=20261119-wdsi14" defer></script>
+    <script src="dsi-site.js?v=20261119-doc14" defer></script>
   </head>
   <body>
     <div class="page-shell">
@@ -145,7 +145,7 @@
             <p class="eyebrow">Overview</p>
             <h2>Cross-Country DSI Signal Board</h2>
             <p>
-              WDSI readings use the same 14-day, equal-day measure for all 15 countries. Higher values indicate more adverse rhetoric. EDSI and ODSI show seven-day readings on their original scale.
+              Each scored document has equal weight in the trailing 14-day WDSI for all 15 countries. Higher values indicate more adverse rhetoric. EDSI and ODSI show seven-day readings on their original scale.
             </p>
           </div>
           <div class="signal-board-toolbar">
@@ -171,7 +171,7 @@
             <p class="eyebrow">Explorer</p>
             <h2>Index Explorer</h2>
             <p>
-              Compare the same daily WDSI across economies. The 14-day mean is the benchmark; the 7-day and 30-day means show how the signal changes with the window.
+              Compare document-weighted WDSI across economies. The benchmark covers 14 calendar days; the 7-day and 30-day series use the same weighting.
             </p>
           </div>
 
@@ -226,7 +226,7 @@
             <p class="eyebrow">Method</p>
             <h2>How Diplomatic Text Becomes DSI</h2>
             <p>
-              The observatory follows the cross-country construction in Section 2.2.3 of the November 19, 2026 paper. The same rule applies to every country, from the publication-day score to the monthly and quarterly series.
+              The observatory weights documents equally for all 15 economies. The paper's international regressions instead weight calendar days equally; their original series remain available in the replication download.
             </p>
           </div>
 
@@ -243,13 +243,13 @@
             </article>
             <article class="method-card">
               <span class="method-index">03</span>
-              <h3>Form a country-day score</h3>
-              <p>On each publication day, take the most adverse score among that country's official records. On a day without a publication, carry the previous score forward. The raw series marks only dates on which a publication was observed.</p>
+              <h3>Give each document equal weight</h3>
+              <p>For each country, sum the scores of all accepted documents published in the 14 calendar days ending on the date shown, then divide by the number of documents. A zero score counts; a day without a document adds nothing.</p>
             </article>
             <article class="method-card">
               <span class="method-index">04</span>
-              <h3>Average over calendar time</h3>
-              <p>Average the 14 daily scores ending on the date shown, giving each day equal weight. The first 13 days are blank. Monthly and quarterly signals average the available daily indices, and downloads identify partial periods. The paper replication workbook preserves study-specific historical signals.</p>
+              <h3>Report daily and period values</h3>
+              <p>The first 13 dates are blank. Once a full window exists, a wholly empty window keeps the last available index. The raw reading averages only that day's documents. Monthly and quarterly figures average available daily indices; downloads flag partial periods.</p>
             </article>
           </div>
         </section>
@@ -259,7 +259,7 @@
             <p class="eyebrow">Why It Matters</p>
             <h2>What the Paper Finds</h2>
             <p>
-              These estimates use the paper's historical samples. The site extends the index series beyond those samples; the financial regressions are not re-estimated with each data release.
+              These are the November 19 paper's estimates: Stock Connect uses document weights; the international tables use day weights. The site's document-weighted series do not replace the paper's regression inputs.
             </p>
           </div>
 
@@ -288,7 +288,7 @@
             <p class="eyebrow">Download</p>
             <h2>Data Downloads</h2>
             <p>
-              All 15 country workbooks use the same fields, weights, and windows. The cross-country WDSI workbook includes the daily and period series. A separate replication workbook preserves the historical signals used in the paper.
+              The 15 country files include daily WDSI document counts and score sums. The cross-country workbook also contains monthly and quarterly means. The separate paper replication files retain the original historical signals.
             </p>
           </div>
 

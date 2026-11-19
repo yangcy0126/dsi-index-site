@@ -27,6 +27,22 @@ def main():
     assert set(g.country_code) == set(COUNTRY_ORDER) and not g.duplicated(["country_code","date"]).any()
     for col in ("c1_raw", "c2_raw", "c3_raw"):
         assert g[col].notna().equals(g.publication) and g[col].dropna().isin(range(-3, 4)).all()
+    totals = []
+    for code, days in g.groupby("country_code"):
+        scores = pd.read_csv(SCORES_DIR / f"{code}_scores.csv", usecols=["time", "c1", "score_status"])
+        scored = scores.loc[scores.score_status.eq("accepted")]
+        if scored.empty or scored.time.isna().any() or not scored.c1.isin(range(-3, 4)).all():
+            raise ValueError(f"{code}: invalid accepted WDSI records")
+        if scored.time.max() > days.date.max():
+            raise ValueError(f"{code}: reviewed country calendar ends before the last scored document")
+        # Use the active score corpus once, on the existing site observation calendar.
+        stats = scored.loc[scored.time.ge(days.date.min())].groupby("time").c1.agg(["count", "sum"])
+        if not stats.index.isin(days.loc[days.publication, "date"]).all():
+            raise ValueError(f"{code}: scored documents on dates absent from the reviewed publication calendar")
+        totals.append(stats.rename(columns={"count": "doc_count"}).assign(doc_sum=-stats["sum"], country_code=code)
+                      .rename_axis("date").reset_index()[["country_code", "date", "doc_count", "doc_sum"]])
+    g = g.merge(pd.concat(totals), on=["country_code", "date"], how="left", validate="one_to_one")
+    g[["doc_count", "doc_sum"]] = g[["doc_count", "doc_sum"]].fillna(0).astype(int)
     INPUTS.mkdir(exist_ok=True)
     write_snapshot(g, "reviewed_daily.csv.gz")
     (INPUTS / "latest_publications.json").write_text(

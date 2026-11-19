@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import json
 import math
 from datetime import datetime, timezone
@@ -22,7 +23,7 @@ INDICATORS = {
         "slug": "wdsi",
         "short_label": "WDSI",
         "label": "War-Related DSI",
-        "description": "War-related diplomatic sentiment. Higher is more adverse; the comparative baseline weights 14 calendar days equally.",
+        "description": "War-related diplomatic sentiment. Higher is more adverse. Each scored document in the trailing 14 calendar days has equal weight.",
         "chart_title": "WDSI",
     },
     "c2": {
@@ -86,6 +87,8 @@ COUNTRY_WORKBOOK_COLUMNS = [
     "c3_30",
     "rolling14",
     "c1_14",
+    "doc_count",
+    "doc_sum",
 ]
 
 MASTER_WORKBOOK_COLUMNS = ["country_code", "country"] + COUNTRY_WORKBOOK_COLUMNS
@@ -97,7 +100,7 @@ VARIABLE_DEFINITIONS = [
     },
     {
         "variable": "publication",
-        "description": "Whether at least one official source publication is observed on that date.",
+        "description": "Publication flag in the reviewed three-branch calendar. For scored WDSI documents on this date, use doc_count > 0.",
     },
     {
         "variable": "raw",
@@ -121,26 +124,27 @@ VARIABLE_DEFINITIONS = [
     },
     {
         "variable": "c1_3 / c2_3 / c3_3",
-        "description": "3-day rolling means on the forward-filled daily paths.",
+        "description": "Trailing 3 days: mean across documents for WDSI; mean of carried daily scores for EDSI and ODSI.",
     },
     {
         "variable": "c1_7 / c2_7 / c3_7",
-        "description": "7-day rolling means on the forward-filled daily paths.",
+        "description": "Trailing 7 days: mean across documents for WDSI; mean of carried daily scores for EDSI and ODSI.",
     },
     {
         "variable": "c1_30 / c2_30 / c3_30",
-        "description": "30-day rolling means on the forward-filled daily paths.",
+        "description": "Trailing 30 days: mean across documents for WDSI; mean of carried daily scores for EDSI and ODSI.",
     },
-    {"variable": "c1_raw / c1", "description": "Higher WDSI is more adverse: +3 most adverse, -3 most conciliatory. Raw is the most adverse score on publication days. EDSI and ODSI keep their original direction (higher is more conciliatory)."},
-    {"variable": "rolling14 / c1_14 / ma14", "description": "Common 15-country baseline: trailing 14 calendar days, equal daily weights on the carried-forward country-day score; first 13 days missing."},
-    {"variable": "wdsi14_countryday", "description": "Monthly or quarterly arithmetic mean of the available comparative daily 14-day WDSI. Higher is more adverse. Quarters weight days, not months."},
+    {"variable": "doc_count / doc_sum", "description": "Number and adverse-positive score sum of accepted WDSI documents on this date. Includes zero scores. Both are zero on days without scored documents."},
+    {"variable": "c1_raw / c1", "description": "WDSI raw is the mean of scored documents on a publication date; c1 is its carried daily path for reference, not the input to window averages. +3 is most adverse, -3 most conciliatory."},
+    {"variable": "rolling14 / c1_14 / ma14", "description": "Site baseline: total doc_sum divided by total doc_count over 14 calendar days including today. Carry the last valid mean only across wholly empty windows. First 13 dates are blank."},
+    {"variable": "wdsi14_document", "description": "Month or quarter mean of available daily 14-day document-weighted WDSI values. Quarters weight days, not months. The frozen paper international file uses wdsi14_countryday instead."},
     {"variable": "signal_days / required_days / full_signal_period", "description": "Valid daily 14-day values / calendar days in the full period / whether these counts match. No data after the last observed country date."},
 ]
 
 METHOD_NOTE = (
-    "November 19, 2026 paper, section 2.2.3. Higher WDSI means more adverse rhetoric. "
-    "All 15 countries: trailing 14-day mean of the carried-forward most adverse country-day score. "
-    "Study-specific historical measures are in the paper replication workbook. "
+    "All 15 countries: each accepted scored document in the trailing 14 calendar days has equal weight, including zero scores. "
+    "Higher WDSI means more adverse rhetoric. Monthly and quarterly values average the available daily indices. "
+    "The paper's international country-day series is preserved separately in the replication files. "
     "EDSI and ODSI retain their original direction and windows."
 )
 
@@ -179,7 +183,7 @@ def sanitize_record(record: dict[str, object]) -> dict[str, object]:
         elif key == "publication":
             cleaned[key] = to_bool(value)
         elif isinstance(value, float):
-            cleaned[key] = clean_number(value, 15 if key.startswith(("c1", "cn_doc", "rolling")) else 3)
+            cleaned[key] = clean_number(value, 15 if key == "raw" or key.startswith(("c1", "rolling")) else 3)
         else:
             cleaned[key] = value
     return cleaned
@@ -245,7 +249,10 @@ def write_indicator_workbook(path: Path, sheet_name: str, frame: pd.DataFrame, i
         ]
     )
     if periods is not None:
-        definitions = pd.concat([definitions, pd.DataFrame(VARIABLE_DEFINITIONS[-4:])], ignore_index=True)
+        definitions.loc[definitions.variable.eq("publication"), "description"] = "At least one accepted WDSI document on the date (doc_count > 0)."
+        for n in (3, 7, 30):
+            definitions.loc[definitions.variable.eq(f"ma{n}"), "description"] = f"Equal weight per scored document in the trailing {n} calendar days, including today."
+        definitions = pd.concat([definitions, pd.DataFrame(VARIABLE_DEFINITIONS[-5:])], ignore_index=True)
     with pd.ExcelWriter(path, engine="openpyxl") as writer:
         frame.to_excel(writer, index=False, sheet_name=sheet_name)
         definitions.to_excel(writer, index=False, sheet_name="variable_definitions")
@@ -322,7 +329,7 @@ def build_country_payload(
         latest_filled_value = clean_number(frame[series_col].iloc[-1])
         latest_7_value = clean_number(frame[rolling7_col].iloc[-1])
         latest_30_value = clean_number(frame[rolling30_col].iloc[-1])
-        current_year_mean = clean_number(records.loc[year_mask, series_col].mean())
+        current_year_mean = clean_number(records.loc[year_mask, "c1_14" if indicator == "c1" else series_col].mean())
 
         indicator_summary = {
             "slug": indicator_meta["slug"],
@@ -340,6 +347,9 @@ def build_country_payload(
         country_summary["indicators"][indicator] = indicator_summary
         if indicator == "c1":
             indicator_summary["latest_14d"] = clean_number(frame["c1_14"].iloc[-1], 15)
+            scored_dates = frame.loc[frame.doc_count.gt(0), "date"]
+            indicator_summary["publication_days"] = len(scored_dates)
+            indicator_summary["latest_publication_date"] = scored_dates.max()
 
     # Backward-compatible WDSI aliases for the old front-end and supplements.
     c1_summary = country_summary["indicators"]["c1"]
@@ -371,11 +381,16 @@ def build_indicator_panel(master_frame: pd.DataFrame, indicator: str) -> pd.Data
         }
     )
     if indicator == "c1":
+        panel["publication"] = master_frame.doc_count.gt(0)
         panel["ma14"] = master_frame["c1_14"]
+        panel[["doc_count", "doc_sum"]] = master_frame[["doc_count", "doc_sum"]]
     return panel
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--include-paper", action="store_true", help="Also rebuild the frozen paper replication exports.")
+    args = parser.parse_args()
     SITE_DATA_DIR.mkdir(parents=True, exist_ok=True)
     daily = load_inputs()
     latest_lookup = json.loads((INPUTS / "latest_publications.json").read_text(encoding="utf-8"))
@@ -462,23 +477,10 @@ def main() -> None:
     master_frame.to_csv(SITE_DATA_DIR / "dsi_all_countries.csv", index=False, encoding="utf-8-sig")
     write_workbook(SITE_DATA_DIR / "dsi_all_countries.xlsx", "daily_panel", master_frame)
 
-    frozen = frozen_countrydays()
-    site_periods, paper_periods = period_means(master_frame), period_means(frozen)
-    for name, table in (("site_periods", site_periods), ("paper_periods", paper_periods)):
-        table.to_csv(SITE_DATA_DIR / f"wdsi_{name}.csv", index=False, encoding="utf-8-sig")
-    docs = paper_documents(pd.read_csv(INPUTS / "paper_document_days.csv.gz"))
-    notes = [
-        ("international_daily", "Frozen country-day series for 15 economies. Higher WDSI is more adverse. The Korean regression source is the archived k1 series; other countries use the shared archived country-day input."),
-        ("international_periods", "Monthly and quarterly means of the available daily c1_14 values. Counts and full_signal_period distinguish complete periods. These are signal panels, not outcome-specific financial regression samples."),
-        ("stock_connect_daily", "Figure 2 / Table 4: historical document-weighted WDSI on the paper plotting calendar. The paper describes ten official Chinese source categories. Warm-up uses the available earlier history."),
-        ("doc_count / doc_sum", "Daily number of accepted source records, including non-war zeros, and sum of adverse-positive scores. Both zero on days without records."),
-        ("wdsi14_document", "Sum of scores / number of records in the trailing 14 calendar days, carried only when the whole window is empty. 7- and 30-day windows are sensitivity measures.")
-    ]
-    with pd.ExcelWriter(SITE_DATA_DIR / "wdsi_paper_replication.xlsx", engine="openpyxl") as writer:
-        pd.DataFrame(notes, columns=["series", "definition"]).to_excel(writer, sheet_name="readme", index=False)
-        frozen.to_excel(writer, sheet_name="international_daily", index=False)
-        paper_periods.to_excel(writer, sheet_name="international_periods", index=False)
-        docs.loc[docs.date.ge("2010-01-01")].to_excel(writer, sheet_name="stock_connect_daily", index=False)
+    site_periods = period_means(master_frame, "wdsi14_document")
+    site_periods.to_csv(SITE_DATA_DIR / "wdsi_site_periods.csv", index=False, encoding="utf-8-sig")
+    if args.include_paper or not all((SITE_DATA_DIR / name).is_file() for name in ("wdsi_paper_periods.csv", "wdsi_paper_replication.xlsx")):
+        write_frozen_paper_exports()
     for indicator, indicator_meta in INDICATORS.items():
         indicator_panel = build_indicator_panel(master_frame, indicator)
         file_slug = indicator_meta["slug"]
@@ -499,6 +501,25 @@ def main() -> None:
             indicator_meta["short_label"],
             {"site_periods": site_periods} if indicator == "c1" else None,
         )
+
+
+def write_frozen_paper_exports():
+    frozen = frozen_countrydays()
+    paper_periods = period_means(frozen, "wdsi14_countryday")
+    paper_periods.to_csv(SITE_DATA_DIR / "wdsi_paper_periods.csv", index=False, encoding="utf-8-sig")
+    docs = paper_documents(pd.read_csv(INPUTS / "paper_document_days.csv.gz"))
+    notes = [
+        ("international_daily", "Frozen country-day series for 15 economies. Higher WDSI is more adverse. The Korean regression source is the archived k1 series; other countries use the shared archived country-day input."),
+        ("international_periods", "Monthly and quarterly means of the available daily c1_14 values. Counts and full_signal_period distinguish complete periods. These are signal panels, not outcome-specific financial regression samples."),
+        ("stock_connect_daily", "Figure 2 / Table 4: historical document-weighted WDSI on the paper plotting calendar. The paper describes ten official Chinese source categories. Warm-up uses the available earlier history."),
+        ("doc_count / doc_sum", "Daily number of accepted source records, including non-war zeros, and sum of adverse-positive scores. Both zero on days without records."),
+        ("wdsi14_document", "Sum of scores / number of records in the trailing 14 calendar days, carried only when the whole window is empty. 7- and 30-day windows are sensitivity measures.")
+    ]
+    with pd.ExcelWriter(SITE_DATA_DIR / "wdsi_paper_replication.xlsx", engine="openpyxl") as writer:
+        pd.DataFrame(notes, columns=["series", "definition"]).to_excel(writer, sheet_name="readme", index=False)
+        frozen.to_excel(writer, sheet_name="international_daily", index=False)
+        paper_periods.to_excel(writer, sheet_name="international_periods", index=False)
+        docs.loc[docs.date.ge("2010-01-01")].to_excel(writer, sheet_name="stock_connect_daily", index=False)
 
 
 if __name__ == "__main__":

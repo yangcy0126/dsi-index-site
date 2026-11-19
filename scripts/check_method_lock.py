@@ -21,6 +21,15 @@ def windows(x, n):
     return np.r_[np.full(n - 1, np.nan), prefix[n:] - prefix[:-n]]
 
 
+def document_windows(count, total, n):
+    k = windows(count, n)
+    avg = windows(total, n) / np.where(k > 0, k, np.nan)
+    for i in range(n, len(avg)):
+        if k[i] == 0:
+            avg[i] = avg[i - 1]
+    return avg
+
+
 def check_edges():
     dates = pd.date_range("2024-01-01", periods=37)
     f = pd.DataFrame({"date": dates, "country_code": "CN", "c1_raw": np.nan,
@@ -30,7 +39,8 @@ def check_edges():
     g = daily_indices(f)
     docs = paper_documents(f)
     assert g.c1_14[:13].isna().all() and docs.wdsi14_document[:13].isna().all()
-    same(g.c1_14[13], (4 * 3 - 10 * 2) / 14)
+    same(g.c1_raw.iloc[[0, 1, 4, 33]], [1.5, np.nan, -2, 0])
+    same(g.c1_14.iloc[[13, 14, 18, 32, 33]], [1/3, -2, -2, -2, 0])
     same(docs.wdsi14_document.iloc[[13, 14, 18, 32, 33]], [1/3, -2, -2, -2, 0])
 
 
@@ -39,14 +49,14 @@ def compare_table(a, b):
                                   check_dtype=False, rtol=0, atol=1e-12)
 
 
-def check_periods(frame, expected_daily):
+def check_periods(frame, expected_daily, field):
     dates = pd.to_datetime(expected_daily.date)
     for freq in ("M", "Q"):
         z = frame.loc[frame.frequency.eq(freq)].set_index(["country_code", "period"]).sort_index()
         groups = expected_daily.groupby([expected_daily.country_code, dates.dt.to_period(freq).astype(str)])
         assert list(z.index) == list(groups.size().index)
         values = groups.value
-        same(z.wdsi14_countryday, values.sum(min_count=1).div(values.count().replace(0, np.nan)))
+        same(z[field], values.sum(min_count=1).div(values.count().replace(0, np.nan)))
         same(z.signal_days, values.count())
         for row in z.itertuples():
             t = pd.Period(row.Index[1], freq=freq)
@@ -77,25 +87,36 @@ def main():
         p = panel.loc[panel.country_code.eq(code)].reset_index(drop=True)
         j = pd.DataFrame(json.loads((SITE_DATA_DIR / f"{code}.json").read_text(encoding="utf-8"))["records"])
         assert f.columns.equals(schema) and j.columns.equals(schema)
-        assert not any("doc" in col for col in f.columns) and "latest_doc_14d" not in s["indicators"]["c1"]
+        for col in ("doc_count", "doc_sum"):
+            for out in (f, j, p):
+                same(out[col], a[col])
+        assert p.publication.equals(a.doc_count.gt(0))
         compare_table(master.loc[master.country_code.eq(code), f.columns], f)
         assert list(a.date) == list(f.date) == list(p.date) == list(j.date)
         assert pd.to_datetime(a.date).diff().dropna().eq(pd.Timedelta(days=1)).all()
         assert a.publication.equals(f.publication) and a.publication.equals(a.c1_raw.notna())
-        stance = -a.c1_raw.ffill()
-        same(f.c1_raw, -a.c1_raw)
+        raw = a.doc_sum.div(a.doc_count.where(a.doc_count.gt(0)))
+        stance = raw.ffill()
+        same(f.c1_raw, raw)
+        same(j.c1_raw, raw)
+        same(j.raw, raw)
         same(p.raw, f.c1_raw)
         same(f.raw, f.c1_raw)
         same(p.filled, stance)
         same(j.c1, stance)
         for n in (3, 7, 14, 30):
-            expect = windows(stance, n) / n
+            expect = document_windows(a.doc_count, a.doc_sum, n)
             for x in (p[f"ma{n}"], f[f"c1_{n}"], j[f"c1_{n}"]):
                 same(x, expect)
             if n != 3:
                 same(f[f"rolling{n}"], expect)
+                same(j[f"rolling{n}"], expect)
         same(s["latest_14d"], f.c1_14.iloc[-1])
         same(s["indicators"]["c1"]["latest_14d"], f.c1_14.iloc[-1])
+        wi = s["indicators"]["c1"]
+        assert wi["publication_days"] == raw.count() and wi["latest_publication_date"] == a.loc[raw.notna(), "date"].max()
+        for key, val in (("latest_raw", raw.dropna().iloc[-1]), ("latest_7d", f.c1_7.iloc[-1]), ("latest_30d", f.c1_30.iloc[-1])):
+            same(wi[key], val, 0.0005001)
         assert s["latest_date"] == f.date.iloc[-1] and s["publication_days"] == f.publication.sum()
         for key, slug in (("c2","edsi"), ("c3","odsi")):
             z = branches[slug].loc[branches[slug].country_code.eq(code)]
@@ -108,19 +129,14 @@ def main():
             compare_table(pd.read_excel(SITE_DATA_DIR / f"{code}.xlsx", sheet_name=code), f)
     live = pd.read_csv(SITE_DATA_DIR / "wdsi_site_periods.csv")
     paper = pd.read_csv(SITE_DATA_DIR / "wdsi_paper_periods.csv")
-    check_periods(live, master.rename(columns={"c1_14": "value"}))
+    check_periods(live, master.rename(columns={"c1_14": "value"}), "wdsi14_document")
     frozen = pd.read_csv(INPUTS / "paper_countryday.csv.gz")
     frozen["value"] = frozen.groupby("country_code").legacy_filled.transform(lambda s: -windows(s, 14) / 14)
-    check_periods(paper, frozen)
+    check_periods(paper, frozen, "wdsi14_countryday")
     source_docs = pd.read_csv(INPUTS / "paper_document_days.csv.gz")
     assert pd.to_datetime(source_docs.date).diff().dropna().eq(pd.Timedelta(days=1)).all()
     for n in (7, 14, 30):
-        counts = windows(source_docs.doc_count, n)
-        avg = windows(source_docs.doc_sum, n) / np.where(counts > 0, counts, np.nan)
-        for i in range(n, len(avg)):
-            if counts[i] == 0:
-                avg[i] = avg[i-1]
-        source_docs[f"wdsi{n}_document"] = avg
+        source_docs[f"wdsi{n}_document"] = document_windows(source_docs.doc_count, source_docs.doc_sum, n)
     archive = SITE_DATA_DIR / "wdsi_paper_replication.xlsx"
     doc_export = pd.read_excel(archive, sheet_name="stock_connect_daily")
     compare_table(doc_export, source_docs.loc[source_docs.date.ge("2010-01-01")])
@@ -130,8 +146,14 @@ def main():
         official = official.rename(columns={"time": "date"}).set_index(["country_code", "date"]).sort_index()
         ordered = master.set_index(["country_code", "date"]).sort_index()
         assert official.index.equals(ordered.index)
-        for k in ("c1", "c2", "c3"):
-            same(official[k] * (-1 if k == "c1" else 1), ordered[k])
+        for k in ("c2", "c3"):
+            same(official[k], ordered[k])
+        for code, a in ordered.groupby(level="country_code"):
+            docs = pd.read_csv(root / f"data/情绪测度结果数据_扩展15国/{code}_scores.csv", usecols=["time","score_status","c1"])
+            grouped = docs.loc[docs.score_status.eq("accepted")].groupby("time").c1.agg(["count", "sum"])
+            bydate = grouped.reindex(a.index.get_level_values("date"), fill_value=0)
+            same(a.doc_count, bydate["count"])
+            same(a.doc_sum, -bydate["sum"])
         docs = pd.read_csv(root / "data/情绪测度结果数据_扩展15国/CN_scores.csv", usecols=["time","c1","score_status"])
         counts = docs.loc[docs.score_status.eq("accepted")].groupby("time").c1.agg(["sum","count"])
         same(source_docs.doc_count, counts["count"].reindex(source_docs.date, fill_value=0))
@@ -139,7 +161,8 @@ def main():
         ref = pd.read_csv(root / "result/updated_signal_aggregation_search_20261002/docroll_14_audit/docroll_14_signal_series.csv")
         assert list(doc_export.date) == list(ref.date)
         same(doc_export.wdsi14_document, -ref.docroll_14)
-        print(f"Verified source stances, {len(docs):,} Chinese records and {len(ref):,} Figure 2 days.")
+        same(ordered.loc["CN"].loc[ref.date, "c1_14"], -ref.docroll_14)
+        print(f"Verified all 15 active score sources ({int(ordered.doc_count.sum()):,} in-calendar documents) and {len(ref):,} Figure 2 days.")
     if args.paper_reference:
         ref = pd.read_csv(args.paper_reference)
         ref.wdsi14_countryday *= -1

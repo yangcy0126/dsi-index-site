@@ -79,7 +79,7 @@ Then open `http://127.0.0.1:8000`.
 ## Data flow
 
 1. The reviewed country panel supplies the aggregate inputs under `inputs/`. Study-specific historical inputs are frozen separately.
-2. `scripts/build_dsi_site_data.py` rebuilds the public panels under the same 14-day, equal-day WDSI benchmark for every country. Higher means more adverse. The separate paper replication workbook preserves the paper's original empirical measures. EDSI and ODSI are unchanged.
+2. `scripts/build_dsi_site_data.py` rebuilds the public WDSI for every country as the mean across accepted documents in the last 14 calendar days, including today. The exports include daily document counts and score sums. Higher means more adverse. The separate paper replication workbook retains the original international day-weighted series. EDSI and ODSI are unchanged.
 3. Run `python scripts/check_method_lock.py --workbooks` before publication. See [the method lock](METHODOLOGY_LOCK.md) for fields, weights, coverage and provenance.
 4. Push reviewed inputs and public assets to the main branch to deploy to dsi-index.org.
 

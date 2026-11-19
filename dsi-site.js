@@ -10,7 +10,7 @@ const DSI_SITE_STATE = {
 
 const dsiSummaryPath = "data/summary.json";
 const dsiEventsPath = "data/events.json";
-const dsiAssetVersion = "20261119-wdsi14";
+const dsiAssetVersion = "20261119-doc14";
 
 const DSI_INDICATOR_META = {
   c1: {
@@ -168,7 +168,7 @@ function dsiScoreSentence(country, indicatorSummary) {
   if (!dsiHasNumericValue(score)) {
     return `${country.label} does not yet have a recent ${meta.shortLabel} signal.`;
   }
-  return `${country.label}: ${wdsi ? "14-day country-day" : "7-day"} ${meta.shortLabel}, ${tone.label}.`;
+  return `${country.label}: ${wdsi ? "14-day document-weighted" : "7-day"} ${meta.shortLabel}, ${tone.label}.`;
 }
 
 function dsiDeltaSentence(delta, dayCount) {
@@ -237,7 +237,7 @@ function dsiRenderCountryBoard() {
       </div>
       <div class="country-meta">
         <span>${dsiEscapeHtml(country.code)}</span>
-        <span>${meta.shortLabel} | ${dsiFormatDate(country.latest_publication_date)}</span>
+        <span>${meta.shortLabel} | ${dsiFormatDate(indicatorSummary.latest_publication_date ?? country.latest_publication_date)}</span>
       </div>
       <div class="country-score ${tone.className}">${dsiFormatScore(value)}</div>
       <div class="country-tone">${dsiEscapeHtml(tone.label)}</div>
@@ -304,13 +304,13 @@ function dsiRenderSelectedMetrics(country) {
     : "--";
   changeEl.className = `metric-value ${changeClass}`;
 
-  document.getElementById("selected-publication-date").textContent = dsiFormatDate(country.latest_publication_date);
+  document.getElementById("selected-publication-date").textContent = dsiFormatDate(indicatorSummary.latest_publication_date ?? country.latest_publication_date);
   document.getElementById("selected-publication-score").textContent =
     `${country.latest_title || "Latest official publication"} | publication-day ${meta.shortLabel}: ${dsiFormatScore(indicatorSummary.latest_raw)} | ${dsiDeltaSentence(changeValue, 30)}`;
   document.getElementById("selected-coverage").textContent =
     `${dsiFormatDate(country.start_date)} to ${dsiFormatDate(country.latest_date)}`;
   document.getElementById("selected-publication-days").textContent =
-    `${country.publication_days} publication days | ${country.calendar_days} calendar days | ${meta.shortLabel}`;
+    `${indicatorSummary.publication_days ?? country.publication_days} publication days | ${country.calendar_days} calendar days | ${meta.shortLabel}`;
 }
 
 function dsiRenderDownloadList() {
@@ -328,7 +328,7 @@ function dsiRenderDownloadList() {
     },
     {
       title: "WDSI cross-country panel",
-      meta: "Same daily fields for all 15 countries. The workbook also includes site monthly and quarterly means.",
+      meta: "Document-weighted daily WDSI, document counts and score sums for all 15 countries; the workbook includes monthly and quarterly means.",
       href: downloads.wdsi_xlsx || "data/wdsi_all_countries.xlsx",
       csv: downloads.wdsi_csv,
     },
@@ -339,7 +339,7 @@ function dsiRenderDownloadList() {
     },
     {
       title: "Paper replication data",
-      meta: "Frozen daily and period signals for the paper's analyses. CSV contains international period means.",
+      meta: "Original paper series, including the day-weighted international WDSI. CSV contains its monthly and quarterly means.",
       href: downloads.wdsi_replication,
       csv: downloads.wdsi_paper_periods,
     },
@@ -519,8 +519,8 @@ function dsiRenderChart(country, countryData) {
   if (wdsi) {
     const mode = DSI_SITE_STATE.seriesMode;
     const keys = { rolling14: "c1_14", rolling7: "c1_7", rolling30: "c1_30", raw: "c1_raw" };
-    const labels = { rolling14: "14-day country-day WDSI",
-      rolling7: "7-day country-day WDSI", rolling30: "30-day country-day WDSI", raw: "Most adverse publication-day score" };
+    const labels = { rolling14: "14-day document-weighted WDSI",
+      rolling7: "7-day document-weighted WDSI", rolling30: "30-day document-weighted WDSI", raw: "Mean score of documents published that day" };
     const rows = showRaw ? rawRecords : records;
     view = labels[mode];
     chartTraces = [{ x: rows.map(r => r.date), y: rows.map(r => r[keys[mode]]), name: view,
