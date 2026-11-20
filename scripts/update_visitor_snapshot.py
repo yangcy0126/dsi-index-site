@@ -1,15 +1,9 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
 from pathlib import Path
 
-from build_wdsi_data import (
-    OUTPUT_DIR,
-    VISITOR_COUNTER_ID,
-    VISITOR_REGION_LABELS,
-    build_visitor_snapshot,
-)
+from build_wdsi_data import OUTPUT_DIR, build_visitor_snapshot
 
 
 def load_existing_snapshot(path: Path) -> dict[str, object] | None:
@@ -26,21 +20,6 @@ def comparable_snapshot(payload: dict[str, object] | None) -> dict[str, object] 
     return comparable
 
 
-def unavailable_snapshot() -> dict[str, object]:
-    return {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "available": False,
-        "counter_id": VISITOR_COUNTER_ID,
-        "source": "Flag Counter public overview",
-        "separated_regions": list(VISITOR_REGION_LABELS.values()),
-        "total_views": None,
-        "total_visitors": None,
-        "countries": [],
-        "top_countries": [],
-        "display_countries": [],
-    }
-
-
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     destination = OUTPUT_DIR / "visitor_stats.json"
@@ -49,11 +28,7 @@ def main() -> None:
     try:
         payload = build_visitor_snapshot()
     except Exception as exc:
-        print(f"Visitor snapshot update failed: {exc}")
-        if existing is not None:
-            print("Keeping the existing visitor snapshot.")
-            return
-        payload = unavailable_snapshot()
+        raise SystemExit(f"Visitor snapshot not updated: {exc}") from exc
 
     if comparable_snapshot(existing) == comparable_snapshot(payload):
         print("Visitor snapshot unchanged.")

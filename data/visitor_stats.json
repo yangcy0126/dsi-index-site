@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-05T01:05:26.756903+00:00",
+  "generated_at": "2026-11-20T03:31:48.771571+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -9,23 +9,23 @@
     "Hong Kong",
     "Macao"
   ],
-  "total_countries": 22,
-  "flags_collected": 37,
-  "total_views": 999,
-  "total_visitors": 492,
-  "visitors_yesterday": 4,
-  "visitors_30d_average": 10,
+  "total_countries": 27,
+  "flags_collected": 45,
+  "total_views": 1172,
+  "total_visitors": 643,
+  "visitors_yesterday": 5,
+  "visitors_30d_average": 2,
   "visitors_record": 59,
   "visitors_record_date": "August 9, 2026",
-  "views_yesterday": 4,
-  "views_30d_average": 12,
+  "views_yesterday": 8,
+  "views_30d_average": 3,
   "views_record": 108,
   "views_record_date": "March 22, 2026",
   "countries": [
     {
       "code": "US",
       "country": "United States",
-      "visitors": 224,
+      "visitors": 291,
       "members": [
         "United States"
       ]
@@ -33,7 +33,7 @@
     {
       "code": "CN",
       "country": "Mainland China",
-      "visitors": 66,
+      "visitors": 89,
       "members": [
         "China"
       ]
@@ -41,25 +41,41 @@
     {
       "code": "SG",
       "country": "Singapore",
-      "visitors": 42,
+      "visitors": 47,
       "members": [
         "Singapore"
       ]
     },
     {
+      "code": "GB",
+      "country": "United Kingdom",
+      "visitors": 47,
+      "members": [
+        "United Kingdom"
+      ]
+    },
+    {
       "code": "TW",
       "country": "Taiwan",
-      "visitors": 38,
+      "visitors": 40,
       "members": [
         "Taiwan"
       ]
     },
     {
-      "code": "GB",
-      "country": "United Kingdom",
-      "visitors": 36,
+      "code": "JP",
+      "country": "Japan",
+      "visitors": 22,
       "members": [
-        "United Kingdom"
+        "Japan"
+      ]
+    },
+    {
+      "code": "CA",
+      "country": "Canada",
+      "visitors": 15,
+      "members": [
+        "Canada"
       ]
     },
     {
@@ -71,19 +87,35 @@
       ]
     },
     {
-      "code": "JP",
-      "country": "Japan",
-      "visitors": 11,
+      "code": "NL",
+      "country": "Netherlands",
+      "visitors": 12,
       "members": [
-        "Japan"
+        "Netherlands"
       ]
     },
     {
       "code": "FR",
       "country": "France",
-      "visitors": 9,
+      "visitors": 10,
       "members": [
         "France"
+      ]
+    },
+    {
+      "code": "DE",
+      "country": "Germany",
+      "visitors": 9,
+      "members": [
+        "Germany"
+      ]
+    },
+    {
+      "code": "AT",
+      "country": "Austria",
+      "visitors": 8,
+      "members": [
+        "Austria"
       ]
     },
     {
@@ -95,41 +127,17 @@
       ]
     },
     {
-      "code": "AT",
-      "country": "Austria",
-      "visitors": 6,
+      "code": "CH",
+      "country": "Switzerland",
+      "visitors": 7,
       "members": [
-        "Austria"
-      ]
-    },
-    {
-      "code": "CA",
-      "country": "Canada",
-      "visitors": 6,
-      "members": [
-        "Canada"
-      ]
-    },
-    {
-      "code": "DE",
-      "country": "Germany",
-      "visitors": 6,
-      "members": [
-        "Germany"
-      ]
-    },
-    {
-      "code": "NL",
-      "country": "Netherlands",
-      "visitors": 6,
-      "members": [
-        "Netherlands"
+        "Switzerland"
       ]
     },
     {
       "code": "KR",
       "country": "South Korea",
-      "visitors": 5,
+      "visitors": 6,
       "members": [
         "South Korea"
       ]
@@ -143,17 +151,9 @@
       ]
     },
     {
-      "code": "CH",
-      "country": "Switzerland",
-      "visitors": 4,
-      "members": [
-        "Switzerland"
-      ]
-    },
-    {
       "code": "AU",
       "country": "Australia",
-      "visitors": 2,
+      "visitors": 3,
       "members": [
         "Australia"
       ]
@@ -164,6 +164,14 @@
       "visitors": 2,
       "members": [
         "India"
+      ]
+    },
+    {
+      "code": "RU",
+      "country": "Russia",
+      "visitors": 2,
+      "members": [
+        "Russia"
       ]
     },
     {
@@ -183,11 +191,43 @@
       ]
     },
     {
+      "code": "BO",
+      "country": "Bolivia",
+      "visitors": 1,
+      "members": [
+        "Bolivia"
+      ]
+    },
+    {
       "code": "IE",
       "country": "Ireland",
       "visitors": 1,
       "members": [
         "Ireland"
+      ]
+    },
+    {
+      "code": "LV",
+      "country": "Latvia",
+      "visitors": 1,
+      "members": [
+        "Latvia"
+      ]
+    },
+    {
+      "code": "MC",
+      "country": "Monaco",
+      "visitors": 1,
+      "members": [
+        "Monaco"
+      ]
+    },
+    {
+      "code": "PE",
+      "country": "Peru",
+      "visitors": 1,
+      "members": [
+        "Peru"
       ]
     },
     {
@@ -203,7 +243,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 224,
+      "visitors": 291,
       "members": [
         "United States"
       ]
@@ -211,7 +251,7 @@
     {
       "code": "CN",
       "country": "Mainland China",
-      "visitors": 66,
+      "visitors": 89,
       "members": [
         "China"
       ]
@@ -219,25 +259,25 @@
     {
       "code": "SG",
       "country": "Singapore",
-      "visitors": 42,
+      "visitors": 47,
       "members": [
         "Singapore"
       ]
     },
     {
-      "code": "TW",
-      "country": "Taiwan",
-      "visitors": 38,
+      "code": "GB",
+      "country": "United Kingdom",
+      "visitors": 47,
       "members": [
-        "Taiwan"
+        "United Kingdom"
       ]
     },
     {
-      "code": "GB",
-      "country": "United Kingdom",
-      "visitors": 36,
+      "code": "TW",
+      "country": "Taiwan",
+      "visitors": 40,
       "members": [
-        "United Kingdom"
+        "Taiwan"
       ]
     }
   ],
@@ -245,7 +285,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 224,
+      "visitors": 291,
       "members": [
         "United States"
       ],
@@ -254,7 +294,7 @@
     {
       "code": "CN",
       "country": "Mainland China",
-      "visitors": 66,
+      "visitors": 89,
       "members": [
         "China"
       ],
@@ -263,27 +303,45 @@
     {
       "code": "SG",
       "country": "Singapore",
-      "visitors": 42,
+      "visitors": 47,
       "members": [
         "Singapore"
       ],
       "is_focus_region": false
     },
     {
+      "code": "GB",
+      "country": "United Kingdom",
+      "visitors": 47,
+      "members": [
+        "United Kingdom"
+      ],
+      "is_focus_region": false
+    },
+    {
       "code": "TW",
       "country": "Taiwan",
-      "visitors": 38,
+      "visitors": 40,
       "members": [
         "Taiwan"
       ],
       "is_focus_region": true
     },
     {
-      "code": "GB",
-      "country": "United Kingdom",
-      "visitors": 36,
+      "code": "JP",
+      "country": "Japan",
+      "visitors": 22,
       "members": [
-        "United Kingdom"
+        "Japan"
+      ],
+      "is_focus_region": false
+    },
+    {
+      "code": "CA",
+      "country": "Canada",
+      "visitors": 15,
+      "members": [
+        "Canada"
       ],
       "is_focus_region": false
     },
@@ -297,56 +355,38 @@
       "is_focus_region": false
     },
     {
-      "code": "JP",
-      "country": "Japan",
-      "visitors": 11,
+      "code": "NL",
+      "country": "Netherlands",
+      "visitors": 12,
       "members": [
-        "Japan"
+        "Netherlands"
       ],
       "is_focus_region": false
     },
     {
       "code": "FR",
       "country": "France",
-      "visitors": 9,
+      "visitors": 10,
       "members": [
         "France"
       ],
       "is_focus_region": false
     },
     {
-      "code": "HK",
-      "country": "Hong Kong",
-      "visitors": 8,
+      "code": "DE",
+      "country": "Germany",
+      "visitors": 9,
       "members": [
-        "Hong Kong"
+        "Germany"
       ],
-      "is_focus_region": true
+      "is_focus_region": false
     },
     {
       "code": "AT",
       "country": "Austria",
-      "visitors": 6,
+      "visitors": 8,
       "members": [
         "Austria"
-      ],
-      "is_focus_region": false
-    },
-    {
-      "code": "CA",
-      "country": "Canada",
-      "visitors": 6,
-      "members": [
-        "Canada"
-      ],
-      "is_focus_region": false
-    },
-    {
-      "code": "DE",
-      "country": "Germany",
-      "visitors": 6,
-      "members": [
-        "Germany"
       ],
       "is_focus_region": false
     }

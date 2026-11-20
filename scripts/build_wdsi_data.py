@@ -11,6 +11,7 @@ from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 import pandas as pd
+from bs4 import BeautifulSoup
 from openpyxl.styles import Font
 
 
@@ -227,7 +228,9 @@ def strip_html_text(html: str) -> str:
     text = re.sub(r"<script\b[^>]*>.*?</script>", " ", html, flags=re.IGNORECASE | re.DOTALL)
     text = re.sub(r"<style\b[^>]*>.*?</style>", " ", text, flags=re.IGNORECASE | re.DOTALL)
     text = re.sub(r"<[^>]+>", " ", text)
-    return re.sub(r"\s+", " ", unescape(text)).strip()
+    # Flag Counter groups large counts with commas; keep commas in prose and dates.
+    text = re.sub(r"(?<=\d),(?=\d{3}\b)", "", unescape(text))
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def fetch_url_text_with_curl(url: str) -> str:
@@ -329,27 +332,21 @@ def parse_visitor_history(history_html: str) -> dict[str, int]:
 
 def parse_visitor_countries(countries_html: str) -> list[dict[str, object]]:
     countries: list[dict[str, object]] = []
-    for row_html in re.findall(r"<tr>(.*?)</tr>", countries_html, flags=re.IGNORECASE | re.DOTALL):
-        if "style=\"display:none;\"" in row_html.lower():
-            continue
-        if "/flag_details/" not in row_html or "/factbook/" not in row_html:
-            continue
-        code_match = re.search(r"/factbook/([a-z]{2})/DVgZ", row_html, flags=re.IGNORECASE)
-        country_match = re.search(r"/factbook/[a-z]{2}/DVgZ[^>]*><u>([^<]+)</u></a>", row_html, flags=re.IGNORECASE)
-        visitors_match = re.search(
-            r"</a></font></td>\s*<td[^>]*><font[^>]*>(\d+)</font></td>",
-            row_html,
-            flags=re.IGNORECASE | re.DOTALL,
-        )
-        last_seen_match = re.search(r"<td>([^<]+)</td>\s*$", row_html, flags=re.IGNORECASE | re.DOTALL)
-        if not code_match or not country_match or not visitors_match or not last_seen_match:
-            continue
+    soup = BeautifulSoup(countries_html, "html.parser")
+    chart_link = re.compile(rf"^/detail30/([a-z]{{2}})/{VISITOR_COUNTER_ID}/?$", re.IGNORECASE)
+    for link in soup.find_all("a", href=chart_link):
+        code = chart_link.fullmatch(link["href"])[1].upper()
+        cell = link.find_parent("td")
+        count = cell.find_previous_sibling("td") if cell else None
+        name = count.find_previous_sibling("td") if count else None
+        if not name or not name.get_text(strip=True):
+            raise ValueError(f"Missing visitor country name for {code}.")
         countries.append(
             {
-                "code": code_match.group(1).upper(),
-                "country": unescape(country_match.group(1)).strip(),
-                "visitors": int(visitors_match.group(1)),
-                "last_seen": strip_html_text(last_seen_match.group(1)),
+                "code": code,
+                "country": name.get_text(" ", strip=True),
+                "visitors": int(count.get_text(strip=True).replace(",", "")),
+                "last_seen": cell.find_parent("tr").find_all("td", recursive=False)[-1].get_text(" ", strip=True),
             }
         )
     return countries
@@ -401,6 +398,8 @@ def build_visitor_snapshot() -> dict[str, object]:
     overview = parse_visitor_overview(overview_html)
     totals = parse_visitor_history(history_html)
     countries = normalize_visitor_countries(parse_visitor_countries(countries_html))
+    if len(countries) != overview["total_countries"]:
+        raise ValueError(f"Expected {overview['total_countries']} visitor country rows, found {len(countries)}.")
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "available": True,
@@ -750,23 +749,12 @@ def main() -> None:
     try:
         visitor_payload = build_visitor_snapshot()
     except Exception as exc:
-        print(f"Visitor snapshot unavailable: {exc}")
-        visitor_payload = {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-            "available": False,
-            "counter_id": VISITOR_COUNTER_ID,
-            "source": "Flag Counter public overview",
-            "separated_regions": list(VISITOR_REGION_LABELS.values()),
-            "total_views": None,
-            "total_visitors": None,
-            "countries": [],
-            "top_countries": [],
-            "display_countries": [],
-        }
-    (OUTPUT_DIR / "visitor_stats.json").write_text(
-        json.dumps(visitor_payload, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+        print(f"Visitor snapshot not updated: {exc}")
+    else:
+        (OUTPUT_DIR / "visitor_stats.json").write_text(
+            json.dumps(visitor_payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
 
     print(f"Built WDSI web data in {OUTPUT_DIR}")
 
