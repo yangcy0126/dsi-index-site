@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-20T09:13:32.378624+00:00",
+  "generated_at": "2026-11-20T17:46:23.271531+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 27,
   "flags_collected": 45,
-  "total_views": 1173,
-  "total_visitors": 643,
+  "total_views": 1177,
+  "total_visitors": 644,
   "visitors_yesterday": 5,
   "visitors_30d_average": 2,
   "visitors_record": 59,
@@ -39,19 +39,19 @@
       ]
     },
     {
+      "code": "GB",
+      "country": "United Kingdom",
+      "visitors": 48,
+      "members": [
+        "United Kingdom"
+      ]
+    },
+    {
       "code": "SG",
       "country": "Singapore",
       "visitors": 47,
       "members": [
         "Singapore"
-      ]
-    },
-    {
-      "code": "GB",
-      "country": "United Kingdom",
-      "visitors": 47,
-      "members": [
-        "United Kingdom"
       ]
     },
     {
@@ -257,19 +257,19 @@
       ]
     },
     {
+      "code": "GB",
+      "country": "United Kingdom",
+      "visitors": 48,
+      "members": [
+        "United Kingdom"
+      ]
+    },
+    {
       "code": "SG",
       "country": "Singapore",
       "visitors": 47,
       "members": [
         "Singapore"
-      ]
-    },
-    {
-      "code": "GB",
-      "country": "United Kingdom",
-      "visitors": 47,
-      "members": [
-        "United Kingdom"
       ]
     },
     {
@@ -301,20 +301,20 @@
       "is_focus_region": true
     },
     {
+      "code": "GB",
+      "country": "United Kingdom",
+      "visitors": 48,
+      "members": [
+        "United Kingdom"
+      ],
+      "is_focus_region": false
+    },
+    {
       "code": "SG",
       "country": "Singapore",
       "visitors": 47,
       "members": [
         "Singapore"
-      ],
-      "is_focus_region": false
-    },
-    {
-      "code": "GB",
-      "country": "United Kingdom",
-      "visitors": 47,
-      "members": [
-        "United Kingdom"
       ],
       "is_focus_region": false
     },
