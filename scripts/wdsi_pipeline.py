@@ -2679,6 +2679,10 @@ class GermanyForeignOfficeSource:
         if main is None:
             raise ValueError(f"Missing German Foreign Office article body for {url}")
 
+        stamp = main.select_one(".heading__meta")
+        if stamp is not None and DE_DOTTED_DATE_RE.search(stamp.get_text(" ", strip=True)):
+            published_at = parse_de_date(stamp.get_text(" ", strip=True))
+
         for selector in [
             "nav",
             "header",
@@ -2697,7 +2701,8 @@ class GermanyForeignOfficeSource:
                 node.decompose()
 
         content_parts: list[str] = []
-        for node in main.select("p, li, h2, h3, blockquote"):
+        paragraphs = main.select("p.rte__paragraph, p.quote__paragraph, li.rte__list-item")
+        for node in paragraphs or main.select("p, li, h2, h3, blockquote"):
             text = clean_text(node.get_text(" ", strip=True))
             if not text:
                 continue
@@ -4841,7 +4846,15 @@ class FranceMfaSpokespersonSource:
         if not content:
             raise ValueError(f"Missing parsed content for {url}")
 
-        published_at = self._extract_published_at(url, title, html_text, content)
+        stamp = article.select_one(".diplomatie--hdp-date--created, .diplomatie--hdp-date--validated")
+        if stamp is not None:
+            published_at = parse_fr_date(stamp.get_text(" ", strip=True))
+            selectors = ".fr-text--lead, .fr-prose" if "node--type-actualite" in article.get("class", []) else ".fr-mt-6w .fr-col-md-7"
+            sections = article.select(selectors)
+            if sections:
+                content = clean_text("\n".join(node.get_text("\n", strip=True) for node in sections))
+        else:
+            published_at = self._extract_published_at(url, title, html_text, content)
 
         return ScrapedRecord(
             country_code=self.country_code,
