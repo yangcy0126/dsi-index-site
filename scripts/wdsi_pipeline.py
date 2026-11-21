@@ -4909,6 +4909,7 @@ class FranceMfaSpokespersonSource:
 
 
 class RussiaMfaNewsSource:
+    central_originals_from = "2026-08-07"
     country_code = "RU"
     history_start_date = "2010-01-01"
     resume_missing_history = True
@@ -4948,7 +4949,10 @@ class RussiaMfaNewsSource:
         return self.fetch_between(start_date.isoformat(), end_date.isoformat(), max_pages=max_pages)
 
     def fetch_between(self, start_date: str, end_date: str, max_pages: int = 20) -> list[ScrapedRecord]:
+        central_only = end_date >= self.central_originals_from
         if os.getenv("WDSI_RU_OFFICIAL_TELEGRAM_ONLY", "").strip().lower() in {"1", "true", "yes"}:
+            if central_only:
+                raise ValueError("RU: this date range requires central ministry English originals, not the official channel.")
             return self._fetch_official_telegram_between(start_date, end_date, max_pages=max_pages)
 
         try:
@@ -4967,17 +4971,15 @@ class RussiaMfaNewsSource:
             for published_at, normalized_title in getattr(self, "known_title_keys", set())
             if str(published_at).strip() and str(normalized_title).strip()
         }
+        seen_ids = {m[1] for u in seen_urls if (m := re.search(r"/(\d{6,})(?:/|[?#]|$)", u))}
 
         with sync_playwright() as playwright:
             headless = os.getenv("WDSI_PLAYWRIGHT_HEADLESS", "1").strip().lower() not in {"0", "false", "no"}
-            browser = playwright.chromium.launch(
-                headless=headless,
-                args=["--disable-blink-features=AutomationControlled"],
-            )
+            browser = playwright.chromium.launch(headless=headless)
             records: list[ScrapedRecord] = []
 
             for section in self.sections:
-                context = self._new_browser_context(browser)
+                context = browser.new_context() if central_only else self._new_browser_context(browser)
                 list_page = context.new_page()
                 article_page = context.new_page()
                 try:
@@ -4995,19 +4997,23 @@ class RussiaMfaNewsSource:
                             str(candidate["published_at"]),
                             self._normalize_compare_text(str(candidate["title"])),
                         )
-                        if url in seen_urls:
-                            continue
-                        if title_key in seen_titles:
+                        article_id = re.search(r"/(\d{6,})(?:/|[?#]|$)", url)
+                        if central_only and article_id is None:
+                            raise ValueError(f"RU: no central publication ID in {url}")
+                        if url in seen_urls or (central_only and article_id[1] in seen_ids) or (not central_only and title_key in seen_titles):
                             continue
                         seen_urls.add(url)
                         seen_titles.add(title_key)
+                        if article_id:
+                            seen_ids.add(article_id[1])
                         try:
-                            body_text = self._fetch_article_text(
-                                article_page,
-                                url,
-                                str(candidate["section_url"]),
-                            )
-                            content = self._extract_article_content(body_text, candidate["title"])
+                            if central_only:
+                                article_page.goto(url, wait_until="domcontentloaded", timeout=45000)
+                                article_page.locator("h1.photo-content__title, .announcement__title").first.wait_for(timeout=15000)
+                                content = self._central_original(article_page.content(), candidate)
+                            else:
+                                body_text = self._fetch_article_text(article_page, url, str(candidate["section_url"]))
+                                content = self._extract_article_content(body_text, candidate["title"])
                             records.append(
                                 ScrapedRecord(
                                     country_code=self.country_code,
@@ -5020,7 +5026,9 @@ class RussiaMfaNewsSource:
                                     speaker=self._speaker(candidate["title"], str(candidate["speaker"])),
                                 )
                             )
-                        except Exception:
+                        except Exception as exc:
+                            if central_only:
+                                raise RuntimeError(f"RU: incomplete central original at {url}; keep the previous release.") from exc
                             continue
                 finally:
                     article_page.close()
@@ -5028,11 +5036,36 @@ class RussiaMfaNewsSource:
                     context.close()
             browser.close()
 
-        if not records:
+        if not records and not central_only:
             return self._fetch_official_telegram_between(start_date, end_date, max_pages=max_pages)
 
         deduped = {record.url: record for record in records}
         return sorted(deduped.values(), key=lambda record: (record.published_at, record.url))
+
+    @classmethod
+    def _central_original(cls, html: str, candidate: dict[str, str]) -> str:
+        soup = BeautifulSoup(html, "html.parser")
+        heading = soup.select_one("h1.photo-content__title, .announcement__title")
+        if not heading or cls._normalize_compare_text(heading.get_text(" ", strip=True)) != cls._normalize_compare_text(candidate["title"]):
+            raise ValueError("RU: central detail title does not match the archive")
+        article = soup.select_one(".photo-content__desc .article-content")
+        if article is not None:
+            stamp = soup.select_one(".photo-content__date")
+            day = parse_us_date(stamp.get_text(" ", strip=True)) if stamp else ""
+            content = clean_text(article.get_text("\n", strip=True))
+        else:
+            announcement = soup.select_one(".announcement__text")
+            stamp = soup.select_one(".announcement__doc-num")
+            match = re.search(r"(\d{1,2})-(\d{1,2})-(\d{4})$", stamp.get_text(strip=True)) if stamp else None
+            if not match or not announcement:
+                raise ValueError("RU: missing original or publication stamp")
+            day = date(int(match[3]), int(match[2]), int(match[1])).isoformat()
+            for node in announcement.select(".announcement__title, .announcement__doc-num"):
+                node.decompose()
+            content = clean_text(announcement.get_text("\n", strip=True))
+        if not content or day != candidate["published_at"]:
+            raise ValueError("RU: missing central text or conflicting publication date")
+        return content
 
     def _fetch_official_telegram_between(
         self,
@@ -5169,7 +5202,8 @@ class RussiaMfaNewsSource:
     ) -> list[dict[str, str]]:
         section_url = str(section["list_url"])
         collected: list[dict[str, str]] = []
-        section_max_pages = min(max_pages, int(section.get("max_pages", max_pages)))
+        central_only = end_date >= self.central_originals_from
+        section_max_pages = max_pages if central_only else min(max_pages, int(section.get("max_pages", max_pages)))
         section_start_date = str(section.get("section_start_date", "") or "")
         if section_start_date and end_date < section_start_date:
             return []
@@ -5181,10 +5215,14 @@ class RussiaMfaNewsSource:
             try:
                 self._load_mid_list_page(page, page_url, referer=section_url if page_number > 1 else None)
             except RuntimeError:
+                if central_only:
+                    raise
                 break
 
             page_candidates = self._extract_list_candidates(page, str(section["item_url_fragment"]))
             if not page_candidates:
+                if central_only:
+                    raise ValueError(f"RU: empty central listing before the date boundary: {page_url}")
                 break
 
             oldest_on_page = min(iso_to_date(candidate["published_at"]) for candidate in page_candidates)
@@ -5198,14 +5236,17 @@ class RussiaMfaNewsSource:
 
             if oldest_on_page < effective_start_bound:
                 break
+        else:
+            if central_only:
+                raise ValueError(f"RU: {section_url} has not reached {effective_start_date}; keep the previous release.")
 
         return collected
 
     def _extract_list_candidates(self, page: object, item_url_fragment: str) -> list[dict[str, str]]:
         items = page.evaluate(
             f"""
-() => Array.from(document.querySelectorAll('.announce__item')).map((item) => {{
-  const link = item.querySelector('a[href*="{item_url_fragment}"]');
+() => Array.from(document.querySelectorAll('ul.announce_articles li.announce__item')).map((item) => {{
+  const link = item.querySelector('a.announce__link[href*="{item_url_fragment}"]');
   if (!link) {{
     return null;
   }}

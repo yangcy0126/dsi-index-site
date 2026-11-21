@@ -10,7 +10,7 @@ const DSI_SITE_STATE = {
 
 const dsiSummaryPath = "data/summary.json";
 const dsiEventsPath = "data/events.json";
-const dsiAssetVersion = "20261120-archives";
+const dsiAssetVersion = "20261120-russia-central";
 
 const DSI_INDICATOR_META = {
   c1: {
