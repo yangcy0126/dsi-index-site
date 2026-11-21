@@ -713,37 +713,44 @@ h3 {
   background: var(--accent-soft);
 }
 
-.download-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.index-downloads {
   border-top: 1px solid var(--line-strong);
-  border-left: 1px solid var(--line);
 }
 
-.download-item {
+.index-file {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  min-height: 96px;
-  padding: 18px;
-  border-right: 1px solid var(--line);
+  padding: 18px 0;
   border-bottom: 1px solid var(--line);
-  background: var(--surface);
 }
 
-.download-item-wide {
-  grid-column: 1 / -1;
+.index-file h3 {
+  margin: 0 0 4px;
+  font-size: 1.04rem;
 }
 
-.download-item strong {
-  display: block;
-  margin-bottom: 4px;
-}
-
-.download-meta {
+.index-file p {
+  margin: 0;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+}
+
+.index-file-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.index-file select {
+  min-height: 42px;
+  padding: 0 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
 }
 
 .download-link {
@@ -1148,15 +1155,13 @@ h3 {
   .coverage-band,
   .method-grid,
   .research-grid,
-  .download-list,
   .supplement-band,
   .trump-metric-grid,
   .directed-metric-grid {
     grid-template-columns: 1fr;
   }
 
-  .metric-card-primary,
-  .download-item-wide {
+  .metric-card-primary {
     grid-column: auto;
   }
 
@@ -1199,9 +1204,10 @@ h3 {
     min-height: 420px;
   }
 
-  .download-item {
+  .index-file {
     align-items: flex-start;
     flex-direction: column;
+    gap: 10px;
   }
 
   .site-footer {

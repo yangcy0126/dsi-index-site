@@ -15,10 +15,10 @@
       href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap"
       rel="stylesheet"
     >
-    <link rel="stylesheet" href="styles.css?v=20260808-neutral-visitors">
+    <link rel="stylesheet" href="styles.css?v=20261121-index-downloads">
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
     <script src="script.js?v=20261119-wdsi14" defer></script>
-    <script src="dsi-site.js?v=20261120-russia-central" defer></script>
+    <script src="dsi-site.js?v=20261121-index-downloads" defer></script>
   </head>
   <body>
     <div class="page-shell">
@@ -259,7 +259,7 @@
             <p class="eyebrow">Why It Matters</p>
             <h2>What the Paper Finds</h2>
             <p>
-              The November 19 paper weights documents equally for Stock Connect and days equally in its international tables. The <a href="data/wdsi_weighting_comparison_20261119.zip" download>international weighting comparison</a> applies document weights to the same historical samples, with the same outcomes, controls and inference. It is a separate check, not a revision to the paper.
+              The November 19 paper weights documents equally for Stock Connect and days equally in its international tables. The international weighting comparison applies document weights to the same historical samples, with the same outcomes, controls and inference. It is a separate check, not a revision to the paper.
             </p>
           </div>
 
@@ -287,14 +287,28 @@
           <div class="section-heading">
             <p class="eyebrow">Download</p>
             <h2>Data Downloads</h2>
-            <p>
-              For the charts above, use the site's document-weighted daily or period WDSI. To reproduce the paper, use the frozen historical signals. The weighting comparison pairs the original international estimates with the document-weighted estimates on the same samples.
-              The November 20 release includes a <a href="data/multicountry_source_audit_20261120.csv" download>document-level revision log</a>, the <a href="data/india_source_audit_20261120.csv" download>India source audit</a>, the <a href="data/russia_central_catalogue_20261120.csv" download>Russian ministry catalogue</a>, and a <a href="data/russia_wdsi_revision_20261120.csv" download>daily comparison of the previous and revised Russian WDSI</a>. See <a href="data/source_coverage.csv" download>country coverage and last publication dates</a> and <a href="data/source_review_exceptions.csv" download>unscored and unavailable texts</a>.
-            </p>
           </div>
 
-          <div class="download-panel">
-            <div class="download-list" id="download-list"></div>
+          <div class="index-downloads">
+            <div class="index-file">
+              <div>
+                <h3>Index series</h3>
+                <p id="index-file-description">Daily WDSI, EDSI and ODSI for 15 economies, plus monthly and quarterly averages of the document-weighted WDSI.</p>
+              </div>
+              <div class="index-file-actions">
+                <select id="index-file-economy" aria-label="Economy for index download" hidden>
+                  <option value="">All 15 economies</option>
+                </select>
+                <a id="index-file-link" class="download-link" href="data/dsi_all_countries.xlsx?edition=20261121" download aria-label="Download index series for all 15 economies in Excel">Excel</a>
+              </div>
+            </div>
+            <div class="index-file">
+              <div>
+                <h3>Sources and revisions</h3>
+                <p>Coverage by economy, official source records, unscored texts and revisions to the published indices.</p>
+              </div>
+              <a class="download-link" href="data/index_sources.xlsx" download aria-label="Download index sources and revisions in Excel">Excel</a>
+            </div>
           </div>
         </section>
 

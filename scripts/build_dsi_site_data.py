@@ -227,11 +227,15 @@ def build_latest_publication_lookup() -> dict[str, dict[str, str]]:
     return lookup
 
 
-def write_workbook(path: Path, sheet_name: str, frame: pd.DataFrame) -> None:
+def write_workbook(path: Path, sheet_name: str, frame: pd.DataFrame, site_periods=None) -> None:
     definitions = pd.DataFrame(VARIABLE_DEFINITIONS)
     with pd.ExcelWriter(path, engine="openpyxl") as writer:
         frame.to_excel(writer, index=False, sheet_name=sheet_name)
         definitions.to_excel(writer, index=False, sheet_name="variable_definitions")
+        if site_periods is not None:
+            site_periods.to_excel(writer, index=False, sheet_name="site_periods", freeze_panes=(1, 0))
+            sheet = writer.sheets["site_periods"]
+            sheet.auto_filter.ref = sheet.dimensions
 
 
 def write_indicator_workbook(path: Path, sheet_name: str, frame: pd.DataFrame, indicator_label: str, periods=None) -> None:
@@ -476,9 +480,8 @@ def main() -> None:
     master_frame = pd.concat(master_frames, ignore_index=True)
     master_frame = master_frame[MASTER_WORKBOOK_COLUMNS]
     master_frame.to_csv(SITE_DATA_DIR / "dsi_all_countries.csv", index=False, encoding="utf-8-sig")
-    write_workbook(SITE_DATA_DIR / "dsi_all_countries.xlsx", "daily_panel", master_frame)
-
     site_periods = period_means(master_frame, "wdsi14_document")
+    write_workbook(SITE_DATA_DIR / "dsi_all_countries.xlsx", "daily_panel", master_frame, site_periods)
     site_periods.to_csv(SITE_DATA_DIR / "wdsi_site_periods.csv", index=False, encoding="utf-8-sig")
     if args.include_paper or not all((SITE_DATA_DIR / name).is_file() for name in ("wdsi_paper_periods.csv", "wdsi_paper_replication.xlsx")):
         write_frozen_paper_exports()

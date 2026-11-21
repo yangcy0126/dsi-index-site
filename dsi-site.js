@@ -313,78 +313,24 @@ function dsiRenderSelectedMetrics(country) {
     `${indicatorSummary.publication_days ?? country.publication_days} publication days | ${country.calendar_days} calendar days | ${meta.shortLabel}`;
 }
 
-function dsiRenderDownloadList() {
-  const list = document.getElementById("download-list");
-  if (!list || !DSI_SITE_STATE.summary) {
-    return;
-  }
-  const downloads = DSI_SITE_STATE.summary.downloads || {};
-  const items = [
-    {
-      title: "Full DSI daily dataset",
-      meta: "Combined cross-country workbook covering all three DSI branches and variable definitions.",
-      href: downloads.dsi_xlsx || "data/dsi_all_countries.xlsx",
-      csv: downloads.dsi_csv,
-    },
-    {
-      title: "Site WDSI: daily panel",
-      meta: "Use ma14 for the 14-day chart. Daily document counts and score sums are included for all 15 economies; the workbook also includes period means.",
-      href: downloads.wdsi_xlsx || "data/wdsi_all_countries.xlsx",
-      csv: downloads.wdsi_csv,
-    },
-    {
-      title: "Site WDSI: monthly and quarterly means",
-      meta: "Use wdsi14_document for the mean of daily site readings. Coverage counts and full-period flags identify incomplete months or quarters.",
-      href: downloads.wdsi_site_periods,
-    },
-    {
-      title: "Paper replication: original signals",
-      meta: "The workbook contains the Stock Connect and international series. The CSV contains the paper's day-weighted international period means (wdsi14_countryday).",
-      href: downloads.wdsi_replication,
-      csv: downloads.wdsi_paper_periods,
-    },
-    {
-      title: "International regressions: weighting comparison",
-      meta: "Original and document-weighted estimates for equity flows, debt flows, total portfolio flows and U.S. holdings, with paired historical index inputs and a data dictionary (CSV files in ZIP).",
-      href: downloads.wdsi_weighting_comparison || "data/wdsi_weighting_comparison_20261119.zip",
-    },
-    {
-      title: "EDSI cross-country panel",
-      meta: "Cross-country workbook for the economic DSI branch only.",
-      href: downloads.edsi_xlsx || "data/edsi_all_countries.xlsx",
-    },
-    {
-      title: "ODSI cross-country panel",
-      meta: "Cross-country workbook for the other-diplomatic DSI branch only.",
-      href: downloads.odsi_xlsx || "data/odsi_all_countries.xlsx",
-    },
-    {
-      title: "Site summary (JSON)",
-      meta: "Country list, three-indicator latest values, coverage windows, and download paths.",
-      href: downloads.summary_json || "data/summary.json",
-    },
-    ...DSI_SITE_STATE.summary.countries.map((country) => ({
-      title: `${country.label} data`,
-      meta: `${country.code} | ${country.publication_days} publication days | workbook contains all three DSI branches`,
-      href: country.file_xlsx || country.file_csv,
-      csv: country.file_csv,
-    })),
-  ];
+function dsiBindIndexDownload() {
+  const select = document.getElementById("index-file-economy");
+  const link = document.getElementById("index-file-link");
+  const description = document.getElementById("index-file-description");
+  const allPath = link.getAttribute("href");
+  const allDescription = description.textContent;
+  const countries = [...DSI_SITE_STATE.summary.countries].sort((a, b) => a.label.localeCompare(b.label, "en"));
+  countries.forEach((country) => select.add(new Option(country.label, country.code)));
 
-  list.innerHTML = "";
-  items.forEach((item) => {
-    const row = document.createElement("div");
-    row.className = `download-item ${item.href === "data/dsi_all_countries.xlsx" ? "download-item-wide" : ""}`.trim();
-    row.innerHTML = `
-      <div>
-        <strong>${dsiEscapeHtml(item.title)}</strong>
-        <div class="download-meta">${dsiEscapeHtml(item.meta)}</div>
-      </div>
-      <div><a class="download-link" href="${dsiVersionedPath(item.href, DSI_SITE_STATE.dataVersion)}" download>${item.href.split(".").pop().toUpperCase()}</a>
-      ${item.csv ? `<a class="download-link" href="${dsiVersionedPath(item.csv, DSI_SITE_STATE.dataVersion)}" download>CSV</a>` : ""}</div>
-    `;
-    list.appendChild(row);
-  });
+  const update = () => {
+    const country = countries.find((item) => item.code === select.value);
+    link.href = dsiVersionedPath(country ? country.file_xlsx : allPath, DSI_SITE_STATE.dataVersion);
+    link.setAttribute("aria-label", `Download index series for ${country ? country.label : "all 15 economies"} in Excel`);
+    description.textContent = country ? `Daily WDSI, EDSI and ODSI for ${country.label}, with variable definitions.` : allDescription;
+  };
+  select.addEventListener("change", update);
+  select.hidden = false;
+  update();
 }
 
 function dsiBuildChartLayout(country, records) {
@@ -651,7 +597,7 @@ async function initDSISite() {
     DSI_SITE_STATE.selectedCode = summary.countries?.[0]?.code ?? null;
 
     dsiRenderGlobalMeta();
-    dsiRenderDownloadList();
+    dsiBindIndexDownload();
     dsiBindCountrySelectors();
     dsiBindIndicatorToggle();
     dsiBindSeriesToggle();

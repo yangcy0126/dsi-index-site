@@ -34,6 +34,13 @@ jobs:
         with:
           ref: ${{ inputs.publish_ref || github.sha }}
 
+      - name: Refresh index source workbook if the audit tables changed
+        run: |
+          if ! python scripts/build_index_sources.py --check; then
+            python -m pip install 'openpyxl>=3.1,<4'
+            python scripts/build_index_sources.py
+          fi
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
