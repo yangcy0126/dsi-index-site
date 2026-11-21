@@ -13,6 +13,7 @@ const summaryPath = "data/summary.json";
 const trumpPath = "data/trump_indices.json";
 const trumpDirectedSummaryPath = "data/trump_directed_summary.json";
 const trumpDirectedBasePath = "data/trump_directed";
+const trumpDataVersion = "20261121";
 const visitorsPath = "data/visitor_stats.json";
 const assetVersion = "20260420-dsi-8";
 const VISITORS_REFRESH_INTERVAL_MS = 120000;
@@ -252,7 +253,7 @@ function startVisitorsAutoRefresh() {
 
 async function loadTrumpDirectedCountryData(code) {
   if (!state.trumpDirectedCache.has(code)) {
-    state.trumpDirectedCache.set(code, fetchJson(`${trumpDirectedBasePath}/${code}.json`));
+    state.trumpDirectedCache.set(code, fetchJson(`${trumpDirectedBasePath}/${code}.json`, state.trumpDirected.generated_at || trumpDataVersion));
   }
   return state.trumpDirectedCache.get(code);
 }
@@ -417,18 +418,21 @@ function renderTrumpMetricCards() {
   const geo = trumpGeopoliticalMeta(geoValue);
   const shock = trumpShockMeta(shockValue);
   const modeLabel = trumpSeriesLabel(state.trumpSeriesMode);
+  const noScoredText = state.trumpSeriesMode === "daily" && state.trump.latest_scored_authored_posts === 0;
 
   const toneEl = document.getElementById("trump-tone-latest");
   toneEl.textContent = formatScore(toneValue);
   toneEl.className = `metric-value ${tone.className}`;
   document.getElementById("trump-tone-caption").textContent =
-    `${modeLabel} average across all authored Trump posts. Latest reading suggests ${tone.label} rhetoric.`;
+    noScoredText ? "No scored original text on this date; the daily value is zero by convention." :
+    `${modeLabel} average across scored original text posts. Latest reading suggests ${tone.label} rhetoric.`;
 
   const geoEl = document.getElementById("trump-geo-latest");
   geoEl.textContent = formatScore(geoValue);
   geoEl.className = `metric-value ${geo.className}`;
   document.getElementById("trump-geo-caption").textContent =
-    `${modeLabel} mean for China, tariffs, war, NATO, migration, and other geopolitical posts. Latest stance is ${geo.label}.`;
+    noScoredText ? "No scored original text on this date; the daily value is zero by convention." :
+    `${modeLabel} mean across scored original text posts. Non-geopolitical posts contribute zero. Latest stance is ${geo.label}.`;
 
   const shockEl = document.getElementById("trump-shock-latest");
   shockEl.textContent = formatScore(shockValue);
@@ -926,8 +930,8 @@ async function init() {
   try {
     const [summary, trump, trumpDirected, visitors] = await Promise.all([
       fetchJson(summaryPath),
-      fetchJson(trumpPath).catch(() => null),
-      fetchJson(trumpDirectedSummaryPath).catch(() => null),
+      fetchJson(trumpPath, trumpDataVersion).catch(() => null),
+      fetchJson(trumpDirectedSummaryPath, trumpDataVersion).catch(() => null),
       fetchJson(visitorsPath).catch(() => null),
     ]);
     state.summary = summary;

@@ -165,7 +165,7 @@ VARIABLE_DEFINITIONS = [
     {
         "variable": "geopolitical_score_llm_mean",
         "category": "geopolitics",
-        "description": "Daily mean raw geopolitical score among geopolitical posts only.",
+        "description": "Daily mean geopolitical score across all scored original text posts; non-geopolitical posts contribute zero.",
         "units_or_scale": "-3 to 3",
         "recommended_use": "supporting",
     },
@@ -207,7 +207,7 @@ VARIABLE_DEFINITIONS = [
     {
         "variable": "trump_geopolitical_index",
         "category": "headline",
-        "description": "Main Trump Geopolitical Index. Daily mean LLM geopolitical score on geopolitical posts only.",
+        "description": "Main Trump Geopolitical Index. Daily mean across all scored original text posts, including zero scores for non-geopolitical posts.",
         "units_or_scale": "-3 to 3",
         "recommended_use": "core",
     },
@@ -387,6 +387,7 @@ def build_compact_json(daily: pd.DataFrame, summary: dict[str, object]) -> dict[
         "coverage_end": summary["coverage_end"],
         "model": summary["model"],
         "scoring_coverage": summary["scoring_coverage"],
+        "latest_scored_authored_posts": int(daily["scored_authored_posts"].iloc[-1]),
         "records": records,
     }
 
@@ -413,6 +414,8 @@ def write_workbook(daily: pd.DataFrame, summary: dict[str, object]) -> None:
             "Core columns are the three trump_* indices and their 7-day and 30-day rolling averages. "
             "Legacy columns are retained for backward compatibility."
         )
+        if "quote_posts" in summary["method"]:
+            defs_sheet["A4"] = summary["method"]["quote_posts"]
         defs_sheet["A1"].font = Font(bold=True, size=14)
         defs_sheet["A2"].font = Font(italic=True)
         defs_sheet["A3"].font = Font(italic=True)
