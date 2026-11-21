@@ -1,9 +1,26 @@
 from __future__ import annotations
 
+import argparse
 import json
+import time
 from pathlib import Path
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
 
 from build_wdsi_data import OUTPUT_DIR, build_visitor_snapshot
+
+
+def published_snapshot_is_stale(expected: dict[str, object]) -> bool:
+    url = f"https://dsi-index.org/data/visitor_stats.json?check={int(time.time()) // 300}"
+    request = Request(url, headers={"Accept": "application/json", "Cache-Control": "no-cache"})
+    try:
+        with urlopen(request, timeout=20) as response:
+            published = json.load(response)
+    except HTTPError as exc:
+        if exc.code == 404:
+            return True
+        raise
+    return comparable_snapshot(expected) != comparable_snapshot(published)
 
 
 def load_existing_snapshot(path: Path) -> dict[str, object] | None:
@@ -42,4 +59,11 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--needs-deploy", action="store_true",
+                        help="Compare the saved snapshot to the one on the live site.")
+    if parser.parse_args().needs_deploy:
+        snapshot = json.loads((OUTPUT_DIR / "visitor_stats.json").read_bytes())
+        print("true" if published_snapshot_is_stale(snapshot) else "false")
+    else:
+        main()

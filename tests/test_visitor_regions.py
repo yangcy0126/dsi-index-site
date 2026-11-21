@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import io
+import json
 import sys
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from urllib.error import HTTPError
 from unittest.mock import patch
 
 
@@ -59,6 +62,35 @@ class VisitorSnapshotTests(unittest.TestCase):
                 with self.assertRaisesRegex(SystemExit, "bad response"):
                     update_visitor_snapshot.main()
             self.assertEqual(path.read_bytes(), previous)
+
+    def test_check_writes_only_real_changes(self) -> None:
+        before = {"available": True, "total_views": 10, "generated_at": "first"}
+        same = {**before, "generated_at": "second"}
+        changed = {**same, "total_views": 11}
+        with TemporaryDirectory() as tmp, patch.object(update_visitor_snapshot, "OUTPUT_DIR", Path(tmp)):
+            path = Path(tmp) / "visitor_stats.json"
+            original = json.dumps(before).encode()
+            path.write_bytes(original)
+            with patch.object(update_visitor_snapshot, "build_visitor_snapshot", side_effect=[same, changed]):
+                update_visitor_snapshot.main()
+                self.assertEqual(path.read_bytes(), original)
+                update_visitor_snapshot.main()
+                self.assertEqual(json.loads(path.read_bytes()), changed)
+
+    def test_stale_public_copy_is_redeployed_without_another_commit(self) -> None:
+        expected = {"available": True, "total_views": 11, "generated_at": "current"}
+        for total, stale in [(11, False), (10, True)]:
+            live = json.dumps({**expected, "total_views": total, "generated_at": "other"}).encode()
+            with self.subTest(total=total), patch.object(update_visitor_snapshot, "urlopen", return_value=io.BytesIO(live)):
+                self.assertEqual(update_visitor_snapshot.published_snapshot_is_stale(expected), stale)
+        for status in (404, 503):
+            error = HTTPError("https://dsi-index.org/", status, "test", None, None)
+            with self.subTest(status=status), patch.object(update_visitor_snapshot, "urlopen", side_effect=error):
+                if status == 404:
+                    self.assertTrue(update_visitor_snapshot.published_snapshot_is_stale(expected))
+                else:
+                    with self.assertRaises(HTTPError):
+                        update_visitor_snapshot.published_snapshot_is_stale(expected)
 
 
 class VisitorRegionTests(unittest.TestCase):

@@ -5,6 +5,11 @@ on:
     branches:
       - main
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      publish_ref:
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -26,6 +31,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.publish_ref || github.sha }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

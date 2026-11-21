@@ -1,9 +1,8 @@
-# Scheduled workflow kept active for visitor snapshot updates.
 name: Update Visitor Snapshot
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "2-57/5 * * * *"
   workflow_dispatch:
   push:
     branches:
@@ -11,6 +10,7 @@ on:
     paths:
       - "scripts/update_visitor_snapshot.py"
       - "scripts/build_wdsi_data.py"
+      - "tests/test_visitor_regions.py"
       - ".github/workflows/update-visitors.yml"
 
 permissions:
@@ -20,18 +20,20 @@ permissions:
 
 concurrency:
   group: visitor-snapshot
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   refresh-visitors:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: write
+    outputs:
+      publish: ${{ steps.public.outputs.needed }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Setup Python
@@ -72,17 +74,25 @@ jobs:
             exit 1
           fi
 
-      - name: Setup Pages
-        if: steps.commit-and-push.outputs.changed == 'true' || github.event_name != 'schedule'
-        uses: actions/configure-pages@v5
+      - name: Check whether the public snapshot needs deployment
+        id: public
+        env:
+          CHANGED: ${{ steps.commit-and-push.outputs.changed }}
+        run: |
+          needed="$CHANGED"
+          if [ "$needed" != "true" ]; then
+            needed=$(python scripts/update_visitor_snapshot.py --needs-deploy)
+          fi
+          echo "Public snapshot needs deployment: $needed"
+          echo "needed=$needed" >> "$GITHUB_OUTPUT"
 
-      - name: Upload Pages artifact
-        if: steps.commit-and-push.outputs.changed == 'true' || github.event_name != 'schedule'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-
-      - name: Deploy to GitHub Pages
-        if: steps.commit-and-push.outputs.changed == 'true' || github.event_name != 'schedule'
-        id: deployment
-        uses: actions/deploy-pages@v4
+  publish:
+    needs: refresh-visitors
+    if: needs.refresh-visitors.outputs.publish == 'true'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/deploy.yml
+    with:
+      publish_ref: main

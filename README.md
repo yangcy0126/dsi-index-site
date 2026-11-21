@@ -101,6 +101,12 @@ The records workflow lives at:
 
 It is manually dispatched. A new publication date requires a reviewed source import before the site panel advances.
 
+### Visitor snapshots
+
+The [visitor workflow](https://github.com/yangcy0126/dsi-index-site/actions/workflows/update-visitors.yml) requests a check at minutes 02, 07, ..., 57 each hour. [GitHub may delay or drop scheduled runs](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule). Use the actual run times to check the cadence; the timestamp in the [live snapshot](https://dsi-index.org/data/visitor_stats.json) is the last data change, not a heartbeat.
+
+Changed statistics are committed and published. On an unchanged check, a stale public copy is redeployed; an up-to-date copy is left alone. A failed source check keeps the last good snapshot. The workflow can also be run manually without adding a test visit.
+
 ## Using Qwen instead of OpenAI
 
 Yes. The scorer now supports OpenAI-compatible providers.
