@@ -10,7 +10,7 @@ const DSI_SITE_STATE = {
 
 const dsiSummaryPath = "data/summary.json";
 const dsiEventsPath = "data/events.json";
-const dsiAssetVersion = "20261119-doc14-results";
+const dsiAssetVersion = "20261120-india";
 
 const DSI_INDICATOR_META = {
   c1: {
