@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-23T20:05:29.081713+00:00",
+  "generated_at": "2026-11-24T04:44:58.096351+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -10,14 +10,14 @@
     "Macao"
   ],
   "total_countries": 27,
-  "flags_collected": 47,
-  "total_views": 1190,
-  "total_visitors": 655,
-  "visitors_yesterday": 2,
-  "visitors_30d_average": 2,
+  "flags_collected": 48,
+  "total_views": 1191,
+  "total_visitors": 656,
+  "visitors_yesterday": 6,
+  "visitors_30d_average": 3,
   "visitors_record": 59,
   "visitors_record_date": "August 9, 2026",
-  "views_yesterday": 3,
+  "views_yesterday": 6,
   "views_30d_average": 3,
   "views_record": 108,
   "views_record_date": "March 22, 2026",
@@ -25,7 +25,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 294,
+      "visitors": 295,
       "members": [
         "United States"
       ]
@@ -243,7 +243,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 294,
+      "visitors": 295,
       "members": [
         "United States"
       ]
@@ -285,7 +285,7 @@
     {
       "code": "US",
       "country": "United States",
-      "visitors": 294,
+      "visitors": 295,
       "members": [
         "United States"
       ],
