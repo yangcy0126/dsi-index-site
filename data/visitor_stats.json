@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-27T20:14:30.909582+00:00",
+  "generated_at": "2026-11-28T02:48:23.160564+00:00",
   "available": true,
   "counter_id": "DVgZ",
   "source": "Flag Counter public overview",
@@ -11,8 +11,8 @@
   ],
   "total_countries": 27,
   "flags_collected": 48,
-  "total_views": 1199,
-  "total_visitors": 664,
+  "total_views": 1200,
+  "total_visitors": 665,
   "visitors_yesterday": 2,
   "visitors_30d_average": 2,
   "visitors_record": 59,
@@ -65,7 +65,7 @@
     {
       "code": "JP",
       "country": "Japan",
-      "visitors": 23,
+      "visitors": 24,
       "members": [
         "Japan"
       ]
@@ -330,7 +330,7 @@
     {
       "code": "JP",
       "country": "Japan",
-      "visitors": 23,
+      "visitors": 24,
       "members": [
         "Japan"
       ],
